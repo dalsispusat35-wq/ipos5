@@ -1,0 +1,7 @@
+mingit/
+**/node_modules/
+**/dist/
+*.log
+.gemini/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,24 @@
+[{
+  "_id": {
+    "$oid": "6a585aaabc9a80cf639f3990"
+  },
+  "detail_route_id": "DR000014",
+  "route_id": "RT-MALAM-B9945-PCY-PU2",
+  "asal_nopen": "40395C1",
+  "asal_nama": "AGN ARVINET 40395C1",
+  "tujuan_nopen": "40395C1",
+  "tujuan_nama": "AGN ARVINET 40395C1",
+  "seq": 1,
+  "estimasi_jam": 0.5,
+  "moda": "D",
+  "nama_moda": "DARAT",
+  "role_asal": "ORIGIN",
+  "role_tujuan": "DESTINATION",
+  "status": "AKTIF",
+  "createdAt": {
+    "$date": "2026-07-16T04:14:34.287Z"
+  },
+  "updatedAt": {
+    "$date": "2026-07-16T04:14:34.287Z"
+  }
+}]

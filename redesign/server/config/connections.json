@@ -1,0 +1,16 @@
+[
+  {
+    "id": "default",
+    "name": "R (192.168.5.219)",
+    "uri": "mongodb://admin:Pos3eu8XDH6BJ8LBB6XUpZ8bhWVCqCgErxD@192.168.5.219:27017/?authSource=admin",
+    "database": "ipos5_reporting",
+    "color": "#059669"
+  },
+  {
+    "id": "local",
+    "name": "Local MongoDB",
+    "uri": "mongodb://localhost:27017",
+    "database": "ipos5_reporting",
+    "color": "#4f46e5"
+  }
+]

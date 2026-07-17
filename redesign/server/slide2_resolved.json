@@ -1,0 +1,240 @@
+{
+  "success": true,
+  "data": {
+    "source": "PPT_SLIDE_2",
+    "category": "MALAM",
+    "routes": [
+      {
+        "vehicle": "B 9910 PCX",
+        "category": "MALAM",
+        "groups": [
+          {
+            "id": "PICK_UP_AGP",
+            "name": "PICK UP AGP",
+            "startTime": "16.00",
+            "endTime": "21.00",
+            "stops": [
+              {
+                "_id": "6a44d53b363b05a264c50be6",
+                "nopend": "40395C1",
+                "nama_nopend": "AGEN ARVINET 40395C1",
+                "nopen_kc_kcu": "40100",
+                "nama_kcu_kc": "KC Ujungberung 40100",
+                "nopen_kcu": "40000",
+                "nama_kcu": "KCU Bandung 40000",
+                "kdregional": "3",
+                "nama_regional": "Regional III Bandung 40004",
+                "status": "AKTIF",
+                "updatedAt": "2026-07-15T11:20:00.366Z"
+              },
+              {
+                "_id": "6a44d53b363b05a264c50bea",
+                "nopend": "40395U1",
+                "nama_nopend": "AGENPOS CICALENGKA 40395U1",
+                "nopen_kc_kcu": "40100",
+                "nama_kcu_kc": "KC Ujungberung 40100",
+                "nopen_kcu": "40000",
+                "nama_kcu": "KCU Bandung 40000",
+                "kdregional": "3",
+                "nama_regional": "Regional III Bandung 40004",
+                "status": "AKTIF",
+                "updatedAt": "2026-07-15T11:20:00.366Z"
+              },
+              {
+                "_id": "6a44d53b363b05a264c50bb8",
+                "nopend": "40381U2",
+                "nama_nopend": "AGEN CIPARAY 40381U2",
+                "nopen_kc_kcu": "40100",
+                "nama_kcu_kc": "KC Ujungberung 40100",
+                "nopen_kcu": "40000",
+                "nama_kcu": "KCU Bandung 40000",
+                "kdregional": "3",
+                "nama_regional": "Regional III Bandung 40004",
+                "status": "AKTIF",
+                "updatedAt": "2026-07-15T11:20:00.366Z"
+              },
+              {
+                "_id": "6a44d53b363b05a264c50bbb",
+                "nopend": "40382U1",
+                "nama_nopend": "AGEN MAJALAYA 40382U1",
+                "nopen_kc_kcu": "40100",
+                "nama_kcu_kc": "KC Ujungberung 40100",
+                "nopen_kcu": "40000",
+                "nama_kcu": "KCU Bandung 40000",
+                "kdregional": "3",
+                "nama_regional": "Regional III Bandung 40004",
+                "status": "AKTIF",
+                "updatedAt": "2026-07-15T11:20:00.366Z"
+              },
+              {
+                "_id": "6a44d53b363b05a264c50bba",
+                "nopend": "40382B2",
+                "nama_nopend": "KCP MAJALAYA 40382B2",
+                "nopen_kc_kcu": "40100",
+                "nama_kcu_kc": "KC Ujungberung 40100",
+                "nopen_kcu": "40000",
+                "nama_kcu": "KCU Bandung 40000",
+                "kdregional": "3",
+                "nama_regional": "Regional III Bandung 40004",
+                "status": "AKTIF",
+                "updatedAt": "2026-07-15T11:20:00.366Z"
+              },
+              {
+                "_id": "6a44d53b363b05a264c50bd6",
+                "nopend": "40393U3",
+                "nama_nopend": "AGEN CILEUNYI 40393U3",
+                "nopen_kc_kcu": "40100",
+                "nama_kcu_kc": "KC Ujungberung 40100",
+                "nopen_kcu": "40000",
+                "nama_kcu": "KCU Bandung 40000",
+                "kdregional": "3",
+                "nama_regional": "Regional III Bandung 40004",
+                "status": "AKTIF",
+                "updatedAt": "2026-07-15T11:20:00.366Z"
+              },
+              {
+                "_id": "6a44d53b363b05a264c5304a",
+                "nopend": "40393S8",
+                "nama_nopend": "PTN EXPEDISI CINUNUK PERMATA BIRU 40393S8",
+                "nopen_kc_kcu": "40100",
+                "nama_kcu_kc": "KC Ujungberung 40100",
+                "nopen_kcu": "40000",
+                "nama_kcu": "KCU Bandung 40000",
+                "kdregional": "3",
+                "nama_regional": "Regional III Bandung 40004",
+                "status": "AKTIF",
+                "updatedAt": "2026-07-15T11:20:00.366Z"
+              }
+            ],
+            "skipped": [
+              {
+                "candidate": "AGP ONG",
+                "reason": "Tidak ditemukan di database master_kantor"
+              },
+              {
+                "candidate": "AGP Omega",
+                "reason": "Tidak ditemukan di database master_kantor"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "vehicle": "B 9945 PCY",
+        "category": "MALAM",
+        "groups": [
+          {
+            "id": "PICK_UP_1",
+            "name": "PICK UP 1",
+            "startTime": "18.00",
+            "endTime": "21.30",
+            "stops": [
+              {
+                "_id": "6a44d53b363b05a264c509d8",
+                "nopend": "40000",
+                "nama_nopend": "KCU BANDUNG 40000",
+                "nopen_kc_kcu": "40000",
+                "nama_kcu_kc": "KCU Bandung 40000",
+                "nopen_kcu": "40000",
+                "nama_kcu": "KCU BANDUNG 40000",
+                "kdregional": "3",
+                "nama_regional": "Regional III Bandung 40004",
+                "status": "AKTIF",
+                "updatedAt": "2026-07-15T11:20:00.366Z"
+              },
+              {
+                "_id": "6a44d53b363b05a264c50a27",
+                "nopend": "40141C3",
+                "nama_nopend": "AGEN UNPAR 40141C3",
+                "nopen_kc_kcu": "40000",
+                "nama_kcu_kc": "KCU Bandung 40000",
+                "nopen_kcu": "40000",
+                "nama_kcu": "KCU Bandung 40000",
+                "kdregional": "3",
+                "nama_regional": "Regional III Bandung 40004",
+                "status": "AKTIF",
+                "updatedAt": "2026-07-15T11:20:00.366Z"
+              },
+              {
+                "_id": "6a44d53b363b05a264c50a25",
+                "nopend": "40135U1",
+                "nama_nopend": "AGEN BANDUNG DAGO 40135U1",
+                "nopen_kc_kcu": "40000",
+                "nama_kcu_kc": "KCU Bandung 40000",
+                "nopen_kcu": "40000",
+                "nama_kcu": "KCU Bandung 40000",
+                "kdregional": "3",
+                "nama_regional": "Regional III Bandung 40004",
+                "status": "AKTIF",
+                "updatedAt": "2026-07-15T11:20:00.366Z"
+              },
+              {
+                "_id": "6a44d53b363b05a264c509f2",
+                "nopend": "40114A",
+                "nama_nopend": "KCP BANDUNGCIHAPIT 40114A",
+                "nopen_kc_kcu": "40000",
+                "nama_kcu_kc": "KCU Bandung 40000",
+                "nopen_kcu": "40000",
+                "nama_kcu": "KCU Bandung 40000",
+                "kdregional": "3",
+                "nama_regional": "Regional III Bandung 40004",
+                "status": "AKTIF",
+                "updatedAt": "2026-07-15T11:20:00.366Z"
+              },
+              {
+                "_id": "6a44d53b363b05a264c50abb",
+                "nopend": "40263C2",
+                "nama_nopend": "AGEN GATSU POS 40263C2",
+                "nopen_kc_kcu": "40000",
+                "nama_kcu_kc": "KCU Bandung 40000",
+                "nopen_kcu": "40000",
+                "nama_kcu": "KCU Bandung 40000",
+                "kdregional": "3",
+                "nama_regional": "Regional III Bandung 40004",
+                "status": "AKTIF",
+                "updatedAt": "2026-07-15T11:20:00.366Z"
+              }
+            ],
+            "skipped": [
+              {
+                "candidate": "AGP Siliwangi",
+                "reason": "Tidak ditemukan di database master_kantor"
+              }
+            ]
+          },
+          {
+            "id": "PICK_UP_2",
+            "name": "PICK UP 2",
+            "startTime": "22.00",
+            "endTime": "24.00",
+            "stops": [
+              {
+                "_id": "6a44d53b363b05a264c509ea",
+                "nopend": "40100",
+                "nama_nopend": "KC UJUNGBERUNG 40100",
+                "nopen_kc_kcu": "40100",
+                "nama_kcu_kc": "KC Ujungberung 40100",
+                "nopen_kcu": "40000",
+                "nama_kcu": "KCU Bandung 40000",
+                "kdregional": "3",
+                "nama_regional": "Regional III Bandung 40004",
+                "status": "AKTIF",
+                "updatedAt": "2026-07-15T11:20:00.366Z"
+              }
+            ],
+            "skipped": [
+              {
+                "candidate": "AGP Artajati",
+                "reason": "Tidak ditemukan di database master_kantor"
+              },
+              {
+                "candidate": "AGP Ciskul",
+                "reason": "Tidak ditemukan di database master_kantor"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
