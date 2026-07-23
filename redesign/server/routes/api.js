@@ -10,6 +10,7 @@ import TransactionController from '../controllers/TransactionController.js';
 import CompassController from '../controllers/CompassController.js';
 import ManifestController from '../controllers/ManifestController.js';
 import PickupScheduleController from '../controllers/PickupScheduleController.js';
+import RouteJourneyController from '../controllers/RouteJourneyController.js';
 
 import KantorModel from '../models/KantorModel.js';
 import ProdukModel from '../models/ProdukModel.js';
@@ -141,6 +142,16 @@ router.get('/manifests/:code', requireDb, (req, res) => ManifestController.getBy
 router.post('/manifests', requireDb, (req, res) => ManifestController.create(req, res));
 router.post('/manifests/transit', requireDb, (req, res) => ManifestController.transit(req, res));
 router.post('/manifests/arrive', requireDb, (req, res) => ManifestController.arrive(req, res));
+
+// ─── Dynamic Capacity Routing (Milk Run) Routes ─────────────────────────────
+router.post('/route-journeys/simulate', requireDb, (req, res) => RouteJourneyController.simulateMilkRun(req, res));
+router.get('/route-journeys/active', requireDb, (req, res) => RouteJourneyController.getActiveJourney(req, res));
+router.get('/route-journeys/:journeyId', requireDb, (req, res) => RouteJourneyController.getJourney(req, res));
+router.post('/route-journeys', requireDb, (req, res) => RouteJourneyController.createJourney(req, res));
+router.post('/route-journeys/:journeyId/start', requireDb, (req, res) => RouteJourneyController.startJourney(req, res));
+router.post('/route-journeys/:journeyId/stops/:seq/process', requireDb, (req, res) => RouteJourneyController.processStop(req, res));
+router.post('/route-journeys/:journeyId/complete', requireDb, (req, res) => RouteJourneyController.completeJourney(req, res));
+router.post('/route-journeys/:journeyId/cancel', requireDb, (req, res) => RouteJourneyController.cancelJourney(req, res));
 
 // ─── MongoDB Compass Manager Routes ──────────────────────────────────────────
 // NOTE: connect, disconnect, connections list are NOT behind requireDb

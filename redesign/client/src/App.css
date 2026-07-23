@@ -972,7 +972,6 @@
   .mobile-menu-btn {
     display: flex;
   }
-  .main-content { width: 100%; }
   .content-body { padding: 16px; }
   .topbar       { padding: 0 16px; }
   .compass-grid { grid-template-columns: 1fr; }
@@ -981,6 +980,25 @@
   .journey-arrow { transform: rotate(90deg); width: 60px; min-width: unset; }
   .timeline-row { grid-template-columns: 70px 1fr; gap: 10px; }
   .page-header  { flex-direction: column; gap: 12px; }
+
+  /* Checker — Search form full width */
+  .checker-search-form { flex-direction: column; }
+  .checker-search-form button { width: 100%; }
+
+  /* Checker — milk run header stack on mobile */
+  .milk-run-header { flex-direction: column !important; align-items: flex-start !important; }
+  .milk-run-header-controls { width: 100%; }
+  .milk-run-header-controls button { font-size: 12px !important; }
+
+  /* Topbar title truncate on mobile */
+  .topbar-title h1 { font-size: 15px !important; }
+
+  /* Tables: horizontal scroll */
+  .table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table-container table { min-width: 560px; }
+
+  /* Timeline tracker scroll on mobile */
+  .timeline-wrapper { overflow-x: auto; padding-bottom: 8px; }
 }
 
 /* ============================================================
@@ -1238,3 +1256,49 @@
   color: var(--text-primary) !important;
 }
 
+/* ============================================================
+   LIGHT THEME — MILK RUN ROAD TRACK
+   ============================================================ */
+:root.light-theme .milk-run-track-box {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+
+
+:root.light-theme .milk-run-stop-label {
+  color: #0b192c !important;
+}
+
+:root.light-theme .milk-run-stop-sub {
+  color: #627d98 !important;
+}
+
+:root.light-theme .milk-run-node-badge {
+  background: #e2e8f0 !important;
+  border-color: #94a3b8 !important;
+  color: #334e68 !important;
+}
+
+:root.light-theme .milk-run-stop-item.active .milk-run-node-badge {
+  background: var(--accent-cyan) !important;
+  border-color: #0b192c !important;
+  color: #0b192c !important;
+}
+
+:root.light-theme .milk-run-stop-item.visited .milk-run-node-badge {
+  background: #10B981 !important;
+  border-color: #10B981 !important;
+  color: #ffffff !important;
+}
+
+:root.light-theme .milk-run-truck-badge {
+  background: #0b192c !important;
+  color: #00D2C4 !important;
+  border-color: #00D2C4 !important;
+}
+
+:root.light-theme .milk-run-truck-body {
+  border-color: #0b192c;
+  box-shadow: 0 4px 12px rgba(11, 25, 44, 0.25);
+}

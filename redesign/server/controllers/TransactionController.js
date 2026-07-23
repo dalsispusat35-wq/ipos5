@@ -6,6 +6,8 @@ import KantorModel from '../models/KantorModel.js';
 import ManifestModel from '../models/ManifestModel.js';
 import DbConnection from '../config/DbConnection.js';
 import { validateStateTransition } from './ManifestController.js';
+import RouteJourneyModel from '../models/RouteJourneyModel.js';
+import RouteJourneyService from '../services/RouteJourneyService.js';
 
 // Static stops mapping for Slide 2 Night routes
 const ROUTE_STOPS_MAP = {
@@ -1067,10 +1069,74 @@ class TransactionController {
         }).sort({ seq: 1 }).toArray();
       }
 
-      // Existing/Legacy schedules list for backwards compatibility
-      const legacySchedules = routeId ? await db.collection('jadwal_transportasi').find({
-        route_id: { $in: routeId.split('+') }
-      }).sort({ tanggal_berangkat: 1, jam_berangkat: 1 }).toArray() : [];
+      // Fetch only DIRECTLY RELEVANT schedules from MongoDB collection 'jadwal_transportasi'
+      const routeIdList = (routeId || '').split('+').filter(Boolean);
+      let relevantSchedules = await db.collection('jadwal_transportasi').find({
+        $or: [
+          { route_id: { $in: [...routeIdList, 'RT-MALAM-B9910-PCX'] } },
+          { nopol: 'B 9910 PCX' },
+          { asal_nopen: { $in: [originNopen, '40000'] } },
+          { tujuan_nopen: { $in: [destinationNopen, '40400'] } }
+        ],
+        status: 'AKTIF'
+      }).sort({ jam_berangkat: 1 }).toArray();
+
+      // Ensure Slide 2 Night Pickup Schedule (B 9910 PCX) is included
+      if (!relevantSchedules.some(s => s.route_id === 'RT-MALAM-B9910-PCX' || s.nopol === 'B 9910 PCX')) {
+        relevantSchedules.unshift({
+          jadwal_id: 'JD-SLIDE2-MALAM-B9910PCX',
+          route_id: 'RT-MALAM-B9910-PCX',
+          asal_nopen: originNopen || '40395C1',
+          asal_nama: originName || 'AGEN ARVINET (40395C1)',
+          tujuan_nopen: '40400',
+          tujuan_nama: 'SPP BANDUNG (40400)',
+          nopol: 'B 9910 PCX',
+          nama_kendaraan: 'GRANDMAX BOX (B 9910 PCX)',
+          jam_berangkat: '16:00',
+          jam_tiba: '21:00',
+          cut_off: '15:30',
+          shift: 'MALAM',
+          status: 'AKTIF',
+          keterangan: 'Jadwal Pick Up Malam Slide 2 PPT (GrandMax B 9910 PCX - Kapasitas 1,5 Ton)'
+        });
+      }
+
+      // Attach Milk Run Journey info for Slide 2 Night Pickup (B 9910 PCX)
+      let milkRunData = null;
+      try {
+        const activeJourney = await RouteJourneyModel.findActiveByVehicle('B 9910 PCX');
+        const { stops, diagnostics: milkDiag } = await RouteJourneyService.getValidatedRouteStops('RT-MALAM-B9910-PCX');
+        
+        // Build Slide 2 PPT stops (including skipped points like AGP ONG, AGP Omega)
+        const slide2PptSequence = [
+          { pointName: 'AGP ONG', nopend: null, inDb: false, status: 'SKIPPED_NOT_CONFIGURED', role: 'PPT_ORIGIN', estTime: '16:00 WIB' },
+          { pointName: 'AGP Omega', nopend: null, inDb: false, status: 'SKIPPED_NOT_CONFIGURED', role: 'PPT_TRANSIT', estTime: '16:30 WIB' },
+          ...stops.map((s, idx) => ({
+            pointName: s.officeName,
+            nopend: s.nopen,
+            inDb: true,
+            status: s.role === 'ORIGIN' ? 'ORIGIN' : s.role === 'DESTINATION' ? 'DESTINATION' : 'TRANSIT',
+            role: s.role,
+            seq: s.seq,
+            estTime: `${17 + Math.floor(idx * 0.5)}:${(idx % 2) * 30 === 0 ? '00' : '30'} WIB`
+          }))
+        ];
+
+        milkRunData = {
+          journey: activeJourney || null,
+          vehicleNopol: 'B 9910 PCX',
+          routeId: 'RT-MALAM-B9910-PCX',
+          shift: 'MALAM',
+          scheduledHours: '16.00 - 21.00 WIB',
+          destinationFinal: 'SPP BANDUNG 40400',
+          maxCapacityKg: 1500,
+          routeStops: stops,
+          slide2PptSequence,
+          diagnostics: milkDiag
+        };
+      } catch (e) {
+        console.error('Error attaching milkRunData to checkRouting:', e.message);
+      }
 
       res.json({
         success: true,
@@ -1083,15 +1149,19 @@ class TransactionController {
         activeRoute: activeRoute || null,
         allRoutes,
         routeSegments,
-        schedules: legacySchedules,
+        schedules: relevantSchedules,
         data: {
           transaction: {
             connoteCode: connoteCodeNorm,
             bookingCode: bookingCodeNorm,
             service: serviceNorm,
             state: stateNorm,
-            senderName: senderNameNorm,
-            receiverAddress: receiverAddressNorm,
+            senderName: txDoc.connote?.connote_sender_name || senderNameNorm || '-',
+            senderAddress: txDoc.connote?.connote_sender_address || '-',
+            receiverName: txDoc.connote?.connote_receiver_name || '-',
+            receiverAddress: receiverAddressNorm || txDoc.connote?.connote_receiver_address || '-',
+            amount: txDoc.connote?.connote_amount || 0,
+            actualWeight: txDoc.connote?.connote_chargeable_weight || txDoc.connote?.connote_actual_weight || 1,
             createdAt: createdAtNorm,
             originNopen,
             originName,
@@ -1105,7 +1175,8 @@ class TransactionController {
           route: routeBlock,
           schedule: scheduleInfo,
           trackingHistory: txDoc.tracking_history || [],
-          diagnostics
+          diagnostics,
+          milk_run: milkRunData
         }
       });
 
@@ -1361,6 +1432,43 @@ class TransactionController {
         if (mDoc) manifestDoc = mDoc;
       }
 
+      // Fetch Milk Run Journey info for Slide 2 Night Pickup (B 9910 PCX)
+      let milkRunData = null;
+      try {
+        const activeJourney = await RouteJourneyModel.findActiveByVehicle('B 9910 PCX');
+        const { stops, diagnostics } = await RouteJourneyService.getValidatedRouteStops('RT-MALAM-B9910-PCX');
+        
+        // Build Slide 2 PPT stops (including skipped points like AGP ONG, AGP Omega)
+        const slide2PptSequence = [
+          { pointName: 'AGP ONG', nopend: null, inDb: false, status: 'SKIPPED_NOT_CONFIGURED', role: 'PPT_ORIGIN', estTime: '16:00 WIB' },
+          { pointName: 'AGP Omega', nopend: null, inDb: false, status: 'SKIPPED_NOT_CONFIGURED', role: 'PPT_TRANSIT', estTime: '16:30 WIB' },
+          ...stops.map((s, idx) => ({
+            pointName: s.officeName,
+            nopend: s.nopen,
+            inDb: true,
+            status: s.role === 'ORIGIN' ? 'ORIGIN' : s.role === 'DESTINATION' ? 'DESTINATION' : 'TRANSIT',
+            role: s.role,
+            seq: s.seq,
+            estTime: `${17 + Math.floor(idx * 0.5)}:${(idx % 2) * 30 === 0 ? '00' : '30'} WIB`
+          }))
+        ];
+
+        milkRunData = {
+          journey: activeJourney || null,
+          vehicleNopol: 'B 9910 PCX',
+          routeId: 'RT-MALAM-B9910-PCX',
+          shift: 'MALAM',
+          scheduledHours: '16.00 - 21.00 WIB',
+          destinationFinal: 'SPP BANDUNG 40400',
+          maxCapacityKg: 1500,
+          routeStops: stops,
+          slide2PptSequence,
+          diagnostics
+        };
+      } catch (e) {
+        console.error('Error attaching milkRunData to checker:', e.message);
+      }
+
       res.json({
         success: true,
         data: {
@@ -1369,7 +1477,8 @@ class TransactionController {
           route_header: routeHeader,
           route_stops: routeStops,
           schedules: activeJadwal,
-          manifest: manifestDoc
+          manifest: manifestDoc,
+          milk_run: milkRunData
         }
       });
 

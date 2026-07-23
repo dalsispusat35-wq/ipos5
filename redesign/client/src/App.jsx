@@ -23,6 +23,7 @@ import SettingsPage from './pages/Settings.jsx';
 import GateMonitoring from './pages/GateMonitoring.jsx';
 import JadwalPickup from './pages/JadwalPickup.jsx';
 import Transaksi from './pages/Transaksi.jsx';
+import RouteJourney from './pages/RouteJourney.jsx';
 
 function AppContent() {
   const location = useLocation();
@@ -265,10 +266,11 @@ function AppContent() {
                 {location.pathname.startsWith('/kantor') && 'Master Kantor'}
                 {location.pathname.startsWith('/produk') && 'Master Produk'}
                 {location.pathname.startsWith('/kendaraan') && 'Master Kendaraan'}
-                {location.pathname.startsWith('/route') && 'Master Route'}
+                {location.pathname.startsWith('/route') && !location.pathname.startsWith('/route-journey') && 'Master Route'}
                 {location.pathname.startsWith('/template') && 'Template Jadwal'}
                 {location.pathname.startsWith('/jadwal') && !location.pathname.startsWith('/jadwal-pickup') && 'Jadwal Transportasi'}
                 {location.pathname.startsWith('/jadwal-pickup') && 'Jadwal Pick Up SPP Bandung'}
+                {location.pathname.startsWith('/route-journey') && 'Milk Run Dynamic Capacity Routing (B 9910 PCX)'}
                 {location.pathname.startsWith('/transit-monitoring') && 'Transit & Gate Monitoring'}
                 {location.pathname.startsWith('/transaksi') && 'Data Transaksi Paket'}
                 {location.pathname.startsWith('/compass') && 'MongoDB Compass Manager'}
@@ -321,6 +323,7 @@ function AppContent() {
             <Route path="/template" element={<TemplateJadwal />} />
             <Route path="/jadwal" element={<JadwalTransportasi />} />
             <Route path="/jadwal-pickup" element={<JadwalPickup />} />
+            <Route path="/route-journey" element={<RouteJourney />} />
             <Route path="/transit-monitoring" element={<GateMonitoring />} />
             <Route path="/transaksi" element={<Transaksi />} />
             <Route 

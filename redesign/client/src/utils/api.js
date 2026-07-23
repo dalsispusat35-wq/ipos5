@@ -19,6 +19,13 @@ export const fetchApi = async (endpoint, options = {}) => {
   }
 
   const response = await fetch(url, config);
+  const contentType = response.headers.get('content-type') || '';
+
+  if (!contentType.includes('application/json')) {
+    const text = await response.text();
+    throw new Error(`Response HTTP ${response.status}: Server backend belum di-restart atau mengembalikan non-JSON. (${text.slice(0, 100)})`);
+  }
+
   const data = await response.json();
 
   if (!response.ok) {
@@ -90,6 +97,19 @@ export const api = {
 
   // Slide 2 PPT - pickup malam tervalidasi master_kantor
   getSlide2NightPickup: () => fetchApi('/pickup-schedules/slide-2/night'),
+
+  // Dynamic Capacity Routing (Milk Run)
+  simulateMilkRun: (data = {}) => fetchApi('/route-journeys/simulate', { method: 'POST', body: data }),
+  getActiveRouteJourney: (nopol = 'B 9910 PCX') => fetchApi(`/route-journeys/active?vehicle_nopol=${encodeURIComponent(nopol)}`),
+  getRouteJourney: (id) => fetchApi(`/route-journeys/${id}`),
+  createRouteJourney: (data = {}) => fetchApi('/route-journeys', { method: 'POST', body: data }),
+  startRouteJourney: (id) => fetchApi(`/route-journeys/${id}/start`, { method: 'POST' }),
+  processRouteJourneyStop: (id, seq, idempotencyKey) => fetchApi(`/route-journeys/${id}/stops/${seq}/process`, {
+    method: 'POST',
+    headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {}
+  }),
+  completeRouteJourney: (id) => fetchApi(`/route-journeys/${id}/complete`, { method: 'POST' }),
+  cancelRouteJourney: (id, reason) => fetchApi(`/route-journeys/${id}/cancel`, { method: 'POST', body: { reason } }),
 
   // Compass Manager
   getConnections: () => fetchApi('/compass/connections'),

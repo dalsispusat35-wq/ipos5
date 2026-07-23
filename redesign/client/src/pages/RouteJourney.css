@@ -1,0 +1,415 @@
+/* RouteJourney.css — Navy Premium Theme for Milk Run Routing */
+
+:root {
+  --rj-bg-navy: #0B192C;
+  --rj-bg-card: #1E3E62;
+  --rj-primary-blue: #00D2C4;
+  --rj-accent-cyan: #00D2C4;
+  --rj-accent-yellow: #D4AF37;
+  --rj-text-main: #F8FAFC;
+  --rj-text-muted: #94A3B8;
+  --rj-border: rgba(255, 255, 255, 0.1);
+  --rj-border-glow: rgba(0, 210, 196, 0.3);
+}
+
+.route-journey-container {
+  padding: 24px;
+  background-color: var(--rj-bg-navy);
+  min-height: calc(100vh - 64px);
+  color: var(--rj-text-main);
+  font-family: inherit;
+}
+
+/* Header Section */
+.route-journey-header-card {
+  background: var(--rj-bg-card);
+  border: 1px solid var(--rj-border);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.route-journey-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.route-journey-header-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.route-journey-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.route-journey-badge-draft { background: rgba(148, 163, 184, 0.2); color: #94A3B8; border: 1px solid #94A3B8; }
+.route-journey-badge-ready { background: rgba(59, 130, 246, 0.2); color: #60A5FA; border: 1px solid #60A5FA; }
+.route-journey-badge-in_progress { background: rgba(0, 210, 196, 0.2); color: var(--rj-accent-cyan); border: 1px solid var(--rj-accent-cyan); box-shadow: 0 0 10px var(--rj-border-glow); }
+.route-journey-badge-completed { background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid #34D399; }
+.route-journey-badge-cancelled { background: rgba(239, 68, 68, 0.2); color: #F87171; border: 1px solid #F87171; }
+
+.route-journey-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--rj-border);
+}
+
+.route-journey-meta-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.route-journey-meta-label {
+  font-size: 11px;
+  color: var(--rj-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.route-journey-meta-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--rj-text-main);
+}
+
+/* Metric Cards Grid */
+.route-journey-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.route-journey-metric-card {
+  background: var(--rj-bg-card);
+  border: 1px solid var(--rj-border);
+  border-radius: 10px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.route-journey-metric-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: rgba(0, 210, 196, 0.15);
+  color: var(--rj-accent-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.route-journey-metric-info {
+  display: flex;
+  flex-direction: column;
+
+}
+
+.route-journey-metric-val {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--rj-text-main);
+}
+
+/* Capacity Progress Bar */
+.route-journey-capacity-card {
+  background: var(--rj-bg-card);
+  border: 1px solid var(--rj-border);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+}
+
+.route-journey-capacity-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.route-journey-progress-track {
+  width: 100%;
+  height: 14px;
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 7px;
+  overflow: hidden;
+  border: 1px solid var(--rj-border);
+}
+
+.route-journey-progress-fill {
+  height: 100%;
+  transition: width 0.5s ease-in-out, background-color 0.3s ease;
+  border-radius: 7px;
+}
+
+.fill-cyan { background: linear-gradient(90deg, #00D2C4, #38BDF8); }
+.fill-yellow { background: linear-gradient(90deg, #F59E0B, #D4AF37); }
+.fill-danger { background: linear-gradient(90deg, #EF4444, #DC2626); }
+
+/* Horizontal / Vertical Flowchart */
+.route-journey-flow-card {
+  background: var(--rj-bg-card);
+  border: 1px solid var(--rj-border);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.route-journey-flow-track {
+  display: flex;
+  align-items: stretch;
+  gap: 16px;
+  overflow-x: auto;
+  padding: 12px 4px 24px 4px;
+  scroll-behavior: smooth;
+}
+
+.route-journey-stop-card {
+  flex: 0 0 240px;
+  background: rgba(11, 25, 44, 0.7);
+  border: 1px solid var(--rj-border);
+  border-radius: 10px;
+  padding: 16px;
+  position: relative;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.route-journey-stop-card.stop-current {
+  border-color: var(--rj-accent-cyan);
+  box-shadow: 0 0 16px rgba(0, 210, 196, 0.3);
+  background: rgba(0, 210, 196, 0.08);
+}
+
+.route-journey-stop-card.stop-completed {
+  border-color: rgba(16, 185, 129, 0.5);
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.route-journey-stop-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.route-journey-stop-seq {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--rj-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.stop-current .route-journey-stop-seq {
+  background: var(--rj-accent-cyan);
+  color: #0B192C;
+}
+
+.stop-completed .route-journey-stop-seq {
+  background: #10B981;
+  color: #FFFFFF;
+}
+
+.route-journey-stop-name {
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 4px;
+  color: var(--rj-text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.route-journey-stop-nopen {
+  font-size: 11px;
+  color: var(--rj-accent-cyan);
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.route-journey-stop-metrics {
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--rj-text-muted);
+}
+
+.route-journey-arrow {
+  display: flex;
+  align-items: center;
+  color: var(--rj-accent-cyan);
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+/* Vehicle Animation Position */
+.route-journey-vehicle-anim {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--rj-accent-cyan);
+  font-size: 12px;
+  font-weight: 700;
+  animation: pulseVehicle 2s infinite ease-in-out;
+}
+
+@keyframes pulseVehicle {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(4px); }
+}
+
+/* Controls Bar */
+.route-journey-controls {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.route-journey-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.route-journey-btn-primary {
+  background: var(--rj-accent-cyan);
+  color: #0B192C;
+  box-shadow: 0 4px 14px rgba(0, 210, 196, 0.3);
+}
+
+.route-journey-btn-primary:hover:not(:disabled) {
+  background: #38BDF8;
+  box-shadow: 0 6px 18px rgba(56, 189, 248, 0.4);
+}
+
+.route-journey-btn-secondary {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--rj-text-main);
+  border: 1px solid var(--rj-border);
+}
+
+.route-journey-btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.route-journey-btn-danger {
+  background: rgba(239, 68, 68, 0.2);
+  color: #F87171;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.route-journey-btn-danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.3);
+}
+
+.route-journey-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Tables Section */
+.route-journey-table-card {
+  background: var(--rj-bg-card);
+  border: 1px solid var(--rj-border);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.route-journey-table-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.route-journey-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.route-journey-table th {
+  background: rgba(11, 25, 44, 0.8);
+  color: var(--rj-text-muted);
+  text-align: left;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--rj-border);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+.route-journey-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--rj-border);
+  color: var(--rj-text-main);
+}
+
+.route-journey-table tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .route-journey-flow-track {
+    flex-direction: column;
+  }
+  .route-journey-stop-card {
+    flex: 1 1 auto;
+  }
+  .route-journey-arrow {
+    transform: rotate(90deg);
+    justify-content: center;
+  }
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .route-journey-vehicle-anim,
+  .route-journey-progress-fill,
+  .route-journey-stop-card {
+    animation: none !important;
+    transition: none !important;
+  }
+}

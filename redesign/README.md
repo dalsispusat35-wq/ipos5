@@ -484,3 +484,94 @@ Setiap nama kantor dicari secara dinamis dari koleksi `master_kantor` berdasarka
   * `RUTE TIDAK DITEMUKAN` (`ROUTE_NOT_FOUND`)
   * `DATA TIDAK LENGKAP` (`TRANSACTION_INCOMPLETE`)
 
+---
+
+## 14. Dynamic Capacity Routing — Milk Run (RT-MALAM-B9910-PCX)
+
+Modul **Dynamic Capacity Routing — Milk Run** (`/route-journey`) menyediakan kalkulasi kapasitas dinamis real-time, simulasi dry-run, dan pemrosesan transaksi ACID untuk perjalanan pickup malam armada **B 9910 PCX** (Mobil Box 1.5 Ton) pada rute **RT-MALAM-B9910-PCX** menuju tujuan akhir **SPP BANDUNG 40400**.
+
+### A. Spesifikasi & Batasan Kasus
+* **Armada Kendaraan:** `B 9910 PCX` (Kapasitas Maksimal: 1.500 kg / 1,5 Ton dari `master_kendaraan`).
+* **Route ID:** `RT-MALAM-B9910-PCX`.
+* **Shift:** `MALAM` (16.00 WIB – 21.00 WIB).
+* **Urutan Stop Runtime (8 Titik dari `detail_route`):**
+  1. `40395C1` (AGEN ARVINET 40395C1) — ORIGIN
+  2. `40395U1` (AGENPOS CICALENGKA 40395U1) — TRANSIT
+  3. `40381U2` (AGEN CIPARAY 40381U2) — TRANSIT
+  4. `40382U1` (AGEN MAJALAYA 40382U1) — TRANSIT
+  5. `40382B2` (KCP MAJALAYA 40382B2) — TRANSIT
+  6. `40393U3` (AGEN CILEUNYI 40393U3) — TRANSIT
+  7. `40393S8` (PTN EXPEDISI CINUNUK PERMATA BIRU 40393S8) — TRANSIT
+  8. `40400` (SPP BANDUNG 40400) — DESTINATION
+
+### B. Skema Koleksi `route_journeys` (MongoDB Native Driver)
+```json
+{
+  "_id": "ObjectId",
+  "journey_id": "JRN-20260721-B9910PCX-001",
+  "route_id": "RT-MALAM-B9910-PCX",
+  "vehicle_nopol": "B 9910 PCX",
+  "resolved_vehicle_nopol": "B 9910 PCX",
+  "journey_date": "ISODate",
+  "shift": "MALAM",
+  "scheduled_start": "16:00",
+  "scheduled_end": "21:00",
+  "status": "IN_PROGRESS",
+  "current_seq": 1,
+  "current_nopen": "40395C1",
+  "maximum_capacity_kg": 1500,
+  "current_load_kg": 125.5,
+  "remaining_capacity_kg": 1374.5,
+  "cargo": [
+    {
+      "connote_code": "P2607160088433",
+      "weight_kg": 1.0,
+      "origin_nopen": "40395C1",
+      "destination_nopen": "40400",
+      "loaded_at_nopen": "40395C1",
+      "loaded_at": "ISODate"
+    }
+  ],
+  "processed_stops": [
+    {
+      "seq": 1,
+      "nopen": "40395C1",
+      "officeName": "AGEN ARVINET 40395C1",
+      "idempotencyKey": "IDEMP-...",
+      "arrived_at": "ISODate",
+      "departed_at": "ISODate",
+      "load_before_kg": 0,
+      "unloaded_count": 0,
+      "unloaded_weight_kg": 0,
+      "loaded_count": 1,
+      "loaded_weight_kg": 1.0,
+      "load_after_kg": 1.0,
+      "remaining_capacity_kg": 1499.0,
+      "capacity_used_percent": 0.07,
+      "acceptedItems": [],
+      "rejectedItems": []
+    }
+  ],
+  "version": 2,
+  "createdAt": "ISODate",
+  "updatedAt": "ISODate"
+}
+```
+
+### C. REST API Endpoints
+* `POST /api/route-journeys/simulate` — Dry-Run simulasi kalkulasi tanpa mutasi basis data.
+* `GET /api/route-journeys/active?vehicle_nopol=B%209910%20PCX` — Mengambil journey aktif armada B 9910 PCX.
+* `GET /api/route-journeys/:journeyId` — Mengambil detail dokumen journey dan rute.
+* `POST /api/route-journeys` — Inisialisasi journey baru (status `READY`).
+* `POST /api/route-journeys/:journeyId/start` — Memulai perjalanan (`IN_PROGRESS`).
+* `POST /api/route-journeys/:journeyId/stops/:seq/process` — Pemrosesan muat/bongkar stop secara ACID transaction dengan header `Idempotency-Key` dan optimistic lock (`version`).
+* `POST /api/route-journeys/:journeyId/complete` — Penyelesaian journey di titik SPP BANDUNG 40400.
+* `POST /api/route-journeys/:journeyId/cancel` — Pembatalan journey.
+
+### D. Fitur Keamanan & Integritas Data
+1. **ACID Multi-Document Transactions:** Menggunakan `session.withTransaction` dengan readConcern `snapshot` & writeConcern `majority`.
+2. **Race-Condition Protection (Optimistic Locking):** Setiap pembaruan journey menggunakan field incremental `version`. Jika terjadi perubahan paralel, API mengembalikan status HTTP `409 (JOURNEY_VERSION_CONFLICT)`.
+3. **Idempotency Key:** Mencegah eksekusi ganda pada pengiriman ulang request (retry) dengan menyimpan `Idempotency-Key` pada array `processed_stops`.
+4. **State Machine Validation:** Kiriman dinaikkan ke state `INVEHICLE`, dibongkar intermediate ke `INLOCATION`, dan dibongkar di SPP Bandung ke `TRANSIT_SPP_BANDUNG`. Kiriman berstatus `CANCEL` atau `DELIVERED` ditolak secara aman dengan label `STATE_TRANSITION_REJECTED`.
+
+
