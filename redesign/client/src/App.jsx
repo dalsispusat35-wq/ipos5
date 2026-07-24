@@ -4,7 +4,7 @@ import { api } from './utils/api.js';
 import { 
   LayoutDashboard, Package, Building2, Tag, Truck, Map, 
   CalendarClock, Calendar, ShieldCheck, Database, Settings, 
-  Send, Search, Bell, ChevronDown, User, Clock, ClipboardList, Activity, Sun, Moon, Menu
+  Search, Bell, ChevronDown, User, Activity, Menu, ChevronLeft, PanelLeftClose, PanelLeftOpen
 } from 'lucide-react';
 import logoImg from './assets/logo.png';
 
@@ -25,7 +25,7 @@ import Transaksi from './pages/Transaksi.jsx';
 import RouteJourney from './pages/RouteJourney.jsx';
 import Profile from './pages/Profile.jsx';
 
-function Header({ title }) {
+function Header({ title, sidebarCollapsed, onToggleSidebar }) {
   const [searchVal, setSearchVal] = useState('');
   const navigate = useNavigate();
 
@@ -46,12 +46,34 @@ function Header({ title }) {
         display: 'flex',
         alignItems: 'center',
         padding: '0 24px',
-        gap: 20,
+        gap: 16,
         flexShrink: 0,
         position: 'relative',
         zIndex: 10,
       }}
     >
+      {/* Sidebar Toggle Button */}
+      <button
+        onClick={onToggleSidebar}
+        style={{
+          background: 'rgba(255,255,255,0.05)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: 8,
+          width: 34,
+          height: 34,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          color: 'rgba(255,255,255,0.8)',
+          transition: 'all 0.2s',
+          flexShrink: 0,
+        }}
+        title={sidebarCollapsed ? 'Expand Sidebar' : 'Hide Sidebar'}
+      >
+        {sidebarCollapsed ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}
+      </button>
+
       <div style={{ flex: '0 0 auto' }}>
         <h1 style={{ fontWeight: 800, fontSize: 16, color: '#fff', margin: 0, letterSpacing: '-0.01em' }}>
           {title}
@@ -161,6 +183,7 @@ function AppContent() {
   const location = useLocation();
   const [activeConnection, setActiveConnection] = useState(null);
   const [refreshStatsTrigger, setRefreshStatsTrigger] = useState(0);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const fetchActiveConnection = async () => {
     try {
@@ -220,107 +243,134 @@ function AppContent() {
     return 'IPOS5';
   };
 
+  const sidebarWidth = sidebarCollapsed ? 68 : 232;
+
   return (
     <div style={{ display: 'flex', width: '100vw', height: '100vh', overflow: 'hidden', background: '#04091a' }}>
       {/* Sidebar Navigation */}
       <aside
         style={{
-          width: 232,
-          minWidth: 232,
+          width: sidebarWidth,
+          minWidth: sidebarWidth,
           height: '100vh',
           background: '#060d1f',
           borderRight: '1px solid rgba(255,255,255,0.06)',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
+          transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
         {/* Sidebar Logo */}
-        <div style={{ padding: '20px 18px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 9,
-                background: 'transparent',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-              }}
-            >
-              <img src={logoImg} alt="IPOS5 Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-            </div>
-            <div>
-              <div style={{ fontWeight: 800, fontSize: 16, color: '#fff', letterSpacing: '-0.01em', lineHeight: 1.1 }}>
-                IPOS5
+        <div style={{ padding: sidebarCollapsed ? '16px 12px' : '20px 18px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'space-between', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 9,
+                  background: 'transparent',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <img src={logoImg} alt="IPOS5 Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               </div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: 1 }}>
-                PT Pos Indonesia
-              </div>
+              {!sidebarCollapsed && (
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: 16, color: '#fff', letterSpacing: '-0.01em', lineHeight: 1.1 }}>
+                    IPOS5
+                  </div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: 1 }}>
+                    PT Pos Indonesia
+                  </div>
+                </div>
+              )}
             </div>
+
+            {!sidebarCollapsed && (
+              <button
+                onClick={() => setSidebarCollapsed(true)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'rgba(255,255,255,0.3)',
+                  padding: 4,
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+                title="Collapse Sidebar"
+              >
+                <ChevronLeft size={16} />
+              </button>
+            )}
           </div>
         </div>
 
         {/* Navigation Sections */}
-        <nav style={{ flex: 1, padding: '12px 10px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <div className="section-header">Operations</div>
-          <Link to="/" className={`nav-item ${isLinkActive('/') ? 'active' : ''}`}>
-            <LayoutDashboard size={16} /> <span>Dashboard</span>
+        <nav style={{ flex: 1, padding: '12px 8px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {!sidebarCollapsed && <div className="section-header">Operations</div>}
+          <Link to="/" title="Dashboard" className={`nav-item ${isLinkActive('/') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
+            <LayoutDashboard size={17} /> {!sidebarCollapsed && <span>Dashboard</span>}
           </Link>
-          <Link to="/checker" className={`nav-item ${isLinkActive('/checker') ? 'active' : ''}`}>
-            <Package size={16} /> <span>Package Tracking</span>
+          <Link to="/checker" title="Package Tracking" className={`nav-item ${isLinkActive('/checker') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
+            <Package size={17} /> {!sidebarCollapsed && <span>Package Tracking</span>}
           </Link>
-          <Link to="/kantor" className={`nav-item ${isLinkActive('/kantor') ? 'active' : ''}`}>
-            <Building2 size={16} /> <span>Post Offices</span>
-          </Link>
-
-          <div className="section-header" style={{ marginTop: 12 }}>Master Data</div>
-          <Link to="/produk" className={`nav-item ${isLinkActive('/produk') ? 'active' : ''}`}>
-            <Tag size={16} /> <span>Products & Services</span>
-          </Link>
-          <Link to="/kendaraan" className={`nav-item ${isLinkActive('/kendaraan') ? 'active' : ''}`}>
-            <Truck size={16} /> <span>Fleet</span>
-          </Link>
-          <Link to="/route" className={`nav-item ${isLinkActive('/route') ? 'active' : ''}`}>
-            <Map size={16} /> <span>Routes</span>
+          <Link to="/kantor" title="Post Offices" className={`nav-item ${isLinkActive('/kantor') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
+            <Building2 size={17} /> {!sidebarCollapsed && <span>Post Offices</span>}
           </Link>
 
-          <div className="section-header" style={{ marginTop: 12 }}>Logistics</div>
-          <Link to="/template" className={`nav-item ${isLinkActive('/template') ? 'active' : ''}`}>
-            <CalendarClock size={16} /> <span>Schedule Templates</span>
+          {!sidebarCollapsed && <div className="section-header" style={{ marginTop: 12 }}>Master Data</div>}
+          <Link to="/produk" title="Products & Services" className={`nav-item ${isLinkActive('/produk') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
+            <Tag size={17} /> {!sidebarCollapsed && <span>Products & Services</span>}
           </Link>
-          <Link to="/jadwal" className={`nav-item ${isLinkActive('/jadwal') ? 'active' : ''}`}>
-            <Calendar size={16} /> <span>Transport Schedule</span>
+          <Link to="/kendaraan" title="Fleet" className={`nav-item ${isLinkActive('/kendaraan') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
+            <Truck size={17} /> {!sidebarCollapsed && <span>Fleet</span>}
           </Link>
-          <Link to="/route-journey" className={`nav-item ${isLinkActive('/route-journey') ? 'active' : ''}`}>
-            <Activity size={16} /> <span>Milk Run Telemetry</span>
-          </Link>
-          <Link to="/transit-monitoring" className={`nav-item ${isLinkActive('/transit-monitoring') ? 'active' : ''}`}>
-            <ShieldCheck size={16} /> <span>Gate Monitoring</span>
+          <Link to="/route" title="Routes" className={`nav-item ${isLinkActive('/route') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
+            <Map size={17} /> {!sidebarCollapsed && <span>Routes</span>}
           </Link>
 
-          <div className="section-header" style={{ marginTop: 12 }}>System</div>
-          <Link to="/compass" className={`nav-item ${isLinkActive('/compass') ? 'active' : ''}`}>
-            <Database size={16} /> <span>Database Viewer</span>
+          {!sidebarCollapsed && <div className="section-header" style={{ marginTop: 12 }}>Logistics</div>}
+          <Link to="/template" title="Schedule Templates" className={`nav-item ${isLinkActive('/template') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
+            <CalendarClock size={17} /> {!sidebarCollapsed && <span>Schedule Templates</span>}
           </Link>
-          <Link to="/settings" className={`nav-item ${isLinkActive('/settings') ? 'active' : ''}`}>
-            <Settings size={16} /> <span>Settings</span>
+          <Link to="/jadwal" title="Transport Schedule" className={`nav-item ${isLinkActive('/jadwal') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
+            <Calendar size={17} /> {!sidebarCollapsed && <span>Transport Schedule</span>}
           </Link>
-          <Link to="/profile" className={`nav-item ${isLinkActive('/profile') ? 'active' : ''}`}>
-            <User size={16} /> <span>Profile</span>
+          <Link to="/route-journey" title="Milk Run Telemetry" className={`nav-item ${isLinkActive('/route-journey') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
+            <Activity size={17} /> {!sidebarCollapsed && <span>Milk Run Telemetry</span>}
+          </Link>
+          <Link to="/transit-monitoring" title="Gate Monitoring" className={`nav-item ${isLinkActive('/transit-monitoring') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
+            <ShieldCheck size={17} /> {!sidebarCollapsed && <span>Gate Monitoring</span>}
+          </Link>
+
+          {!sidebarCollapsed && <div className="section-header" style={{ marginTop: 12 }}>System</div>}
+          <Link to="/compass" title="Database Viewer" className={`nav-item ${isLinkActive('/compass') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
+            <Database size={17} /> {!sidebarCollapsed && <span>Database Viewer</span>}
+          </Link>
+          <Link to="/settings" title="Settings" className={`nav-item ${isLinkActive('/settings') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
+            <Settings size={17} /> {!sidebarCollapsed && <span>Settings</span>}
+          </Link>
+          <Link to="/profile" title="Profile" className={`nav-item ${isLinkActive('/profile') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
+            <User size={17} /> {!sidebarCollapsed && <span>Profile</span>}
           </Link>
         </nav>
 
         {/* Sidebar Footer */}
         <Link 
           to="/profile"
+          title="Sari Rahayu Profile"
           style={{
-            padding: '14px 16px',
+            padding: sidebarCollapsed ? '14px 0' : '14px 16px',
             borderTop: '1px solid rgba(255,255,255,0.06)',
             display: 'flex',
             alignItems: 'center',
+            justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
             gap: 10,
             textDecoration: 'none',
             color: 'inherit'
@@ -344,20 +394,26 @@ function AppContent() {
           >
             SR
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              Sari Rahayu
+          {!sidebarCollapsed && (
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                Sari Rahayu
+              </div>
+              <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.35)' }}>
+                Logistics Operator
+              </div>
             </div>
-            <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.35)' }}>
-              Logistics Operator
-            </div>
-          </div>
+          )}
         </Link>
       </aside>
 
       {/* Main Container */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
-        <Header title={getPageTitle()} />
+        <Header 
+          title={getPageTitle()} 
+          sidebarCollapsed={sidebarCollapsed} 
+          onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)} 
+        />
 
         <main style={{ flex: 1, padding: 24, overflowY: 'auto', background: '#04091a' }}>
           <Routes>
