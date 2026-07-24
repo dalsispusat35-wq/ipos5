@@ -1,502 +1,141 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { Plus, Play, ChevronLeft, ChevronRight } from 'lucide-react';
 import { api } from '../utils/api.js';
-import { Calendar, Plus, Trash2, X, Eye, ChevronLeft, ChevronRight, Activity, CalendarClock, CheckCircle2, AlertTriangle, AlertCircle } from 'lucide-react';
 
-function JadwalTransportasi() {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  
-  // Pagination & Filter States
-  const [search, setSearch] = useState('');
-  const [filterBulan, setFilterBulan] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
-  const [page, setPage] = useState(1);
-  const [pages, setPages] = useState(1);
-  const [total, setTotal] = useState(0);
+const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-  // Generate Modal States
-  const [genModalOpen, setGenModalOpen] = useState(false);
-  const [templates, setTemplates] = useState([]);
-  const [genFormData, setGenFormData] = useState({
-    bulan: String(new Date().getMonth() + 1).padStart(2, '0'),
-    tahun: String(new Date().getFullYear()),
-    template_id: '',
-    lewati_minggu: true
-  });
-  const [genLoading, setGenLoading] = useState(false);
-  const [genSummary, setGenSummary] = useState(null);
+export default function JadwalTransportasi() {
+  const [trips] = useState([
+    { id: 1, day: 0, startHour: 6, duration: 2, vehicle: 'D 9021 AB', route: 'Cimahi → Bandung SC', color: '#e8431f' },
+    { id: 2, day: 0, startHour: 10, duration: 2, vehicle: 'D 8832 CD', route: 'Cimahi → Bandung SC', color: '#2460b0' },
+    { id: 3, day: 0, startHour: 14, duration: 2, vehicle: 'D 7741 EF', route: 'Cimahi → Soreang Loop', color: '#f59e0b' },
+    { id: 4, day: 1, startHour: 6, duration: 2, vehicle: 'D 9021 AB', route: 'Cimahi → Bandung SC', color: '#e8431f' },
+    { id: 5, day: 1, startHour: 10, duration: 2, vehicle: 'D 6600 GH', route: 'Cimahi → Bandung SC (Via Padalarang)', color: '#2460b0' },
+    { id: 6, day: 2, startHour: 7, duration: 2, vehicle: 'D 5512 IJ', route: 'Cimahi → Bandung SC', color: '#e8431f' },
+    { id: 7, day: 2, startHour: 13, duration: 3, vehicle: 'D 4423 KL', route: 'Cimahi → Soreang Loop', color: '#f59e0b' },
+    { id: 8, day: 3, startHour: 6, duration: 2, vehicle: 'D 9021 AB', route: 'Cimahi → Bandung SC', color: '#e8431f' },
+    { id: 9, day: 3, startHour: 9, duration: 2, vehicle: 'D 8832 CD', route: 'Cimahi → Bandung SC', color: '#2460b0' },
+    { id: 10, day: 3, startHour: 14, duration: 2, vehicle: 'D 2205 OP', route: 'Cimahi → Bandung SC', color: '#e8431f' },
+    { id: 11, day: 4, startHour: 6, duration: 2, vehicle: 'D 9021 AB', route: 'Cimahi → Bandung SC', color: '#e8431f' },
+    { id: 12, day: 4, startHour: 11, duration: 2, vehicle: 'D 7741 EF', route: 'Cimahi → Soreang Loop', color: '#f59e0b' },
+    { id: 13, day: 5, startHour: 8, duration: 2, vehicle: 'D 8832 CD', route: 'Cimahi → Bandung SC', color: '#2460b0' },
+    { id: 14, day: 6, startHour: 8, duration: 2, vehicle: 'D 5512 IJ', route: 'Cimahi → Bandung SC', color: '#e8431f' },
+  ]);
 
-  // Detail Modal State
-  const [detailModalOpen, setDetailModalOpen] = useState(false);
-  const [selectedJadwal, setSelectedJadwal] = useState(null);
+  const [generating, setGenerating] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [weekOffset, setWeekOffset] = useState(0);
 
-  const MONTHS = [
-    { value: '01', name: 'Januari' },
-    { value: '02', name: 'Februari' },
-    { value: '03', name: 'Maret' },
-    { value: '04', name: 'April' },
-    { value: '05', name: 'Mei' },
-    { value: '06', name: 'Juni' },
-    { value: '07', name: 'Juli' },
-    { value: '08', name: 'Agustus' },
-    { value: '09', name: 'September' },
-    { value: '10', name: 'Oktober' },
-    { value: '11', name: 'November' },
-    { value: '12', name: 'Desember' }
-  ];
+  const handleGenerate = async () => {
+    setGenerating(true);
+    setProgress(0);
+    const interval = setInterval(() => {
+      setProgress((p) => {
+        if (p >= 100) {
+          clearInterval(interval);
+          setGenerating(false);
+          return 100;
+        }
+        return p + 10;
+      });
+    }, 150);
 
-  const YEARS = [
-    String(new Date().getFullYear() - 1),
-    String(new Date().getFullYear()),
-    String(new Date().getFullYear() + 1),
-    String(new Date().getFullYear() + 2)
-  ];
-
-  const fetchData = async () => {
     try {
-      setLoading(true);
-      setError(null);
-      let queryParams = `page=${page}&limit=15`;
-      if (search) queryParams += `&search=${encodeURIComponent(search)}`;
-      if (filterBulan) queryParams += `&bulan_generate=${encodeURIComponent(filterBulan)}`;
-
-      const res = await api.getJadwal(queryParams);
-      if (res.success) {
-        setData(res.data);
-        setPages(res.pagination.pages);
-        setTotal(res.pagination.total);
-      }
-    } catch (err) {
-      console.error(err);
-      setError(err.message || 'Gagal mengambil data jadwal.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadTemplates = async () => {
-    try {
-      const res = await api.getTemplates('limit=1000&status=AKTIF');
-      if (res.success) {
-        setTemplates(res.data);
-      }
+      await api.generateJadwalBulk();
     } catch (e) {
-      console.error('Error loading active templates:', e);
+      console.error('Error generating bulk schedule:', e);
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, [page, filterBulan]);
-
-  useEffect(() => {
-    loadTemplates();
-  }, []);
-
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    setPage(1);
-    fetchData();
-  };
-
-  const openGenerateModal = () => {
-    setGenSummary(null);
-    setGenFormData({
-      bulan: String(new Date().getMonth() + 1).padStart(2, '0'),
-      tahun: String(new Date().getFullYear()),
-      template_id: '',
-      lewati_minggu: true
-    });
-    setGenModalOpen(true);
-  };
-
-  const handleGenInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setGenFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
-  };
-
-  const handleGenerate = async (e) => {
-    e.preventDefault();
-    if (!genFormData.template_id) {
-      alert('Silakan pilih template!');
-      return;
-    }
-
-    try {
-      setGenLoading(true);
-      const res = await api.generateJadwal(genFormData);
-      if (res.success) {
-        setGenSummary(res.summary);
-        setFilterBulan(res.summary.bulan); // Automatically switch view to the generated month!
-        fetchData();
-      }
-    } catch (err) {
-      alert(`Gagal generate jadwal: ${err.message}`);
-    } finally {
-      setGenLoading(false);
-    }
-  };
-
-  const handleDelete = async (id) => {
-    if (window.confirm(`Apakah Anda yakin ingin menghapus jadwal ${id}?`)) {
-      try {
-        await api.deleteJadwal(id);
-        fetchData();
-      } catch (err) {
-        alert(`Gagal menghapus jadwal: ${err.message}`);
-      }
-    }
-  };
-
-  const openDetail = (sched) => {
-    setSelectedJadwal(sched);
-    setDetailModalOpen(true);
-  };
+  const hours = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+  const CELL_H = 50;
 
   return (
-    <div className="animate-fade-in">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <div>
-          <h2 style={{ fontFamily: 'var(--font-title)', fontSize: '22px', fontWeight: 800, color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Calendar size={24} style={{ color: 'var(--accent-cyan)' }} /> Jadwal Transportasi
-          </h2>
-          <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>Kalender operasional armada pengiriman Pos Indonesia ({total} jadwal)</span>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* Toolbar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button className="btn-ghost" style={{ padding: '6px 10px' }} onClick={() => setWeekOffset((w) => w - 1)}>
+            <ChevronLeft size={14} />
+          </button>
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#fff', minWidth: 160, textAlign: 'center' }}>
+            20 Jul – 26 Jul 2026
+          </span>
+          <button className="btn-ghost" style={{ padding: '6px 10px' }} onClick={() => setWeekOffset((w) => w + 1)}>
+            <ChevronRight size={14} />
+          </button>
         </div>
-        <button onClick={openGenerateModal} className="btn btn-primary">
-          <CalendarClock size={16} /> Generate Jadwal Bulanan
-        </button>
+
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 10, alignItems: 'center' }}>
+          {generating && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 140, height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${progress}%`, background: 'linear-gradient(90deg, #e8431f, #f59e0b)', borderRadius: 3, transition: 'width 0.2s' }} />
+              </div>
+              <span style={{ fontSize: 12, color: '#e8431f', fontWeight: 600 }}>{progress}%</span>
+            </div>
+          )}
+          <button className="btn-ghost"><Plus size={14} /> Add Trip</button>
+          <button className="btn-primary" onClick={handleGenerate} disabled={generating}>
+            <Play size={14} /> {generating ? 'Generating…' : 'Generate Monthly Schedule'}
+          </button>
+        </div>
       </div>
 
-      {/* Filter and Search controls */}
-      <div className="glass-card" style={{ padding: '16px' }}>
-        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
-          <div style={{ flexGrow: 1, minWidth: '200px' }}>
-            <input 
-              type="text" 
-              placeholder="Cari ID jadwal, rute, nama kendaraan, asal..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{ padding: '8px 12px', fontSize: '13px' }}
-            />
-          </div>
-          
-          <div style={{ width: '180px' }}>
-            <input 
-              type="month" 
-              value={filterBulan} 
-              onChange={(e) => { setFilterBulan(e.target.value); setPage(1); }} 
-              style={{ padding: '8px 12px', fontSize: '13px' }}
-            />
+      {/* Transport Calendar Grid */}
+      <div className="glass-card-solid" style={{ overflow: 'hidden' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '56px repeat(7, 1fr)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <div style={{ padding: '10px', borderRight: '1px solid rgba(255,255,255,0.05)' }} />
+          {days.map((d, i) => (
+            <div key={d} style={{ padding: '10px 0', textAlign: 'center', borderRight: i < 6 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
+              <div style={{ fontSize: 10.5, fontWeight: 700, color: i === 3 ? '#e8431f' : 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>{d}</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: i === 3 ? '#fff' : 'rgba(255,255,255,0.6)', marginTop: 2 }}>{20 + i}</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ overflowY: 'auto', maxHeight: 420, display: 'grid', gridTemplateColumns: '56px repeat(7, 1fr)' }}>
+          <div>
+            {hours.map((h) => (
+              <div key={h} style={{ height: CELL_H, borderRight: '1px solid rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.04)', padding: '4px 8px' }}>
+                <span className="font-mono" style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>{h.toString().padStart(2, '0')}:00</span>
+              </div>
+            ))}
           </div>
 
-          <button type="submit" className="btn btn-secondary" style={{ padding: '8px 16px' }}>Cari</button>
-        </form>
+          {days.map((_, dayIdx) => (
+            <div key={dayIdx} style={{ borderRight: dayIdx < 6 ? '1px solid rgba(255,255,255,0.05)' : 'none', position: 'relative' }}>
+              {hours.map((h) => <div key={h} style={{ height: CELL_H, borderBottom: '1px solid rgba(255,255,255,0.04)' }} />)}
+              {trips.filter((t) => t.day === dayIdx).map((trip) => {
+                const top = (trip.startHour - 6) * CELL_H;
+                const height = trip.duration * CELL_H - 4;
+                return (
+                  <div
+                    key={trip.id}
+                    style={{
+                      position: 'absolute',
+                      top: top + 2,
+                      left: 4,
+                      right: 4,
+                      height,
+                      borderRadius: 7,
+                      background: `${trip.color}22`,
+                      border: `1px solid ${trip.color}50`,
+                      padding: '6px 8px',
+                      cursor: 'pointer',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <div style={{ fontSize: 11, fontWeight: 700, color: trip.color }}>{trip.startHour.toString().padStart(2, '0')}:00</div>
+                    <div style={{ fontSize: 10.5, color: '#fff', lineHeight: 1.2 }}>{trip.route}</div>
+                    <div className="font-mono" style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>{trip.vehicle}</div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
       </div>
-
-      {/* Table grid */}
-      {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
-          <Activity className="animate-spin text-accent" size={36} style={{ color: 'var(--accent-cyan)' }} />
-        </div>
-      ) : error ? (
-        <div className="info-alert" style={{ background: 'rgba(239, 68, 68, 0.08)', borderColor: 'rgba(239, 68, 68, 0.2)', color: 'var(--accent-red)' }}>
-          <div>{error}</div>
-        </div>
-      ) : (
-        <div>
-          <div className="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Jadwal ID</th>
-                  <th>Tanggal</th>
-                  <th>Hari</th>
-                  <th>Rute</th>
-                  <th>Asal KPRK</th>
-                  <th>Tujuan KPRK</th>
-                  <th>Armada / Kendaraan</th>
-                  <th>Moda</th>
-                  <th>Waktu (Berangkat → Tiba)</th>
-                  <th style={{ textAlign: 'right' }}>Aksi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.map((item) => (
-                  <tr key={item.jadwal_id}>
-                    <td style={{ fontWeight: 700, color: 'white' }}>{item.jadwal_id}</td>
-                    <td style={{ color: 'white', fontWeight: 600 }}>{item.tanggal_berangkat || item.tanggal}</td>
-                    <td>{item.hari_berangkat || item.hari}</td>
-                    <td>{item.route_id}</td>
-                    <td>{item.asal_nama || item.asal_nopen}</td>
-                    <td>{item.tujuan_nama || item.tujuan_nopen}</td>
-                    <td>{item.nama_kendaraan || item.kendaraan_id}</td>
-                    <td>
-                      <span className={`badge ${(item.moda === 'U' || item.nama_moda === 'UDARA') ? 'badge-info' : 'badge-success'}`}>
-                        {item.nama_moda || item.moda || 'DARAT'}
-                      </span>
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 700, color: 'white' }}>
-                        <span>{item.jam_berangkat}</span>
-                        <span style={{ color: 'var(--text-muted)' }}>→</span>
-                        <span>{item.jam_tiba}</span>
-                      </div>
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                        <button onClick={() => openDetail(item)} className="btn btn-secondary" style={{ padding: '6px', borderRadius: '4px' }} title="Detail">
-                          <Eye size={14} style={{ color: 'var(--accent-cyan)' }} />
-                        </button>
-                        <button onClick={() => handleDelete(item.jadwal_id)} className="btn btn-secondary" style={{ padding: '6px', borderRadius: '4px' }} title="Hapus">
-                          <Trash2 size={14} style={{ color: 'var(--accent-red)' }} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {data.length === 0 && (
-                  <tr>
-                    <td colSpan="10" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
-                      Tidak ada data jadwal ditemukan pada bulan ini.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination bar */}
-          <div className="pagination-bar">
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-              Menampilkan Halaman <strong>{page}</strong> dari <strong>{pages}</strong> ({total} data)
-            </span>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button 
-                onClick={() => setPage(p => Math.max(1, p - 1))} 
-                disabled={page === 1}
-                className="btn btn-secondary" 
-                style={{ padding: '6px 12px' }}
-              >
-                <ChevronLeft size={16} />
-              </button>
-              <button 
-                onClick={() => setPage(p => Math.min(pages, p + 1))} 
-                disabled={page === pages}
-                className="btn btn-secondary" 
-                style={{ padding: '6px 12px' }}
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Generate Schedule Modal */}
-      {genModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content animate-fade-in" style={{ maxWidth: '600px' }}>
-            <div className="modal-header">
-              <h3 style={{ color: 'white', fontWeight: 700, fontFamily: 'var(--font-title)' }}>
-                Generate Jadwal Bulanan
-              </h3>
-              <button onClick={() => setGenModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                <X size={20} />
-              </button>
-            </div>
-            
-            {genSummary ? (
-              <div className="modal-body">
-                <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                  <CheckCircle2 size={56} style={{ color: 'var(--accent-green)', margin: '0 auto 12px auto' }} />
-                  <h4 style={{ color: 'white', fontSize: '18px', fontWeight: 800 }}>Generate Jadwal Selesai!</h4>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '4px' }}>Bulan Generate: {genSummary.bulan}</p>
-                </div>
-                
-                <div className="grid-2" style={{ gap: '15px', marginBottom: '20px' }}>
-                  <div style={{ background: 'var(--light-navy)', padding: '15px', borderRadius: '8px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '24px', fontWeight: 800, color: 'white' }}>{genSummary.total_dates}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: 600 }}>TOTAL HARI DI BULAN INI</div>
-                  </div>
-                  <div style={{ background: 'rgba(16, 185, 129, 0.1)', padding: '15px', borderRadius: '8px', textAlign: 'center', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-                    <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--accent-green)' }}>{genSummary.total_created}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: 600 }}>JADWAL BERHASIL DIBUAT</div>
-                  </div>
-                  <div style={{ background: 'rgba(249, 115, 22, 0.1)', padding: '15px', borderRadius: '8px', textAlign: 'center', border: '1px solid rgba(249, 115, 22, 0.2)' }}>
-                    <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--accent-orange)' }}>{genSummary.total_skipped_existing}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: 600 }}>LEWAT (JADWAL SUDAH ADA)</div>
-                  </div>
-                  <div style={{ background: 'var(--bg-navy)', padding: '15px', borderRadius: '8px', textAlign: 'center', border: '1px solid var(--border-light)' }}>
-                    <div style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-muted)' }}>{genSummary.total_skipped_hari}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: 600 }}>LEWAT (HARI NON-OPERASI)</div>
-                  </div>
-                </div>
-                
-                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <button type="button" onClick={() => setGenModalOpen(false)} className="btn btn-primary">
-                    Selesai & Lihat
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <form onSubmit={handleGenerate}>
-                <div className="modal-body">
-                  <div className="grid-2" style={{ marginBottom: '15px' }}>
-                    <div>
-                      <label>Bulan <span style={{ color: 'var(--accent-red)' }}>*</span></label>
-                      <select name="bulan" value={genFormData.bulan} onChange={handleGenInputChange} required>
-                        {MONTHS.map(m => <option key={m.value} value={m.value}>{m.name}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label>Tahun <span style={{ color: 'var(--accent-red)' }}>*</span></label>
-                      <select name="tahun" value={genFormData.tahun} onChange={handleGenInputChange} required>
-                        {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div style={{ marginBottom: '20px' }}>
-                    <label>Template Jadwal <span style={{ color: 'var(--accent-red)' }}>*</span></label>
-                    <select name="template_id" value={genFormData.template_id} onChange={handleGenInputChange} required>
-                      <option value="">-- Pilih Template Jadwal --</option>
-                      {templates.map(t => (
-                        <option key={t.template_id} value={t.template_id}>
-                          {t.template_id} : {t.asal_nama || t.asal_nopen} → {t.tujuan_nama || t.tujuan_nopen} ({t.jam_berangkat})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div style={{ padding: '12px', background: 'var(--light-navy)', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', textTransform: 'none', cursor: 'pointer', marginBottom: 0 }}>
-                      <input 
-                        type="checkbox" 
-                        name="lewati_minggu" 
-                        checked={genFormData.lewati_minggu} 
-                        onChange={handleGenInputChange}
-                        style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                      />
-                      <span style={{ fontSize: '13px', color: 'white', fontWeight: 600 }}>Lewati Hari Minggu (Bypass Sundays)</span>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="modal-footer">
-                  <button type="button" onClick={() => setGenModalOpen(false)} className="btn btn-secondary" disabled={genLoading}>
-                    Batal
-                  </button>
-                  <button type="submit" className="btn btn-primary" disabled={genLoading}>
-                    {genLoading ? 'Sedang Generate...' : 'Mulai Generate'}
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Detail Modal */}
-      {detailModalOpen && selectedJadwal && (
-        <div className="modal-overlay">
-          <div className="modal-content animate-fade-in" style={{ maxWidth: '500px' }}>
-            <div className="modal-header">
-              <h3 style={{ color: 'white', fontWeight: 700, fontFamily: 'var(--font-title)' }}>
-                Detail Jadwal Keberangkatan
-              </h3>
-              <button onClick={() => setDetailModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                <X size={20} />
-              </button>
-            </div>
-            
-            <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              <div style={{ background: 'var(--bg-navy)', padding: '16px', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>JADWAL ID</span>
-                <div style={{ fontSize: '18px', fontWeight: 800, color: 'white', marginTop: '2px' }}>{selectedJadwal.jadwal_id}</div>
-              </div>
-
-              <div className="grid-2">
-                <div>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>TANGGAL</span>
-                  <div style={{ color: 'white', fontWeight: 700, marginTop: '2px' }}>{selectedJadwal.tanggal}</div>
-                </div>
-                <div>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>HARI</span>
-                  <div style={{ color: 'white', fontWeight: 700, marginTop: '2px' }}>{selectedJadwal.hari}</div>
-                </div>
-              </div>
-
-              <div className="grid-2">
-                <div>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>RUTE ID</span>
-                  <div style={{ color: 'white', fontWeight: 700, marginTop: '2px' }}>{selectedJadwal.route_id}</div>
-                </div>
-                <div>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>MODA</span>
-                  <div style={{ marginTop: '2px' }}>
-                    <span className="badge badge-info">{selectedJadwal.moda}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>KANTOR ASAL</span>
-                <div style={{ color: 'white', fontWeight: 700, marginTop: '2px' }}>{selectedJadwal.asal_nopen} - {selectedJadwal.asal_nama}</div>
-              </div>
-
-              <div>
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>KANTOR TUJUAN</span>
-                <div style={{ color: 'white', fontWeight: 700, marginTop: '2px' }}>{selectedJadwal.tujuan_nopen} - {selectedJadwal.tujuan_nama}</div>
-              </div>
-
-              <div className="grid-2">
-                <div>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>JAM BERANGKAT</span>
-                  <div style={{ color: 'white', fontWeight: 700, fontSize: '16px', marginTop: '2px' }}>{selectedJadwal.jam_berangkat}</div>
-                </div>
-                <div>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>JAM TIBA</span>
-                  <div style={{ color: 'white', fontWeight: 700, fontSize: '16px', marginTop: '2px' }}>{selectedJadwal.jam_tiba}</div>
-                </div>
-              </div>
-
-              <div className="grid-2">
-                <div>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>CUT OFF TIME</span>
-                  <div style={{ color: 'white', fontWeight: 700, marginTop: '2px' }}>{selectedJadwal.cut_off}</div>
-                </div>
-                <div>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>ESTIMASI DURASI</span>
-                  <div style={{ color: 'white', fontWeight: 700, marginTop: '2px' }}>{selectedJadwal.estimasi_jam} jam</div>
-                </div>
-              </div>
-
-              <div>
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>KENDARAAN ARMADA</span>
-                <div style={{ color: 'white', fontWeight: 700, marginTop: '2px' }}>{selectedJadwal.kendaraan_id} - {selectedJadwal.nama_kendaraan}</div>
-              </div>
-
-              <div>
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>KETERANGAN / SUMBER</span>
-                <div style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '2px' }}>
-                  {selectedJadwal.keterangan} ({selectedJadwal.sumber_generate})
-                </div>
-              </div>
-            </div>
-            
-            <div className="modal-footer">
-              <button type="button" onClick={() => setDetailModalOpen(false)} className="btn btn-secondary">
-                Tutup
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
-
-export default JadwalTransportasi;

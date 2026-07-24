@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { api } from './utils/api.js';
 import { 
-  Building, Box, Truck, Map, Calendar, Settings, 
-  Database, Activity, Route as RouteIcon, LayoutDashboard, Menu, ShieldCheck, ShieldAlert,
-  ChevronLeft, ChevronRight, Sun, Moon, Clock, ClipboardList
+  LayoutDashboard, Package, Building2, Tag, Truck, Map, 
+  CalendarClock, Calendar, ShieldCheck, Database, Settings, 
+  Send, Search, Bell, ChevronDown, User, Clock, ClipboardList, Activity, Sun, Moon, Menu
 } from 'lucide-react';
-import './App.css';
 import logoImg from './assets/logo.png';
 
 // Import Pages
@@ -24,33 +23,144 @@ import GateMonitoring from './pages/GateMonitoring.jsx';
 import JadwalPickup from './pages/JadwalPickup.jsx';
 import Transaksi from './pages/Transaksi.jsx';
 import RouteJourney from './pages/RouteJourney.jsx';
+import Profile from './pages/Profile.jsx';
+
+function Header({ title }) {
+  const [searchVal, setSearchVal] = useState('');
+  const navigate = useNavigate();
+
+  const handleSearchSubmit = (e) => {
+    if (e.key === 'Enter' && searchVal.trim()) {
+      navigate(`/checker?code=${encodeURIComponent(searchVal.trim())}`);
+    }
+  };
+
+  return (
+    <header
+      style={{
+        height: 60,
+        background: 'rgba(6,13,31,0.92)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(255,255,255,0.07)',
+        display: 'flex',
+        alignItems: 'center',
+        padding: '0 24px',
+        gap: 20,
+        flexShrink: 0,
+        position: 'relative',
+        zIndex: 10,
+      }}
+    >
+      <div style={{ flex: '0 0 auto' }}>
+        <h1 style={{ fontWeight: 800, fontSize: 16, color: '#fff', margin: 0, letterSpacing: '-0.01em' }}>
+          {title}
+        </h1>
+      </div>
+
+      <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
+
+      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', whiteSpace: 'nowrap' }}>
+        Cimahi Main Branch · KPC 40511
+      </div>
+
+      {/* Global Quick Search */}
+      <div style={{ flex: 1, maxWidth: 400, position: 'relative' }}>
+        <Search
+          size={14}
+          color="rgba(255,255,255,0.35)"
+          style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }}
+        />
+        <input
+          className="input-navy"
+          value={searchVal}
+          onChange={(e) => setSearchVal(e.target.value)}
+          onKeyDown={handleSearchSubmit}
+          placeholder="Quick search connote, post office..."
+          style={{ paddingLeft: 34, fontSize: 13 }}
+        />
+      </div>
+
+      {/* Header Actions */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 'auto' }}>
+        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap' }}>
+          Thu, 24 Jul 2026
+        </div>
+
+        <button
+          style={{
+            width: 34,
+            height: 34,
+            borderRadius: 9,
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.09)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            position: 'relative',
+          }}
+          title="System Notifications"
+        >
+          <Bell size={15} color="rgba(255,255,255,0.6)" />
+          <div
+            style={{
+              position: 'absolute',
+              top: 6,
+              right: 6,
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              background: '#e8431f',
+              border: '1px solid #060d1f',
+            }}
+          />
+        </button>
+
+        {/* User Profile Badge */}
+        <Link
+          to="/profile"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '5px 10px 5px 5px',
+            borderRadius: 10,
+            background: 'rgba(255,255,255,0.05)',
+            border: '1px solid rgba(255,255,255,0.09)',
+            cursor: 'pointer',
+            textDecoration: 'none'
+          }}
+        >
+          <div
+            style={{
+              width: 26,
+              height: 26,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #1a4080, #0b1830)',
+              border: '1.5px solid rgba(232,67,31,0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 10,
+              fontWeight: 700,
+              color: '#fff',
+            }}
+          >
+            SR
+          </div>
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>Sari R.</span>
+          <ChevronDown size={12} color="rgba(255,255,255,0.4)" />
+        </Link>
+      </div>
+    </header>
+  );
+}
 
 function AppContent() {
   const location = useLocation();
   const [activeConnection, setActiveConnection] = useState(null);
   const [refreshStatsTrigger, setRefreshStatsTrigger] = useState(0);
-  const [isCollapsed, setIsCollapsed] = useState(() => {
-    return localStorage.getItem('sidebar-collapsed') === 'true';
-  });
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('app-theme') || 'dark';
-  });
-
-  useEffect(() => {
-    if (theme === 'light') {
-      document.documentElement.classList.add('light-theme');
-    } else {
-      document.documentElement.classList.remove('light-theme');
-    }
-    localStorage.setItem('app-theme', theme);
-  }, [theme]);
-
-  const toggleSidebar = () => {
-    const nextState = !isCollapsed;
-    setIsCollapsed(nextState);
-    localStorage.setItem('sidebar-collapsed', String(nextState));
-  };
 
   const fetchActiveConnection = async () => {
     try {
@@ -85,237 +195,174 @@ function AppContent() {
     }
   };
 
-  // Helper to check active route
   const isLinkActive = (path) => {
-    if (path === '/') {
-      return location.pathname === '/';
-    }
+    if (path === '/') return location.pathname === '/';
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
 
-  // Close mobile sidebar on route change
-  useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [location.pathname]);
+  const getPageTitle = () => {
+    const p = location.pathname;
+    if (p === '/') return 'Dashboard';
+    if (p.startsWith('/checker')) return 'Package Tracking';
+    if (p.startsWith('/kantor')) return 'Post Offices';
+    if (p.startsWith('/produk')) return 'Products & Services';
+    if (p.startsWith('/kendaraan')) return 'Fleet Management';
+    if (p.startsWith('/route') && !p.startsWith('/route-journey')) return 'Routes';
+    if (p.startsWith('/template')) return 'Schedule Templates';
+    if (p.startsWith('/jadwal') && !p.startsWith('/jadwal-pickup')) return 'Transport Schedule';
+    if (p.startsWith('/jadwal-pickup')) return 'Jadwal Pick Up SPP';
+    if (p.startsWith('/route-journey')) return 'Milk Run Logistics Telemetry';
+    if (p.startsWith('/transit-monitoring')) return 'Gate Monitoring';
+    if (p.startsWith('/transaksi')) return 'Data Transaksi Paket';
+    if (p.startsWith('/compass')) return 'Database Viewer';
+    if (p.startsWith('/settings')) return 'Settings';
+    if (p.startsWith('/profile')) return 'User Profile';
+    return 'IPOS5';
+  };
 
   return (
-    <div className="app-container">
-      {/* Sidebar Overlay for Mobile */}
-      <div 
-        className={`sidebar-overlay ${mobileMenuOpen ? 'visible' : ''}`}
-        onClick={() => setMobileMenuOpen(false)}
-      ></div>
-
-      {/* Sidebar Layout */}
-      <aside className={`sidebar ${isCollapsed ? 'sidebar-collapsed' : ''} ${mobileMenuOpen ? 'sidebar-open' : ''}`}>
-        <div className="sidebar-header" style={{ justifyContent: isCollapsed ? 'center' : 'space-between', padding: isCollapsed ? '20px 0' : '20px 20px 16px' }}>
-          {!isCollapsed ? (
-            <>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div className="logo-icon-wrap" style={{ background: 'transparent', border: 'none', boxShadow: 'none', padding: 0 }}>
-                  <img src={logoImg} alt="IPOS5 Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                </div>
-                <div>
-                  <div className="logo-text">IPOS5 ROUTING</div>
-                  <div className="logo-sub">Pos Indonesia</div>
-                </div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <button 
-                  onClick={toggleSidebar}
-                  className="sidebar-toggle-btn"
-                  title="Collapse Sidebar"
-                >
-                  <ChevronLeft size={14} />
-                </button>
-                <button 
-                  onClick={() => setMobileMenuOpen(false)}
-                  style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '6px', borderRadius: 'var(--radius-sm)' }}
-                  className="show-mobile"
-                  title="Close Sidebar"
-                >
-                  <ChevronLeft size={18} />
-                </button>
-              </div>
-            </>
-          ) : (
-            <button 
-              onClick={toggleSidebar}
-              className="sidebar-toggle-btn"
-              title="Expand Sidebar"
-            >
-              <ChevronRight size={16} />
-            </button>
-          )}
-        </div>
-
-        {/* Database Status Indicator inside sidebar */}
-        <div className="connection-pill">
-          <span 
-            className="connection-dot" 
-            style={{ 
-              width: '8px',
-              height: '8px',
-              borderRadius: '50%',
-              flexShrink: 0,
-              backgroundColor: activeConnection ? activeConnection.color || 'var(--accent-green)' : 'var(--accent-red)',
-              boxShadow: activeConnection ? '0 0 10px rgba(16, 185, 129, 0.5)' : 'none'
-            }}
-          ></span>
-          <span className="connection-name" style={{ fontWeight: 600, color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {activeConnection ? activeConnection.name : 'DB Disconnected'}
-          </span>
-        </div>
-
-        <nav className="sidebar-menu">
-          <Link to="/" className={`menu-item ${isLinkActive('/') ? 'active' : ''}`}>
-            <LayoutDashboard size={18} />
-            <span>Dashboard</span>
-          </Link>
-          
-          <Link to="/checker" className={`menu-item ${isLinkActive('/checker') ? 'active' : ''}`}>
-            <RouteIcon size={18} />
-            <span>Routing Checker</span>
-          </Link>
-
-          <div className="menu-section-label" style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '1px', textTransform: 'uppercase', padding: '12px 16px 6px 16px' }}>Master Data</div>
-
-          <Link to="/kantor" className={`menu-item ${isLinkActive('/kantor') ? 'active' : ''}`}>
-            <Building size={18} />
-            <span>Master Kantor</span>
-          </Link>
-
-          <Link to="/produk" className={`menu-item ${isLinkActive('/produk') ? 'active' : ''}`}>
-            <Box size={18} />
-            <span>Master Produk</span>
-          </Link>
-
-          <Link to="/kendaraan" className={`menu-item ${isLinkActive('/kendaraan') ? 'active' : ''}`}>
-            <Truck size={18} />
-            <span>Master Kendaraan</span>
-          </Link>
-
-          <Link to="/route" className={`menu-item ${isLinkActive('/route') ? 'active' : ''}`}>
-            <Map size={18} />
-            <span>Master Route</span>
-          </Link>
-
-          <div className="menu-section-label" style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '1px', textTransform: 'uppercase', padding: '12px 16px 6px 16px' }}>Penjadwalan</div>
-
-          <Link to="/template" className={`menu-item ${isLinkActive('/template') ? 'active' : ''}`}>
-            <Calendar size={18} />
-            <span>Template Jadwal</span>
-          </Link>
-
-          <Link to="/jadwal" className={`menu-item ${isLinkActive('/jadwal') ? 'active' : ''}`}>
-            <Calendar size={18} />
-            <span>Jadwal Transportasi</span>
-          </Link>
-
-          <Link to="/jadwal-pickup" className={`menu-item ${isLinkActive('/jadwal-pickup') ? 'active' : ''}`}>
-            <Clock size={18} />
-            <span>Jadwal Pick Up SPP</span>
-          </Link>
-
-          <div className="menu-section-label" style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '1px', textTransform: 'uppercase', padding: '12px 16px 6px 16px' }}>Operasional</div>
-
-          <Link to="/transit-monitoring" className={`menu-item ${isLinkActive('/transit-monitoring') ? 'active' : ''}`}>
-            <Activity size={18} />
-            <span>Transit & Gate</span>
-          </Link>
-
-          <Link to="/transaksi" className={`menu-item ${isLinkActive('/transaksi') ? 'active' : ''}`}>
-            <ClipboardList size={18} />
-            <span>Data Transaksi</span>
-          </Link>
-
-          <div className="menu-section-label" style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '1px', textTransform: 'uppercase', padding: '12px 16px 6px 16px' }}>Database</div>
-
-          <Link to="/compass" className={`menu-item ${isLinkActive('/compass') ? 'active' : ''}`}>
-            <Database size={18} />
-            <span>MongoDB Compass</span>
-          </Link>
-
-          <Link to="/settings" className={`menu-item ${isLinkActive('/settings') ? 'active' : ''}`}>
-            <Settings size={18} />
-            <span>Pengaturan</span>
-          </Link>
-        </nav>
-
-        <div className="sidebar-footer">
-          <div>IPOS5 Routing v2.0</div>
-          <div style={{ marginTop: '2px' }}>Redesigned React UI</div>
-        </div>
-      </aside>
-
-      {/* Main Work Area */}
-      <main className="main-content">
-        <header className="topbar">
-          <div className="topbar-left" style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <button 
-              className="mobile-menu-btn" 
-              onClick={() => setMobileMenuOpen(true)}
-              style={{ background: 'var(--light-navy)', border: '1px solid var(--border-light)', color: 'var(--text-secondary)', padding: '6px', borderRadius: '4px', cursor: 'pointer', display: 'none', alignItems: 'center', justifyContent: 'center' }}
-            >
-              <Menu size={20} />
-            </button>
-            <div className="topbar-title">
-              <h1 style={{ fontSize: '18px', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-                {location.pathname === '/' && 'Dashboard'}
-                {location.pathname.startsWith('/checker') && 'Routing Checker'}
-                {location.pathname.startsWith('/kantor') && 'Master Kantor'}
-                {location.pathname.startsWith('/produk') && 'Master Produk'}
-                {location.pathname.startsWith('/kendaraan') && 'Master Kendaraan'}
-                {location.pathname.startsWith('/route') && !location.pathname.startsWith('/route-journey') && 'Master Route'}
-                {location.pathname.startsWith('/template') && 'Template Jadwal'}
-                {location.pathname.startsWith('/jadwal') && !location.pathname.startsWith('/jadwal-pickup') && 'Jadwal Transportasi'}
-                {location.pathname.startsWith('/jadwal-pickup') && 'Jadwal Pick Up SPP Bandung'}
-                {location.pathname.startsWith('/route-journey') && 'Milk Run Dynamic Capacity Routing (B 9910 PCX)'}
-                {location.pathname.startsWith('/transit-monitoring') && 'Transit & Gate Monitoring'}
-                {location.pathname.startsWith('/transaksi') && 'Data Transaksi Paket'}
-                {location.pathname.startsWith('/compass') && 'MongoDB Compass Manager'}
-                {location.pathname.startsWith('/settings') && 'Pengaturan Koneksi'}
-              </h1>
-            </div>
-          </div>
-          <div className="topbar-right">
-            <button 
-              onClick={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
-              className="theme-toggle-btn"
-              title={theme === 'dark' ? 'Ganti ke Mode Terang' : 'Ganti ke Mode Gelap'}
+    <div style={{ display: 'flex', width: '100vw', height: '100vh', overflow: 'hidden', background: '#04091a' }}>
+      {/* Sidebar Navigation */}
+      <aside
+        style={{
+          width: 232,
+          minWidth: 232,
+          height: '100vh',
+          background: '#060d1f',
+          borderRight: '1px solid rgba(255,255,255,0.06)',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Sidebar Logo */}
+        <div style={{ padding: '20px 18px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div
               style={{
-                background: 'rgba(56, 189, 248, 0.08)',
-                border: '1px solid var(--border-light)',
-                color: 'var(--text-primary)',
-                padding: '8px',
-                borderRadius: 'var(--radius-sm)',
-                cursor: 'pointer',
+                width: 36,
+                height: 36,
+                borderRadius: 9,
+                background: 'transparent',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                transition: 'var(--transition-fast)'
+                flexShrink: 0,
               }}
             >
-              {theme === 'dark' ? <Sun size={18} style={{ color: 'var(--accent-yellow)' }} /> : <Moon size={18} style={{ color: 'var(--accent-teal)' }} />}
-            </button>
+              <img src={logoImg} alt="IPOS5 Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            </div>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 16, color: '#fff', letterSpacing: '-0.01em', lineHeight: 1.1 }}>
+                IPOS5
+              </div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: 1 }}>
+                PT Pos Indonesia
+              </div>
+            </div>
           </div>
-        </header>
+        </div>
 
-        <div className="content-body">
+        {/* Navigation Sections */}
+        <nav style={{ flex: 1, padding: '12px 10px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <div className="section-header">Operations</div>
+          <Link to="/" className={`nav-item ${isLinkActive('/') ? 'active' : ''}`}>
+            <LayoutDashboard size={16} /> <span>Dashboard</span>
+          </Link>
+          <Link to="/checker" className={`nav-item ${isLinkActive('/checker') ? 'active' : ''}`}>
+            <Package size={16} /> <span>Package Tracking</span>
+          </Link>
+          <Link to="/kantor" className={`nav-item ${isLinkActive('/kantor') ? 'active' : ''}`}>
+            <Building2 size={16} /> <span>Post Offices</span>
+          </Link>
+
+          <div className="section-header" style={{ marginTop: 12 }}>Master Data</div>
+          <Link to="/produk" className={`nav-item ${isLinkActive('/produk') ? 'active' : ''}`}>
+            <Tag size={16} /> <span>Products & Services</span>
+          </Link>
+          <Link to="/kendaraan" className={`nav-item ${isLinkActive('/kendaraan') ? 'active' : ''}`}>
+            <Truck size={16} /> <span>Fleet</span>
+          </Link>
+          <Link to="/route" className={`nav-item ${isLinkActive('/route') ? 'active' : ''}`}>
+            <Map size={16} /> <span>Routes</span>
+          </Link>
+
+          <div className="section-header" style={{ marginTop: 12 }}>Logistics</div>
+          <Link to="/template" className={`nav-item ${isLinkActive('/template') ? 'active' : ''}`}>
+            <CalendarClock size={16} /> <span>Schedule Templates</span>
+          </Link>
+          <Link to="/jadwal" className={`nav-item ${isLinkActive('/jadwal') ? 'active' : ''}`}>
+            <Calendar size={16} /> <span>Transport Schedule</span>
+          </Link>
+          <Link to="/route-journey" className={`nav-item ${isLinkActive('/route-journey') ? 'active' : ''}`}>
+            <Activity size={16} /> <span>Milk Run Telemetry</span>
+          </Link>
+          <Link to="/transit-monitoring" className={`nav-item ${isLinkActive('/transit-monitoring') ? 'active' : ''}`}>
+            <ShieldCheck size={16} /> <span>Gate Monitoring</span>
+          </Link>
+
+          <div className="section-header" style={{ marginTop: 12 }}>System</div>
+          <Link to="/compass" className={`nav-item ${isLinkActive('/compass') ? 'active' : ''}`}>
+            <Database size={16} /> <span>Database Viewer</span>
+          </Link>
+          <Link to="/settings" className={`nav-item ${isLinkActive('/settings') ? 'active' : ''}`}>
+            <Settings size={16} /> <span>Settings</span>
+          </Link>
+          <Link to="/profile" className={`nav-item ${isLinkActive('/profile') ? 'active' : ''}`}>
+            <User size={16} /> <span>Profile</span>
+          </Link>
+        </nav>
+
+        {/* Sidebar Footer */}
+        <Link 
+          to="/profile"
+          style={{
+            padding: '14px 16px',
+            borderTop: '1px solid rgba(255,255,255,0.06)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            textDecoration: 'none',
+            color: 'inherit'
+          }}
+        >
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #1a4080, #0b1830)',
+              border: '2px solid rgba(232,67,31,0.4)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 12,
+              fontWeight: 700,
+              color: '#fff',
+              flexShrink: 0,
+            }}
+          >
+            SR
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              Sari Rahayu
+            </div>
+            <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.35)' }}>
+              Logistics Operator
+            </div>
+          </div>
+        </Link>
+      </aside>
+
+      {/* Main Container */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+        <Header title={getPageTitle()} />
+
+        <main style={{ flex: 1, padding: 24, overflowY: 'auto', background: '#04091a' }}>
           <Routes>
-            <Route 
-              path="/" 
-              element={
-                <Dashboard 
-                  activeConnection={activeConnection} 
-                  refreshStatsTrigger={refreshStatsTrigger} 
-                />
-              } 
-            />
-            <Route 
-              path="/checker" 
-              element={<Checker activeConnection={activeConnection} />} 
-            />
+            <Route path="/" element={<Dashboard activeConnection={activeConnection} refreshStatsTrigger={refreshStatsTrigger} />} />
+            <Route path="/checker" element={<Checker activeConnection={activeConnection} />} />
             <Route path="/kantor" element={<MasterKantor />} />
             <Route path="/produk" element={<MasterProduk />} />
             <Route path="/kendaraan" element={<MasterKendaraan />} />
@@ -326,24 +373,12 @@ function AppContent() {
             <Route path="/route-journey" element={<RouteJourney />} />
             <Route path="/transit-monitoring" element={<GateMonitoring />} />
             <Route path="/transaksi" element={<Transaksi />} />
-            <Route 
-              path="/compass" 
-              element={<Compass activeConnection={activeConnection} />} 
-            />
-            <Route 
-              path="/settings" 
-              element={
-                <SettingsPage 
-                  activeConnection={activeConnection} 
-                  onConnectionSwitch={handleConnectionSwitch}
-                  onDisconnect={handleDisconnect}
-                />
-              } 
-            />
-
+            <Route path="/compass" element={<Compass activeConnection={activeConnection} />} />
+            <Route path="/settings" element={<SettingsPage activeConnection={activeConnection} onConnectionSwitch={handleConnectionSwitch} onDisconnect={handleDisconnect} />} />
+            <Route path="/profile" element={<Profile />} />
           </Routes>
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

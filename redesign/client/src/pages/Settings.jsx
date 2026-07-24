@@ -1,414 +1,193 @@
 import { useState, useEffect } from 'react';
+import { Eye, EyeOff, Wifi, WifiOff, Save, RefreshCw, Shield, Bell } from 'lucide-react';
 import { api } from '../utils/api.js';
-import { Settings, Plus, RefreshCw, Trash2, Edit2, Play, Check, X, Server, ShieldCheck, ShieldAlert, Sparkles } from 'lucide-react';
 
-function SettingsPage({ activeConnection, onConnectionSwitch, onDisconnect }) {
-  const [profiles, setProfiles] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  // Connection form state
-  const [modalOpen, setModalOpen] = useState(false);
-  const [currentProfile, setCurrentProfile] = useState(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    uri: '',
-    database: '',
-    color: '#0f2640'
-  });
-
-  // Connection test/connection action states
-  const [testResult, setTestResult] = useState(null); // { success: bool, message: str }
-  const [testingId, setTestingId] = useState(null);
-  const [connectingId, setConnectingId] = useState(null);
-
-  const colors = ['#0f2640', '#059669', '#4f46e5', '#d97706', '#b91c1c', '#6b7280', '#0891b2'];
-
-  const fetchProfiles = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const res = await api.getConnections();
-      if (res.success) {
-        setProfiles(res.data);
-      }
-    } catch (err) {
-      console.error(err);
-      setError('Gagal memuat profil koneksi database.');
-    } finally {
-      setLoading(false);
-    }
-  };
+export default function SettingsPage({ activeConnection, onConnectionSwitch, onDisconnect }) {
+  const [uri, setUri] = useState('mongodb://127.0.0.1:27017/ipos5_reporting');
+  const [showUri, setShowUri] = useState(false);
+  const [connected, setConnected] = useState(true);
+  const [testing, setTesting] = useState(false);
+  const [lastTested, setLastTested] = useState('24 Jul 2026, 07:05 WIB');
 
   useEffect(() => {
-    fetchProfiles();
-  }, []);
-
-  const openAddModal = () => {
-    setFormData({
-      name: '',
-      uri: 'mongodb://admin:password@192.168.5.141:27017/?authSource=admin',
-      database: 'ipos5_reporting',
-      color: '#0f2640'
-    });
-    setCurrentProfile(null);
-    setTestResult(null);
-    setModalOpen(true);
-  };
-
-  const openEditModal = (profile) => {
-    setFormData({ ...profile });
-    setCurrentProfile(profile);
-    setTestResult(null);
-    setModalOpen(true);
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const payload = { ...formData };
-      if (currentProfile) payload.id = currentProfile.id;
-
-      const res = await api.saveConnection(payload);
-      if (res.success) {
-        setModalOpen(false);
-        fetchProfiles();
-      }
-    } catch (err) {
-      alert(`Gagal menyimpan profil: ${err.message}`);
+    if (activeConnection) {
+      setConnected(true);
+      if (activeConnection.uri) setUri(activeConnection.uri);
     }
-  };
+  }, [activeConnection]);
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Apakah Anda yakin ingin menghapus profil koneksi ini?')) {
-      try {
-        await api.deleteConnection(id);
-        fetchProfiles();
-      } catch (err) {
-        alert(`Gagal menghapus profil: ${err.message}`);
-      }
-    }
-  };
-
-  const handleTestConnection = async (profile) => {
+  const handleTest = async () => {
+    setTesting(true);
+    setConnected(false);
     try {
-      setTestingId(profile.id);
-      setTestResult(null);
-      // We hit connect API just to test connection
-      const res = await api.connectProfile(profile);
-      if (res.success) {
-        setTestResult({ success: true, message: 'Koneksi berhasil! Database terhubung.' });
+      const res = await api.testDbConnection({ uri });
+      if (res.success && res.connected) {
+        setConnected(true);
+        if (onConnectionSwitch) onConnectionSwitch({ name: 'Active DB', uri, color: 'var(--accent-green)' });
+      } else {
+        setConnected(false);
       }
-    } catch (err) {
-      console.error(err);
-      setTestResult({ success: false, message: err.message || 'Gagal terhubung.' });
+    } catch (e) {
+      console.error('Error testing connection:', e);
+      setConnected(false);
     } finally {
-      setTestingId(null);
+      setTesting(false);
+      setLastTested(new Date().toLocaleString('id-ID') + ' WIB');
     }
   };
-
-  const handleConnect = async (profile) => {
-    try {
-      setConnectingId(profile.id);
-      const res = await api.connectProfile(profile);
-      if (res.success) {
-        onConnectionSwitch(profile);
-        alert(`Koneksi aktif beralih ke: ${profile.name}`);
-      }
-    } catch (err) {
-      alert(`Koneksi gagal: ${err.message}`);
-    } finally {
-      setConnectingId(null);
-    }
-  };
-
-  const handleDisconnect = async () => {
-    if (!window.confirm('Apakah Anda yakin ingin memutuskan koneksi MongoDB?')) return;
-    try {
-      if (onDisconnect) await onDisconnect();
-    } catch (err) {
-      alert('Gagal disconnect: ' + err.message);
-    }
-  };
-
-
 
   return (
-    <div className="animate-fade-in">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <div>
-          <h2 style={{ fontFamily: 'var(--font-title)', fontSize: '22px', fontWeight: 800, color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Settings size={24} style={{ color: 'var(--primary-blue)' }} /> Pengaturan Koneksi
-          </h2>
-          <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>Mengkonfigurasi server koneksi MongoDB (seperti MongoDB Compass)</span>
+    <div style={{ maxWidth: 840, display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* Database Connection Settings Card */}
+      <div className="gradient-border-card" style={{ padding: 26 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 22, flexWrap: 'wrap' }}>
+          <div
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 9,
+              background: 'rgba(232,67,31,0.12)',
+              border: '1px solid rgba(232,67,31,0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#e8431f',
+            }}
+          >
+            <Wifi size={18} />
+          </div>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Database Connection</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
+              MongoDB connection string for IPOS5 data store
+            </div>
+          </div>
+
+          <div
+            style={{
+              marginLeft: 'auto',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '8px 16px',
+              borderRadius: 10,
+              background: connected ? 'rgba(16,185,129,0.08)' : 'rgba(232,67,31,0.08)',
+              border: `1px solid ${connected ? 'rgba(16,185,129,0.2)' : 'rgba(232,67,31,0.2)'}`,
+            }}
+          >
+            <div
+              style={{
+                width: 9,
+                height: 9,
+                borderRadius: '50%',
+                background: connected ? '#10b981' : '#e8431f',
+                flexShrink: 0,
+              }}
+            />
+            <span style={{ fontSize: 12.5, fontWeight: 700, color: connected ? '#10b981' : '#e8431f' }}>
+              {connected ? 'Connected' : testing ? 'Testing…' : 'Disconnected'}
+            </span>
+          </div>
         </div>
-        <button onClick={openAddModal} className="btn btn-primary">
-          <Plus size={16} /> Tambah Profil Koneksi
-        </button>
+
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ display: 'block', fontSize: 11.5, color: 'rgba(255,255,255,0.45)', marginBottom: 7, textTransform: 'uppercase' }}>
+            Connection URI
+          </label>
+          <div style={{ position: 'relative' }}>
+            <input
+              className="input-navy font-mono"
+              type={showUri ? 'text' : 'password'}
+              value={uri}
+              onChange={(e) => setUri(e.target.value)}
+              style={{ paddingRight: 42, fontSize: 13 }}
+            />
+            <button
+              onClick={() => setShowUri(!showUri)}
+              style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.4)' }}
+            >
+              {showUri ? <EyeOff size={15} /> : <Eye size={15} />}
+            </button>
+          </div>
+          <div style={{ marginTop: 6, fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>
+            Format: mongodb://[username:password@]host[:port]/database[?options]
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 20 }}>
+          {[
+            { label: 'Host', value: '127.0.0.1' },
+            { label: 'Port', value: '27017' },
+            { label: 'Database', value: 'ipos5_reporting' },
+            { label: 'Auth Source', value: 'admin' },
+            { label: 'Username', value: 'ipos_user' },
+            { label: 'Pool Size', value: '10' },
+          ].map((f) => (
+            <div key={f.label}>
+              <label style={{ display: 'block', fontSize: 11, color: 'rgba(255,255,255,0.35)', marginBottom: 5 }}>
+                {f.label}
+              </label>
+              <input className="input-navy font-mono" defaultValue={f.value} style={{ fontSize: 12 }} />
+            </div>
+          ))}
+        </div>
+
+        <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
+          {connected ? <Wifi size={13} color="#10b981" /> : <WifiOff size={13} color="#e8431f" />}
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>Last tested: {lastTested}</span>
+          <span style={{ fontSize: 12, color: connected ? '#10b981' : '#e8431f', fontWeight: 600 }}>
+            {connected ? '· Latency: 4ms' : '· Connection refused'}
+          </span>
+        </div>
+
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button className="btn-primary" onClick={handleTest} disabled={testing} style={{ minWidth: 160, justifyContent: 'center' }}>
+            {testing ? <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Wifi size={14} />}
+            {testing ? 'Testing Connection…' : 'Test Connection'}
+          </button>
+          <button className="btn-ghost"><Save size={14} /> Save Changes</button>
+        </div>
       </div>
 
-      {error && (
-        <div className="info-alert" style={{ background: 'rgba(239, 68, 68, 0.08)', borderColor: 'rgba(239, 68, 68, 0.2)', color: 'var(--accent-red)', marginBottom: '20px' }}>
-          <div>{error}</div>
+      {/* System Preferences */}
+      <div className="glass-card-solid" style={{ padding: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+          <Shield size={16} color="rgba(255,255,255,0.5)" />
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>System Preferences</div>
         </div>
-      )}
 
-      {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
-          <RefreshCw className="animate-spin" size={28} />
-        </div>
-      ) : (
-        <div className="grid-2">
-          {/* Connection profile cards */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {profiles.map(p => {
-              const isActive = activeConnection?.id === p.id || (activeConnection?.uri === p.uri && activeConnection?.database === p.database);
-              return (
-                <div 
-                  key={p.id} 
-                  className="glass-card" 
-                  style={{ 
-                    padding: '20px', 
-                    marginBottom: 0,
-                    border: '1px solid',
-                    borderColor: isActive ? 'var(--accent-cyan)' : 'var(--border-light)',
-                    boxShadow: isActive ? 'var(--shadow-cyan)' : 'var(--shadow-sm)',
-                    position: 'relative'
-                  }}
-                >
-                  {/* Color Pill */}
-                  <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '6px', background: p.color || 'var(--primary-blue)', borderTopLeftRadius: '16px', borderBottomLeftRadius: '16px' }}></div>
-                  
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', paddingLeft: '8px' }}>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <h4 style={{ color: 'white', fontWeight: 800, fontSize: '16px' }}>{p.name}</h4>
-                        {isActive && <span className="badge badge-success" style={{ fontSize: '9px', padding: '2px 6px' }}>Aktif</span>}
-                      </div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'monospace', marginTop: '6px', wordBreak: 'break-all' }}>
-                        {p.uri.replace(/:[^:@]+@/, ':****@')}
-                      </div>
-                      <div style={{ fontSize: '12px', color: 'white', marginTop: '6px', fontWeight: 600 }}>
-                        Database: <span style={{ color: 'var(--accent-cyan)', fontFamily: 'monospace' }}>{p.database}</span>
-                      </div>
-                    </div>
-                    
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button onClick={() => openEditModal(p)} className="btn btn-secondary" style={{ padding: '6px' }} title="Edit">
-                        <Edit2 size={13} style={{ color: 'var(--accent-orange)' }} />
-                      </button>
-                      <button onClick={() => handleDelete(p.id)} className="btn btn-secondary" style={{ padding: '6px' }} disabled={isActive} title="Hapus">
-                        <Trash2 size={13} style={{ color: 'var(--accent-red)' }} />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '10px', marginTop: '16px', paddingLeft: '8px' }}>
-                    <button 
-                      onClick={() => handleConnect(p)} 
-                      disabled={isActive || connectingId === p.id}
-                      className="btn btn-primary"
-                      style={{ padding: '6px 16px', fontSize: '12px' }}
-                    >
-                      {connectingId === p.id ? 'Menghubungkan...' : isActive ? '✓ Terhubung' : 'Connect'}
-                    </button>
-                    {isActive && (
-                      <button 
-                        onClick={handleDisconnect}
-                        className="btn btn-secondary"
-                        style={{ padding: '6px 16px', fontSize: '12px', color: 'var(--accent-red)', borderColor: 'rgba(239,68,68,0.3)' }}
-                      >
-                        Disconnect
-                      </button>
-                    )}
-                    <button 
-                      onClick={() => handleTestConnection(p)}
-                      disabled={testingId === p.id}
-                      className="btn btn-secondary"
-                      style={{ padding: '6px 16px', fontSize: '12px' }}
-                    >
-                      {testingId === p.id ? 'Menguji...' : 'Test Connection'}
-                    </button>
-                  </div>
-                </div>
-
-              );
-            })}
-          </div>
-
-          {/* Guide / Status Box */}
-          <div>
-            <div className="glass-card" style={{ height: '100%' }}>
-              <h3 className="card-title"><Server size={18} style={{ color: 'var(--accent-cyan)' }} />Status Layanan MongoDB</h3>
-              
-              {activeConnection ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: '8px', color: 'var(--accent-green)' }}>
-                    <ShieldCheck size={20} />
-                    <div>
-                      <div style={{ fontWeight: 700 }}>Terhubung ke Database</div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Koneksi client MongoDB aktif. Semua modul master siap.</div>
-                    </div>
-                  </div>
-
-                  <table className="table-borderless" style={{ width: '100%', fontSize: '13px' }}>
-                    <tbody>
-                      <tr>
-                        <td style={{ border: 'none', padding: '4px 0', fontWeight: 600 }}>Nama Profil</td>
-                        <td style={{ border: 'none', padding: '4px 0', color: 'white' }}>{activeConnection.name}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ border: 'none', padding: '4px 0', fontWeight: 600 }}>URI</td>
-                        <td style={{ border: 'none', padding: '4px 0', color: 'white', fontFamily: 'monospace' }}>{activeConnection.uri.split('@')[1] || activeConnection.uri}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ border: 'none', padding: '4px 0', fontWeight: 600 }}>Database Aktif</td>
-                        <td style={{ border: 'none', padding: '4px 0', color: 'white', fontFamily: 'monospace' }}>{activeConnection.database}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '8px', color: 'var(--accent-red)' }}>
-                  <ShieldAlert size={20} />
-                  <div>
-                    <div style={{ fontWeight: 700 }}>Koneksi Terputus</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>Tidak ada koneksi MongoDB yang aktif. Modul API CRUD tidak dapat digunakan.</div>
-                  </div>
-                </div>
-              )}
-
-              <div style={{ marginTop: '20px', borderTop: '1px solid var(--border-light)', paddingTop: '20px', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                <div style={{ fontWeight: 600, color: 'white', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <Sparkles size={14} style={{ color: 'var(--accent-orange)' }} /> Cara Menghubungkan MongoDB
-                </div>
-                <ol style={{ paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '6px', lineHeight: '1.5' }}>
-                  <li>Klik tombol <strong>"Tambah Profil Koneksi"</strong> di atas.</li>
-                  <li>Masukkan Nama, URI lengkap koneksi (termasuk user & pass jika ada), dan nama database target.</li>
-                  <li>Uji koneksi dengan tombol <strong>"Test Connection"</strong>.</li>
-                  <li>Klik <strong>"Connect"</strong> pada profil yang diinginkan untuk mengaktifkannya di seluruh aplikasi.</li>
-                </ol>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+          {[
+            { label: 'Branch Code', desc: 'The branch identifier for this installation', value: '40511' },
+            { label: 'Branch Name', desc: 'Display name shown in reports', value: 'KPRK Cimahi' },
+            { label: 'Session Timeout', desc: 'Auto-logout after inactivity (minutes)', value: '60' },
+            { label: 'Default Page Size', desc: 'Records per page in data tables', value: '25' },
+          ].map((f, i) => (
+            <div key={f.label} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '12px 0', borderBottom: i < 3 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: '#fff', marginBottom: 2 }}>{f.label}</div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{f.desc}</div>
               </div>
+              <input className="input-navy font-mono" defaultValue={f.value} style={{ width: 160, fontSize: 13 }} />
             </div>
-          </div>
+          ))}
         </div>
-      )}
+      </div>
 
-      {/* Profile Form Modal */}
-      {modalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content animate-fade-in" style={{ maxWidth: '600px' }}>
-            <div className="modal-header">
-              <h3 style={{ color: 'white', fontWeight: 700, fontFamily: 'var(--font-title)' }}>
-                {currentProfile ? 'Edit Profil Koneksi' : 'Tambah Profil Koneksi Baru'}
-              </h3>
-              <button onClick={() => setModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                <X size={20} />
-              </button>
-            </div>
-            
-            <form onSubmit={handleSubmit}>
-              <div className="modal-body">
-                
-                <div style={{ marginBottom: '15px' }}>
-                  <label>Nama Koneksi <span style={{ color: 'var(--accent-red)' }}>*</span></label>
-                  <input 
-                    type="text" 
-                    name="name" 
-                    placeholder="Contoh: R (192.168.5.219)"
-                    value={formData.name} 
-                    onChange={handleInputChange} 
-                    required 
-                  />
-                </div>
-
-                <div style={{ marginBottom: '15px' }}>
-                  <label>Koneksi URI MongoDB <span style={{ color: 'var(--accent-red)' }}>*</span></label>
-                  <input 
-                    type="text" 
-                    name="uri" 
-                    placeholder="mongodb://username:password@host:port/"
-                    value={formData.uri} 
-                    onChange={handleInputChange} 
-                    required 
-                  />
-                </div>
-
-                <div className="grid-2" style={{ marginBottom: '15px' }}>
-                  <div>
-                    <label>Nama Database <span style={{ color: 'var(--accent-red)' }}>*</span></label>
-                    <input 
-                      type="text" 
-                      name="database" 
-                      placeholder="ipos5_reporting"
-                      value={formData.database} 
-                      onChange={handleInputChange} 
-                      required 
-                    />
-                  </div>
-                  <div>
-                    <label>Label Warna Profil</label>
-                    <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
-                      {colors.map(c => (
-                        <button
-                          key={c}
-                          type="button"
-                          onClick={() => setFormData(prev => ({ ...prev, color: c }))}
-                          style={{
-                            width: '24px',
-                            height: '24px',
-                            borderRadius: '50%',
-                            background: c,
-                            border: formData.color === c ? '2px solid white' : 'none',
-                            cursor: 'pointer',
-                            transition: 'scale 0.2s ease'
-                          }}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {testResult && (
-                  <div 
-                    style={{ 
-                      padding: '12px', 
-                      borderRadius: '8px', 
-                      background: testResult.success ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)',
-                      border: '1px solid',
-                      borderColor: testResult.success ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-                      color: testResult.success ? 'var(--accent-green)' : 'var(--accent-red)',
-                      fontSize: '13px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}
-                  >
-                    {testResult.success ? <ShieldCheck size={16} /> : <ShieldAlert size={16} />}
-                    <span>{testResult.message}</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="modal-footer">
-                <button type="button" onClick={() => setModalOpen(false)} className="btn btn-secondary">
-                  Batal
-                </button>
-                <button type="submit" className="btn btn-primary">
-                  Simpan
-                </button>
-              </div>
-            </form>
+      {/* Application Meta Info Footer */}
+      <div style={{ padding: '14px 18px', borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: 32, flexWrap: 'wrap' }}>
+        {[
+          { label: 'Application', value: 'Cimahi Origin Delivery System' },
+          { label: 'Version', value: 'v2.4.1' },
+          { label: 'Build', value: '20260724-001' },
+          { label: 'License', value: 'PT Pos Indonesia Internal' },
+        ].map((f) => (
+          <div key={f.label}>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', marginBottom: 2 }}>{f.label}</div>
+            <div className="font-mono" style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>{f.value}</div>
           </div>
-        </div>
-      )}
+        ))}
+      </div>
     </div>
   );
 }
-
-export default SettingsPage;

@@ -1,458 +1,203 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Plus, X, Truck } from 'lucide-react';
 import { api } from '../utils/api.js';
-import { Search, Truck, Plus, Edit2, Trash2, X, Eye, ChevronLeft, ChevronRight, Activity } from 'lucide-react';
-import VehicleDetailModal from '../components/VehicleDetailModal.jsx';
 
-function MasterKendaraan() {
-  const navigate = useNavigate();
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [selectedVehicle, setSelectedVehicle] = useState(null);
-  
-  // Pagination & Filter States
-  const [search, setSearch] = useState('');
-  const [moda, setModa] = useState('');
-  const [status, setStatus] = useState('');
-  const [page, setPage] = useState(1);
-  const [pages, setPages] = useState(1);
-  const [total, setTotal] = useState(0);
+export default function MasterKendaraan() {
+  const [vehicles, setVehicles] = useState([
+    { id: 1, plate: 'D 9021 AB', type: 'Box Truck', brand: 'Mitsubishi Canter', driver: 'Hendra Kusuma', capacity: '3.5 ton', status: 'Active', lastService: '12 Jun 2026' },
+    { id: 2, plate: 'D 8832 CD', type: 'Box Truck', brand: 'Hino 300', driver: 'Agus Setiawan', capacity: '4 ton', status: 'Active', lastService: '05 Jul 2026' },
+    { id: 3, plate: 'D 7741 EF', type: 'Pickup', brand: 'Isuzu ELF', driver: 'Dedi Rahmat', capacity: '1.5 ton', status: 'Active', lastService: '18 Jul 2026' },
+    { id: 4, plate: 'D 6600 GH', type: 'Box Truck', brand: 'Mitsubishi Canter', driver: 'Roni Supriadi', capacity: '3.5 ton', status: 'Maintenance', lastService: '01 Jul 2026' },
+    { id: 5, plate: 'D 5512 IJ', type: 'Van', brand: 'Toyota HiAce Commuter', driver: 'Eko Prasetyo', capacity: '0.8 ton', status: 'Active', lastService: '20 Jul 2026' },
+    { id: 6, plate: 'D 4423 KL', type: 'Box Truck', brand: 'Hino 300', driver: 'Budi Santoso', capacity: '4 ton', status: 'Active', lastService: '10 Jul 2026' },
+    { id: 7, plate: 'D 3314 MN', type: 'Pickup', brand: 'Daihatsu Gran Max', driver: 'Yusuf Fauzi', capacity: '0.8 ton', status: 'Inactive', lastService: '15 Mar 2026' },
+    { id: 8, plate: 'D 2205 OP', type: 'Box Truck', brand: 'Mitsubishi Canter', driver: 'Wahyu Hermawan', capacity: '3.5 ton', status: 'Active', lastService: '08 Jul 2026' },
+    { id: 9, plate: 'D 1196 QR', type: 'Van', brand: 'Toyota HiAce', driver: 'Fajar Nugroho', capacity: '0.8 ton', status: 'Active', lastService: '22 Jul 2026' },
+    { id: 10, plate: 'D 0987 ST', type: 'Truck', brand: 'Hino 500', driver: 'Joko Widodo', capacity: '8 ton', status: 'Maintenance', lastService: '28 Jun 2026' },
+  ]);
 
-  // Dropdown options
-  const [modaOptions, setModaOptions] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ plate: '', type: 'Box Truck', brand: '', driver: '', capacity: '', status: 'Active' });
 
-  // Modal States
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalType, setModalType] = useState('add'); // 'add', 'edit', 'detail'
-  const [currentId, setCurrentId] = useState(null);
-  const [formData, setFormData] = useState({
-    kendaraan_id: '',
-    nopol: '',
-    nama_kendaraan: '',
-    jenis_kendaraan: '',
-    kapasitas_kg: 0,
-    kapasitas_m3: 0,
-    moda: 'DARAT',
-    status: 'AKTIF'
-  });
-
-  const fetchData = async () => {
+  const fetchKendaraan = async () => {
     try {
-      setLoading(true);
-      setError(null);
-      let queryParams = `page=${page}&limit=15`;
-      if (search) queryParams += `&search=${encodeURIComponent(search)}`;
-      if (moda) queryParams += `&moda=${encodeURIComponent(moda)}`;
-      if (status) queryParams += `&status=${encodeURIComponent(status)}`;
-
-      const res = await api.getKendaraan(queryParams);
-      if (res.success) {
-        setData(res.data);
-        setPages(res.pagination.pages);
-        setTotal(res.pagination.total);
+      const res = await api.getKendaraan();
+      if (res.success && res.data && res.data.length > 0) {
+        setVehicles(res.data.map((v, idx) => ({
+          id: v._id || idx + 1,
+          plate: v.nopol || v.plate || 'D 0000 XX',
+          type: v.jenis_kendaraan || v.type || 'Box Truck',
+          brand: v.merk_model || v.brand || 'Mitsubishi',
+          driver: v.pengemudi || v.driver || 'Driver Pos',
+          capacity: v.kapasitas || v.capacity || '2.0 ton',
+          status: v.status === 'MAINTENANCE' ? 'Maintenance' : v.status === 'NONAKTIF' ? 'Inactive' : 'Active',
+          lastService: v.last_service || '20 Jul 2026',
+        })));
       }
     } catch (err) {
-      console.error(err);
-      setError(err.message || 'Gagal mengambil data kendaraan.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchFilters = async () => {
-    try {
-      const res = await api.getKendaraanFilters();
-      if (res.success) {
-        setModaOptions(res.data.modas);
-      }
-    } catch (e) {
-      console.error('Error fetching filters options:', e);
+      console.error('Error fetching kendaraan:', err);
     }
   };
 
   useEffect(() => {
-    fetchData();
-  }, [page, moda, status]);
-
-  useEffect(() => {
-    fetchFilters();
+    fetchKendaraan();
   }, []);
 
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    setPage(1);
-    fetchData();
-  };
+  const activeCount = vehicles.filter((v) => v.status === 'Active').length;
+  const maintCount = vehicles.filter((v) => v.status === 'Maintenance').length;
+  const inactCount = vehicles.filter((v) => v.status === 'Inactive').length;
 
-  const openAddModal = () => {
-    setFormData({
-      kendaraan_id: '',
-      nopol: '',
-      nama_kendaraan: '',
-      jenis_kendaraan: '',
-      kapasitas_kg: 0,
-      kapasitas_m3: 0,
-      moda: 'DARAT',
-      status: 'AKTIF'
-    });
-    setModalType('add');
-    setModalOpen(true);
-  };
-
-  const openEditModal = (kendaraan) => {
-    setFormData({ ...kendaraan });
-    setCurrentId(kendaraan.kendaraan_id);
-    setModalType('edit');
-    setModalOpen(true);
-  };
-
-  const openDetailModal = (kendaraan) => {
-    setFormData({ ...kendaraan });
-    setModalType('detail');
-    setModalOpen(true);
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
+  const handleAdd = () => {
+    if (!form.plate || !form.brand) return;
+    setVehicles((prev) => [
       ...prev,
-      [name]: name === 'kapasitas_kg' || name === 'kapasitas_m3' ? parseFloat(value) || 0 : value
-    }));
+      { id: Date.now(), lastService: '24 Jul 2026', ...form },
+    ]);
+    setForm({ plate: '', type: 'Box Truck', brand: '', driver: '', capacity: '', status: 'Active' });
+    setShowForm(false);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (modalType === 'add') {
-        await api.createKendaraan(formData);
-      } else if (modalType === 'edit') {
-        await api.updateKendaraan(currentId, formData);
-      }
-      setModalOpen(false);
-      fetchData();
-      fetchFilters(); // Refresh options
-    } catch (err) {
-      alert(`Gagal menyimpan: ${err.message}`);
-    }
-  };
-
-  const handleDelete = async (id) => {
-    if (window.confirm(`Apakah Anda yakin ingin menghapus Kendaraan ${id}?`)) {
-      try {
-        await api.deleteKendaraan(id);
-        fetchData();
-      } catch (err) {
-        alert(`Gagal menghapus: ${err.message}`);
-      }
-    }
+  const getStatusBadge = (st) => {
+    if (st === 'Active') return <span className="badge badge-emerald">Active</span>;
+    if (st === 'Maintenance') return <span className="badge badge-orange">Maintenance</span>;
+    return <span className="badge badge-navy">Inactive</span>;
   };
 
   return (
-    <div className="animate-fade-in">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <div>
-          <h2 style={{ fontFamily: 'var(--font-title)', fontSize: '22px', fontWeight: 800, color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Truck size={24} style={{ color: 'var(--accent-green)' }} /> Master Kendaraan
-          </h2>
-          <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>Mengelola armada pengiriman Pos Indonesia ({total} kendaraan)</span>
-        </div>
-        <button onClick={openAddModal} className="btn btn-primary">
-          <Plus size={16} /> Tambah Kendaraan
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* Stats Summary Bar */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14 }}>
+        {[
+          { label: 'Total Vehicles', value: vehicles.length, color: '#fff' },
+          { label: 'Operational', value: activeCount, color: '#10b981' },
+          { label: 'In Maintenance', value: maintCount, color: '#e8431f' },
+          { label: 'Inactive', value: inactCount, color: 'rgba(255,255,255,0.35)' },
+        ].map((s) => (
+          <div
+            key={s.label}
+            style={{
+              padding: '14px 18px',
+              borderRadius: 10,
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.07)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 14,
+            }}
+          >
+            <Truck size={18} color={s.color} />
+            <div>
+              <div style={{ fontSize: 22, fontWeight: 800, color: s.color, lineHeight: 1 }}>
+                {s.value}
+              </div>
+              <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>
+                {s.label}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Toolbar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <button className="btn-primary" style={{ marginLeft: 'auto' }} onClick={() => setShowForm(true)}>
+          <Plus size={15} /> Add Vehicle
         </button>
       </div>
 
-      {/* Filter and Search controls */}
-      <div className="glass-card" style={{ padding: '16px' }}>
-        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
-          <div style={{ flexGrow: 1, minWidth: '200px' }}>
-            <input 
-              type="text" 
-              placeholder="Cari ID, nopol, nama kendaraan..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{ padding: '8px 12px', fontSize: '13px' }}
-            />
-          </div>
-          
-          <div style={{ width: '150px' }}>
-            <select name="moda" value={moda} onChange={(e) => { setModa(e.target.value); setPage(1); }} style={{ padding: '8px 12px', fontSize: '13px' }}>
-              <option value="">-- Moda --</option>
-              {modaOptions.map(m => <option key={m} value={m}>{m}</option>)}
-            </select>
-          </div>
-
-          <div style={{ width: '150px' }}>
-            <select name="status" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }} style={{ padding: '8px 12px', fontSize: '13px' }}>
-              <option value="">-- Status --</option>
-              <option value="AKTIF">AKTIF</option>
-              <option value="NONAKTIF">NONAKTIF</option>
-            </select>
-          </div>
-
-          <button type="submit" className="btn btn-secondary" style={{ padding: '8px 16px' }}>Cari</button>
-        </form>
-      </div>
-
-      {/* Table grid */}
-      {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
-          <Activity className="animate-spin text-accent" size={36} style={{ color: 'var(--accent-cyan)' }} />
-        </div>
-      ) : error ? (
-        <div className="info-alert" style={{ background: 'rgba(239, 68, 68, 0.08)', borderColor: 'rgba(239, 68, 68, 0.2)', color: 'var(--accent-red)' }}>
-          <div>{error}</div>
-        </div>
-      ) : (
-        <div>
-          <div className="table-container">
-            <table>
+      <div style={{ display: 'grid', gridTemplateColumns: showForm ? '1fr 340px' : '1fr', gap: 16 }}>
+        {/* Vehicles Table */}
+        <div className="glass-card-solid" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table className="data-table">
               <thead>
                 <tr>
-                  <th>ID Kendaraan</th>
-                  <th>No Polisi</th>
-                  <th>Nama Kendaraan</th>
-                  <th>Jenis</th>
-                  <th>Kapasitas (Kg)</th>
-                  <th>Kapasitas (M³)</th>
-                  <th>Moda</th>
+                  <th>Plate No.</th>
+                  <th>Vehicle Type</th>
+                  <th>Brand / Model</th>
+                  <th>Driver</th>
+                  <th>Capacity</th>
                   <th>Status</th>
-                  <th style={{ textAlign: 'right' }}>Aksi</th>
+                  <th>Last Service</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {data.map((item) => (
-                  <tr key={item.kendaraan_id}>
-                    <td style={{ fontWeight: 700, color: 'white' }}>{item.kendaraan_id}</td>
-                     <td>
+                {vehicles.map((v) => (
+                  <tr key={v.id}>
+                    <td>
+                      <span className="font-mono" style={{ fontSize: 12.5, fontWeight: 600, color: '#fff' }}>
+                        {v.plate}
+                      </span>
+                    </td>
+                    <td style={{ color: 'rgba(255,255,255,0.65)' }}>{v.type}</td>
+                    <td style={{ color: '#fff', fontWeight: 500 }}>{v.brand}</td>
+                    <td style={{ color: 'rgba(255,255,255,0.7)' }}>{v.driver}</td>
+                    <td>
+                      <span className="font-mono" style={{ fontSize: 12 }}>{v.capacity}</span>
+                    </td>
+                    <td>{getStatusBadge(v.status)}</td>
+                    <td style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>{v.lastService}</td>
+                    <td>
                       <button
-                        onClick={() => setSelectedVehicle(item.nopol)}
-                        style={{ background: 'none', border: 'none', color: 'var(--accent-cyan)', fontWeight: 700, cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
-                        title="Klik untuk detail operasional"
+                        style={{
+                          fontSize: 11,
+                          color: 'rgba(255,255,255,0.5)',
+                          background: 'rgba(255,255,255,0.05)',
+                          border: '1px solid rgba(255,255,255,0.08)',
+                          borderRadius: 5,
+                          padding: '3px 8px',
+                          cursor: 'pointer',
+                        }}
                       >
-                        {item.nopol || '-'}
+                        Edit
                       </button>
-                    </td>
-                    <td>{item.nama_kendaraan || '-'}</td>
-                    <td>{item.jenis_kendaraan || '-'}</td>
-                    <td>{item.kapasitas_kg ? item.kapasitas_kg.toLocaleString() : '0'} kg</td>
-                    <td>{item.kapasitas_m3 ? item.kapasitas_m3.toLocaleString() : '0'} m³</td>
-                    <td>
-                      <span className={`badge ${item.moda === 'U' || item.moda === 'UDARA' ? 'badge-info' : 'badge-success'}`}>
-                        {item.moda || 'DARAT'}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`badge ${item.status === 'AKTIF' ? 'badge-success' : 'badge-danger'}`}>
-                        {item.status || 'AKTIF'}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                        <button onClick={() => openDetailModal(item)} className="btn btn-secondary" style={{ padding: '6px', borderRadius: '4px' }} title="Detail">
-                          <Eye size={14} style={{ color: 'var(--accent-cyan)' }} />
-                        </button>
-                        <button onClick={() => openEditModal(item)} className="btn btn-secondary" style={{ padding: '6px', borderRadius: '4px' }} title="Edit">
-                          <Edit2 size={14} style={{ color: 'var(--accent-orange)' }} />
-                        </button>
-                        <button onClick={() => handleDelete(item.kendaraan_id)} className="btn btn-secondary" style={{ padding: '6px', borderRadius: '4px' }} title="Hapus">
-                          <Trash2 size={14} style={{ color: 'var(--accent-red)' }} />
-                        </button>
-                      </div>
                     </td>
                   </tr>
                 ))}
-                {data.length === 0 && (
-                  <tr>
-                    <td colSpan="9" style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
-                      Tidak ada data kendaraan ditemukan.
-                    </td>
-                  </tr>
-                )}
               </tbody>
             </table>
           </div>
+        </div>
 
-          {/* Pagination bar */}
-          <div className="pagination-bar">
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-              Menampilkan Halaman <strong>{page}</strong> dari <strong>{pages}</strong> ({total} data)
-            </span>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button 
-                onClick={() => setPage(p => Math.max(1, p - 1))} 
-                disabled={page === 1}
-                className="btn btn-secondary" 
-                style={{ padding: '6px 12px' }}
+        {/* Add Vehicle Panel */}
+        {showForm && (
+          <div className="glass-card-solid" style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>Add Vehicle</div>
+              <button
+                onClick={() => setShowForm(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', padding: 4 }}
               >
-                <ChevronLeft size={16} />
-              </button>
-              <button 
-                onClick={() => setPage(p => Math.min(pages, p + 1))} 
-                disabled={page === pages}
-                className="btn btn-secondary" 
-                style={{ padding: '6px 12px' }}
-              >
-                <ChevronRight size={16} />
+                <X size={16} />
               </button>
             </div>
-          </div>
-        </div>
-      )}
 
-      {/* Modal dialog for ADD / EDIT / DETAIL */}
-      {modalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content animate-fade-in" style={{ maxWidth: '600px' }}>
-            <div className="modal-header">
-              <h3 style={{ color: 'white', fontWeight: 700, fontFamily: 'var(--font-title)' }}>
-                {modalType === 'add' ? 'Tambah Kendaraan Baru' : modalType === 'edit' ? 'Edit Data Kendaraan' : 'Detail Kendaraan'}
-              </h3>
-              <button onClick={() => setModalOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                <X size={20} />
-              </button>
-            </div>
-            
-            <form onSubmit={handleSubmit}>
-              <div className="modal-body">
-                {modalType !== 'add' && (
-                  <div style={{ marginBottom: '15px' }}>
-                    <label>ID Kendaraan</label>
-                    <input 
-                      type="text" 
-                      name="kendaraan_id" 
-                      value={formData.kendaraan_id} 
-                      disabled 
-                    />
-                  </div>
-                )}
-
-                <div className="grid-2" style={{ marginBottom: '15px' }}>
-                  <div>
-                    <label>No Polisi / Nopol <span style={{ color: 'var(--accent-red)' }}>*</span></label>
-                    <input 
-                      type="text" 
-                      name="nopol" 
-                      placeholder="Contoh: B 1234 POS"
-                      value={formData.nopol} 
-                      onChange={handleInputChange} 
-                      required 
-                      disabled={modalType === 'detail'} 
-                    />
-                  </div>
-                  <div>
-                    <label>Nama Kendaraan <span style={{ color: 'var(--accent-red)' }}>*</span></label>
-                    <input 
-                      type="text" 
-                      name="nama_kendaraan" 
-                      placeholder="Contoh: Colt Diesel Double"
-                      value={formData.nama_kendaraan} 
-                      onChange={handleInputChange} 
-                      required 
-                      disabled={modalType === 'detail'} 
-                    />
-                  </div>
-                </div>
-
-                <div className="grid-2" style={{ marginBottom: '15px' }}>
-                  <div>
-                    <label>Jenis Kendaraan</label>
-                    <input 
-                      type="text" 
-                      name="jenis_kendaraan" 
-                      placeholder="Contoh: Truk Box, Blind Van"
-                      value={formData.jenis_kendaraan} 
-                      onChange={handleInputChange} 
-                      disabled={modalType === 'detail'} 
-                    />
-                  </div>
-                  <div>
-                    <label>Moda Transportasi</label>
-                    <select 
-                      name="moda" 
-                      value={formData.moda} 
-                      onChange={handleInputChange}
-                      disabled={modalType === 'detail'}
-                    >
-                      <option value="DARAT">DARAT</option>
-                      <option value="UDARA">UDARA</option>
-                      <option value="LAUT">LAUT</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid-2" style={{ marginBottom: '15px' }}>
-                  <div>
-                    <label>Kapasitas Berat (Kg)</label>
-                    <input 
-                      type="number" 
-                      name="kapasitas_kg" 
-                      value={formData.kapasitas_kg} 
-                      onChange={handleInputChange} 
-                      disabled={modalType === 'detail'} 
-                    />
-                  </div>
-                  <div>
-                    <label>Kapasitas Volume (M³)</label>
-                    <input 
-                      type="number" 
-                      name="kapasitas_m3" 
-                      step="0.01"
-                      value={formData.kapasitas_m3} 
-                      onChange={handleInputChange} 
-                      disabled={modalType === 'detail'} 
-                    />
-                  </div>
-                </div>
-
-                <div className="grid-1" style={{ marginBottom: '15px' }}>
-                  <div>
-                    <label>Status</label>
-                    <select 
-                      name="status" 
-                      value={formData.status} 
-                      onChange={handleInputChange}
-                      disabled={modalType === 'detail'}
-                    >
-                      <option value="AKTIF">AKTIF</option>
-                      <option value="NONAKTIF">NONAKTIF</option>
-                    </select>
-                  </div>
-                </div>
-
-                {modalType === 'detail' && (
-                  <div style={{ marginTop: '15px', padding: '12px', background: 'var(--light-navy)', borderRadius: '8px', fontSize: '11px', color: 'var(--text-muted)' }}>
-                    <div><strong>Created At:</strong> {formData.createdAt ? new Date(formData.createdAt).toLocaleString() : '-'}</div>
-                    <div style={{ marginTop: '4px' }}><strong>Updated At:</strong> {formData.updatedAt ? new Date(formData.updatedAt).toLocaleString() : '-'}</div>
-                  </div>
-                )}
+            {[
+              { label: 'Plate Number', key: 'plate', placeholder: 'e.g. D 0001 AB' },
+              { label: 'Brand / Model', key: 'brand', placeholder: 'e.g. Mitsubishi Canter' },
+              { label: 'Driver Name', key: 'driver', placeholder: 'Full name' },
+              { label: 'Capacity', key: 'capacity', placeholder: 'e.g. 3.5 ton' },
+            ].map((f) => (
+              <div key={f.key}>
+                <label style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.45)', display: 'block', marginBottom: 5 }}>
+                  {f.label}
+                </label>
+                <input
+                  className="input-navy"
+                  placeholder={f.placeholder}
+                  value={form[f.key]}
+                  onChange={(e) => setForm((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                />
               </div>
+            ))}
 
-              <div className="modal-footer">
-                <button type="button" onClick={() => setModalOpen(false)} className="btn btn-secondary">
-                  {modalType === 'detail' ? 'Tutup' : 'Batal'}
-                </button>
-                {modalType !== 'detail' && (
-                  <button type="submit" className="btn btn-primary">
-                    Simpan
-                  </button>
-                )}
-              </div>
-            </form>
+            <button className="btn-primary" onClick={handleAdd} style={{ width: '100%', justifyContent: 'center', marginTop: 4 }}>
+              Add Vehicle
+            </button>
           </div>
-        </div>
-      )}
-
-      {/* Operational Vehicle details modal */}
-      {selectedVehicle && (
-        <VehicleDetailModal 
-          nopol={selectedVehicle} 
-          onClose={() => setSelectedVehicle(null)} 
-          onViewTransaction={(code) => navigate(`/transaksi?search=${code}`)}
-        />
-      )}
+        )}
+      </div>
     </div>
   );
 }
-
-export default MasterKendaraan;

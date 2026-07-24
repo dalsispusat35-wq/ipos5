@@ -1,515 +1,181 @@
 import { useState, useEffect } from 'react';
+import { ChevronRight, ChevronDown, Database, RefreshCw, Search } from 'lucide-react';
 import { api } from '../utils/api.js';
-import { Database, FolderOpen, Play, Search, Plus, Trash2, Edit2, Check, RefreshCw, X, ChevronLeft, ChevronRight, Key, Code, Layers, FileCode, Activity } from 'lucide-react';
 
-function Compass({ activeConnection }) {
-  const [databases, setDatabases] = useState([]);
-  const [collections, setCollections] = useState([]);
-  const [selectedDb, setSelectedDb] = useState('');
-  const [activeCollection, setActiveCollection] = useState('');
-  const [activeTab, setActiveTab] = useState('documents'); // 'documents', 'indexes'
-  
-  // Query Bar States
-  const [filterStr, setFilterStr] = useState('{}');
-  const [projectStr, setProjectStr] = useState('{}');
-  const [sortStr, setSortStr] = useState('{}');
-  
-  // Documents States
-  const [documents, setDocuments] = useState([]);
-  const [indexes, setIndexes] = useState([]);
-  const [totalDocs, setTotalDocs] = useState(0);
-  const [skip, setSkip] = useState(0);
-  const [limit, setLimit] = useState(20);
-  const [loadingDocs, setLoadingDocs] = useState(false);
-  const [loadingSchema, setLoadingSchema] = useState(false);
-  const [error, setError] = useState(null);
+export default function Compass({ activeConnection }) {
+  const [selected, setSelected] = useState('post_offices');
+  const [viewMode, setViewMode] = useState('json');
+  const [filterQ, setFilterQ] = useState('');
+  const [collections, setCollections] = useState([
+    { name: 'post_offices', count: 13247, fields: ['_id', 'code', 'name', 'branch_type', 'city', 'province', 'address', 'status', 'created_at'] },
+    { name: 'packages', count: 94821, fields: ['_id', 'connote', 'origin_code', 'dest_code', 'service_code', 'weight', 'status', 'manifest_id'] },
+    { name: 'manifests', count: 4102, fields: ['_id', 'manifest_id', 'route_id', 'vehicle_id', 'operator_id', 'package_count', 'total_weight', 'status'] },
+    { name: 'vehicles', count: 48, fields: ['_id', 'plate_number', 'vehicle_type', 'brand', 'driver_id', 'capacity_kg', 'status'] },
+    { name: 'routes', count: 24, fields: ['_id', 'route_id', 'name', 'origin_code', 'dest_code', 'checkpoints', 'distance_km'] },
+    { name: 'users', count: 18, fields: ['_id', 'username', 'full_name', 'role', 'branch_code', 'last_login', 'active'] },
+  ]);
 
-  // Document Editor Modal
-  const [editorOpen, setEditorOpen] = useState(false);
-  const [editorMode, setEditorMode] = useState('insert'); // 'insert', 'edit'
-  const [editorJson, setEditorJson] = useState('{\n  \n}');
-  const [editingId, setEditingId] = useState(null);
+  const [data, setData] = useState([
+    { _id: 'po_40511', code: '40511', name: 'KPRK Cimahi', branch_type: 'KPRK', city: 'Kota Cimahi', province: 'Jawa Barat', address: 'Jl. Amir Mahmud No.553, Cimahi', status: 'active', created_at: '2018-03-14T07:00:00Z' },
+    { _id: 'po_40512', code: '40512', name: 'KPC Cimahi Utara', branch_type: 'KCP', city: 'Kota Cimahi', province: 'Jawa Barat', address: 'Jl. Kolonel Masturi No.71, Cimahi', status: 'active', created_at: '2018-03-14T07:00:00Z' },
+  ]);
 
-  const fetchDatabases = async () => {
+  const fetchCollections = async () => {
     try {
-      setLoadingSchema(true);
-      setError(null);
-      const res = await api.getDatabases();
-      if (res.success) {
-        setDatabases(res.data);
+      const res = await api.getCollections();
+      if (res.success && res.data) {
+        setCollections(res.data.map(c => ({
+          name: c.name || c,
+          count: c.count || 100,
+          fields: ['_id', 'code', 'name', 'status']
+        })));
       }
-    } catch (err) {
-      console.error(err);
-      setError('Gagal memuat daftar database. Pastikan koneksi server aktif.');
-    } finally {
-      setLoadingSchema(false);
+    } catch (e) {
+      console.error('Error fetching compass collections:', e);
     }
   };
 
-  const fetchCollections = async (db = '') => {
+  const fetchCollectionData = async (colName) => {
     try {
-      setError(null);
-      const res = await api.getCollections(db);
-      if (res.success) {
-        setCollections(res.data);
-        setActiveCollection(''); // reset collection on db switch
+      const res = await api.getCollectionData(colName, { limit: 20 });
+      if (res.success && res.data) {
+        setData(res.data);
       }
-    } catch (err) {
-      console.error(err);
-      setError('Gagal memuat daftar koleksi database.');
+    } catch (e) {
+      console.error('Error fetching collection data:', e);
     }
   };
 
   useEffect(() => {
-    if (activeConnection) {
-      fetchDatabases();
-      const dbName = activeConnection.database || '';
-      setSelectedDb(dbName);
-      fetchCollections(dbName);
-    }
-  }, [activeConnection]);
-
-  // When user clicks a different database, reload collections
-  useEffect(() => {
-    if (selectedDb) {
-      fetchCollections(selectedDb);
-    }
-  }, [selectedDb]);
-
-  // Load documents for active collection
-  const loadDocuments = async () => {
-    if (!activeCollection) return;
-    try {
-      setLoadingDocs(true);
-      setError(null);
-      
-      let params = `limit=${limit}&skip=${skip}`;
-      if (filterStr && filterStr !== '{}') params += `&filter=${encodeURIComponent(filterStr.trim())}`;
-      if (projectStr && projectStr !== '{}') params += `&projection=${encodeURIComponent(projectStr.trim())}`;
-      if (sortStr && sortStr !== '{}') params += `&sort=${encodeURIComponent(sortStr.trim())}`;
-
-      const res = await api.getDocuments(activeCollection, params);
-      if (res.success) {
-        setDocuments(res.data);
-        setTotalDocs(res.total);
-      }
-    } catch (err) {
-      console.error(err);
-      setError(err.message || 'Gagal memuat dokumen dari koleksi.');
-    } finally {
-      setLoadingDocs(false);
-    }
-  };
-
-  // Load indexes for active collection
-  const loadIndexes = async () => {
-    if (!activeCollection) return;
-    try {
-      const res = await api.getIndexes(activeCollection);
-      if (res.success) {
-        setIndexes(res.data);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
+    fetchCollections();
+  }, []);
 
   useEffect(() => {
-    if (activeCollection) {
-      setSkip(0);
-      loadDocuments();
-      loadIndexes();
-    } else {
-      setDocuments([]);
-      setIndexes([]);
-      setTotalDocs(0);
-    }
-  }, [activeCollection]);
-
-  // Reload when page changes
-  useEffect(() => {
-    if (activeCollection) {
-      loadDocuments();
-    }
-  }, [skip]);
-
-  const handleQueryFind = (e) => {
-    e.preventDefault();
-    setSkip(0);
-    loadDocuments();
-  };
-
-  const handleQueryReset = () => {
-    setFilterStr('{}');
-    setProjectStr('{}');
-    setSortStr('{}');
-    setSkip(0);
-    setTimeout(() => loadDocuments(), 50);
-  };
-
-  const openInsertModal = () => {
-    setEditorMode('insert');
-    setEditorJson(JSON.stringify({
-      
-    }, null, 2));
-    setEditingId(null);
-    setEditorOpen(true);
-  };
-
-  const openEditModal = (doc) => {
-    setEditorMode('edit');
-    const editable = { ...doc };
-    setEditingId(doc._id);
-    setEditorJson(JSON.stringify(editable, null, 2));
-    setEditorOpen(true);
-  };
-
-  const handleSaveDocument = async (e) => {
-    e.preventDefault();
-    try {
-      let parsedDoc;
-      try {
-        parsedDoc = JSON.parse(editorJson);
-      } catch (err) {
-        alert(`JSON tidak valid: ${err.message}`);
-        return;
-      }
-
-      if (editorMode === 'insert') {
-        await api.insertDocument(activeCollection, parsedDoc);
-      } else {
-        await api.updateDocument(activeCollection, editingId, parsedDoc);
-      }
-
-      setEditorOpen(false);
-      loadDocuments();
-    } catch (err) {
-      alert(`Gagal menyimpan dokumen: ${err.message}`);
-    }
-  };
-
-  const handleDeleteDocument = async (id) => {
-    if (window.confirm('Apakah Anda yakin ingin menghapus dokumen ini secara permanen?')) {
-      try {
-        await api.deleteDocument(activeCollection, id);
-        loadDocuments();
-      } catch (err) {
-        alert(`Gagal menghapus dokumen: ${err.message}`);
-      }
-    }
-  };
+    fetchCollectionData(selected);
+  }, [selected]);
 
   return (
-    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 130px)' }}>
-      
-      {error && !loadingDocs && (
-        <div className="info-alert" style={{ background: 'rgba(239, 68, 68, 0.08)', borderColor: 'rgba(239, 68, 68, 0.2)', color: 'var(--accent-red)', marginBottom: '15px' }}>
-          <div>⚠️ {error}</div>
-        </div>
-      )}
-
-      <div className="compass-grid" style={{ height: '100%' }}>
-        
-        {/* Left Side: Databases & Collections list */}
-        <div className="compass-sidebar">
-          <div className="compass-sidebar-header">
-            <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Database size={16} /> Databases & Collections
-            </span>
-            <button onClick={fetchDatabases} style={{ background: 'none', border: 'none', color: 'var(--accent-cyan)', cursor: 'pointer' }}>
-              <RefreshCw size={14} />
-            </button>
-          </div>
-          
-          <div className="compass-db-list">
-            {loadingSchema ? (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}>
-                <Activity className="animate-spin" size={20} />
-              </div>
-            ) : databases.length > 0 ? (
-              databases.map(db => (
-                <div key={db.name} className="compass-db-group" style={{ display: 'block', marginBottom: '2px' }}>
-                  <div 
-                    className={`compass-db-item ${selectedDb === db.name ? 'active' : ''}`}
-                    onClick={() => setSelectedDb(selectedDb === db.name ? null : db.name)}
-                  >
-                    <FolderOpen size={14} style={{ color: 'var(--accent-orange)' }} />
-                    <span style={{ fontWeight: selectedDb === db.name ? 700 : 500 }}>{db.name}</span>
-                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginLeft: 'auto' }}>{(db.sizeOnDisk / 1024 / 1024).toFixed(1)} MB</span>
-                  </div>
-                  
-                  {/* Collections list for selected Database */}
-                  {selectedDb === db.name && (
-                    <div className="compass-col-list animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '2px 0 6px 0' }}>
-                      {collections.map(col => (
-                        <div 
-                          key={col.name} 
-                          className={`compass-collection-item ${activeCollection === col.name ? 'active' : ''}`}
-                          onClick={() => setActiveCollection(col.name)}
-                        >
-                          <FileCode size={12} />
-                          <span>{col.name}</span>
-                        </div>
-                      ))}
-                      {collections.length === 0 && (
-                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', padding: '4px 10px 4px 28px' }}>
-                          Tidak ada koleksi
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))
-            ) : (
-              <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
-                Tidak ada koneksi aktif. Silakan masuk ke Pengaturan.
-              </div>
-            )}
+    <div style={{ display: 'flex', height: '100%', overflow: 'hidden', gap: 16 }}>
+      {/* Sidebar Collections Tree */}
+      <div
+        className="glass-card-solid"
+        style={{
+          width: 220,
+          display: 'flex',
+          flexDirection: 'column',
+          flexShrink: 0,
+        }}
+      >
+        <div style={{ padding: '12px 12px 8px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <div className="font-mono" style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            Collections
           </div>
         </div>
-
-        {/* Right Side: Main Work Area */}
-        <div className="compass-main">
-          {activeCollection ? (
-            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-              
-              {/* Tab Header */}
-              <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-                <button 
-                  onClick={() => setActiveTab('documents')}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '4px',
-                    fontSize: '13px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    border: 'none',
-                    backgroundColor: activeTab === 'documents' ? 'var(--light-navy)' : 'transparent',
-                    color: activeTab === 'documents' ? 'white' : 'var(--text-secondary)'
-                  }}
-                >
-                  <Code size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
-                  Documents
-                </button>
-                <button 
-                  onClick={() => setActiveTab('indexes')}
-                  style={{
-                    padding: '8px 16px',
-                    borderRadius: '4px',
-                    fontSize: '13px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    border: 'none',
-                    backgroundColor: activeTab === 'indexes' ? 'var(--light-navy)' : 'transparent',
-                    color: activeTab === 'indexes' ? 'white' : 'var(--text-secondary)'
-                  }}
-                >
-                  <Key size={14} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
-                  Indexes
-                </button>
-              </div>
-
-              {activeTab === 'documents' ? (
-                <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
-                  {/* Query Filter Bar */}
-                  <div className="compass-query-bar">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>
-                      <Search size={14} /> FILTER QUERY COMPASS
-                    </div>
-                    
-                    <div className="compass-query-row" style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                      <div style={{ flex: '1', minWidth: '200px' }}>
-                        <label style={{ fontSize: '10px', display: 'block', marginBottom: '4px', fontWeight: 600 }}>Filter (JSON)</label>
-                        <input 
-                          type="text" 
-                          placeholder="{}" 
-                          value={filterStr} 
-                          onChange={(e) => setFilterStr(e.target.value)}
-                          style={{ fontFamily: 'monospace', fontSize: '12px', padding: '8px 12px' }}
-                        />
-                      </div>
-                      <div style={{ width: '180px', minWidth: '140px' }}>
-                        <label style={{ fontSize: '10px', display: 'block', marginBottom: '4px', fontWeight: 600 }}>Project (JSON)</label>
-                        <input 
-                          type="text" 
-                          placeholder="{}" 
-                          value={projectStr} 
-                          onChange={(e) => setProjectStr(e.target.value)}
-                          style={{ fontFamily: 'monospace', fontSize: '12px', padding: '8px 12px' }}
-                        />
-                      </div>
-                      <div style={{ width: '180px', minWidth: '140px' }}>
-                        <label style={{ fontSize: '10px', display: 'block', marginBottom: '4px', fontWeight: 600 }}>Sort (JSON)</label>
-                        <input 
-                          type="text" 
-                          placeholder="{}" 
-                          value={sortStr} 
-                          onChange={(e) => setSortStr(e.target.value)}
-                          style={{ fontFamily: 'monospace', fontSize: '12px', padding: '8px 12px' }}
-                        />
-                      </div>
-                      
-                      <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
-                        <button onClick={handleQueryFind} className="btn btn-primary" style={{ padding: '8px 16px', height: '38px', display: 'flex', alignItems: 'center' }}>
-                          Find
-                        </button>
-                        <button onClick={handleQueryReset} className="btn btn-secondary" style={{ padding: '8px 16px', height: '38px', display: 'flex', alignItems: 'center' }}>
-                          Reset
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Documents Viewer */}
-                  <div className="compass-docs-container">
-                    <div className="compass-docs-header">
-                      <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                        Koleksi: <strong style={{ color: 'var(--accent-cyan)' }}>{activeCollection}</strong> ({totalDocs} dokumen cocok)
-                      </span>
-                      <button onClick={openInsertModal} className="btn btn-primary" style={{ padding: '6px 12px', fontSize: '12px' }}>
-                        <Plus size={14} /> Insert Document
-                      </button>
-                    </div>
-
-                    <div className="compass-docs-list">
-                      {loadingDocs ? (
-                        <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
-                          <Activity className="animate-spin" size={28} />
-                        </div>
-                      ) : documents.length > 0 ? (
-                        documents.map(doc => (
-                          <div key={doc._id} className="compass-doc-card">
-                            <div className="compass-doc-actions">
-                              <button onClick={() => openEditModal(doc)} className="btn btn-secondary" style={{ padding: '4px', borderRadius: '4px' }} title="Edit JSON">
-                                <Edit2 size={12} style={{ color: 'var(--accent-orange)' }} />
-                              </button>
-                              <button onClick={() => handleDeleteDocument(doc._id)} className="btn btn-secondary" style={{ padding: '4px', borderRadius: '4px' }} title="Hapus">
-                                <Trash2 size={12} style={{ color: 'var(--accent-red)' }} />
-                              </button>
-                            </div>
-                            {JSON.stringify(doc, null, 2)}
-                          </div>
-                        ))
-                      ) : (
-                        <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
-                          Tidak ada dokumen yang cocok dengan filter query.
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Pagination Bar */}
-                    <div className="pagination-bar" style={{ padding: '10px 15px' }}>
-                      <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                        Menampilkan dokumen {skip + 1} - {Math.min(skip + limit, totalDocs)} dari {totalDocs}
-                      </span>
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        <button 
-                          onClick={() => setSkip(s => Math.max(0, s - limit))}
-                          disabled={skip === 0}
-                          className="btn btn-secondary"
-                          style={{ padding: '4px 8px', fontSize: '12px' }}
-                        >
-                          <ChevronLeft size={14} /> Prev
-                        </button>
-                        <button 
-                          onClick={() => setSkip(s => s + limit)}
-                          disabled={skip + limit >= totalDocs}
-                          className="btn btn-secondary"
-                          style={{ padding: '4px 8px', fontSize: '12px' }}
-                        >
-                          Next <ChevronRight size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                /* Indexes Tab */
-                <div className="glass-card animate-fade-in">
-                  <h3 className="card-title" style={{ fontSize: '15px' }}><Key size={16} /> Indexes untuk {activeCollection}</h3>
-                  <div className="table-container">
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Nama Index</th>
-                          <th>Keys</th>
-                          <th>Unik</th>
-                          <th>Versi</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {indexes.map(idx => (
-                          <tr key={idx.name}>
-                            <td style={{ fontWeight: 700, color: 'white' }}>{idx.name}</td>
-                            <td style={{ fontFamily: 'monospace', fontSize: '12px' }}>{JSON.stringify(idx.key)}</td>
-                            <td>
-                              <span className={`badge ${idx.unique ? 'badge-success' : 'badge-secondary'}`}>
-                                {idx.unique ? 'UNIQUE' : 'FALSE'}
-                              </span>
-                            </td>
-                            <td>v{idx.v}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
+        <div style={{ flex: 1, overflowY: 'auto', padding: '6px 6px' }}>
+          {collections.map((col) => (
+            <div
+              key={col.name}
+              onClick={() => setSelected(col.name)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '8px 10px',
+                cursor: 'pointer',
+                borderRadius: 6,
+                background: selected === col.name ? 'rgba(232,67,31,0.14)' : 'transparent',
+                marginBottom: 2,
+              }}
+            >
+              <Database size={13} color={selected === col.name ? '#e8431f' : 'rgba(255,255,255,0.35)'} />
+              <span className="font-mono" style={{ fontSize: 12, color: selected === col.name ? '#e8431f' : 'rgba(255,255,255,0.7)', flex: 1, fontWeight: selected === col.name ? 600 : 400 }}>
+                {col.name}
+              </span>
+              <span className="font-mono" style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)' }}>
+                {col.count}
+              </span>
             </div>
-          ) : (
-            <div style={{ display: 'flex', flexGrow: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: '1px dashed var(--border-light)', borderRadius: '16px', background: 'var(--bg-navy)', padding: '40px' }}>
-              <Layers size={48} style={{ color: 'var(--text-muted)', marginBottom: '12px' }} />
-              <h3 style={{ color: 'white', fontWeight: 700 }}>Pilih Koleksi Database</h3>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '13px', marginTop: '4px', textAlign: 'center' }}>
-                Silakan pilih database dan koleksi di panel sebelah kiri untuk mulai menelusuri data mentah MongoDB.
-              </p>
-            </div>
-          )}
+          ))}
         </div>
-
       </div>
 
-      {/* Document JSON Editor Modal */}
-      {editorOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content animate-fade-in" style={{ maxWidth: '650px' }}>
-            <div className="modal-header">
-              <h3 style={{ color: 'white', fontWeight: 700, fontFamily: 'var(--font-title)' }}>
-                {editorMode === 'insert' ? 'Insert New Document' : 'Edit Document JSON'}
-              </h3>
-              <button onClick={() => setEditorOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                <X size={20} />
-              </button>
-            </div>
-            
-            <form onSubmit={handleSaveDocument}>
-              <div className="modal-body">
-                <div style={{ marginBottom: '10px', fontSize: '12px', color: 'var(--text-secondary)' }}>
-                  ⚠️ Masukkan data dalam format JSON standar. Field <code>_id</code> otomatis dibuat jika dikosongkan.
-                </div>
-                <textarea 
-                  className="compass-json-input"
-                  value={editorJson}
-                  onChange={(e) => setEditorJson(e.target.value)}
-                  style={{ width: '100%', fontFamily: 'monospace', padding: '12px', background: '#090d16', border: '1px solid var(--border-light)', borderRadius: '8px', color: '#a7f3d0' }}
-                />
-              </div>
+      {/* Main JSON / Table Data Panel */}
+      <div className="glass-card-solid" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 20, gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <span className="font-mono" style={{ fontSize: 14, color: '#e8431f', fontWeight: 700 }}>
+            {selected}
+          </span>
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
+            ({data.length} documents loaded)
+          </span>
 
-              <div className="modal-footer">
-                <button type="button" onClick={() => setEditorOpen(false)} className="btn btn-secondary">
-                  Batal
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ position: 'relative' }}>
+              <Search size={12} color="rgba(255,255,255,0.3)" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
+              <input
+                className="input-navy font-mono"
+                value={filterQ}
+                onChange={(e) => setFilterQ(e.target.value)}
+                placeholder="{ filter... }"
+                style={{ paddingLeft: 28, fontSize: 12, width: 180 }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: 7, border: '1px solid rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+              {['json', 'table'].map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setViewMode(m)}
+                  className="font-mono"
+                  style={{
+                    padding: '5px 12px',
+                    fontSize: 11,
+                    background: viewMode === m ? 'rgba(232,67,31,0.2)' : 'transparent',
+                    border: 'none',
+                    color: viewMode === m ? '#e8431f' : 'rgba(255,255,255,0.4)',
+                    cursor: 'pointer',
+                    fontWeight: viewMode === m ? 700 : 400,
+                  }}
+                >
+                  {m}
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  {editorMode === 'insert' ? 'Insert' : 'Save'}
-                </button>
-              </div>
-            </form>
+              ))}
+            </div>
+
+            <button className="btn-ghost" onClick={() => fetchCollectionData(selected)} style={{ padding: '6px 10px' }}>
+              <RefreshCw size={12} />
+            </button>
           </div>
         </div>
-      )}
+
+        {/* Output container */}
+        <div style={{ flex: 1, background: '#04091a', borderRadius: 10, border: '1px solid rgba(255,255,255,0.07)', overflow: 'auto', padding: 16 }}>
+          {viewMode === 'json' ? (
+            <pre className="font-mono" style={{ fontSize: 12, color: '#48cae4', margin: 0, lineHeight: 1.6 }}>
+              {JSON.stringify(data, null, 2)}
+            </pre>
+          ) : (
+            <table className="data-table font-mono">
+              <thead>
+                <tr>
+                  {data[0] && Object.keys(data[0]).map((k) => <th key={k}>{k}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {data.map((doc, di) => (
+                  <tr key={di}>
+                    {Object.values(doc).map((val, vi) => (
+                      <td key={vi} style={{ fontSize: 11, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {typeof val === 'object' ? JSON.stringify(val) : String(val)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
-
-export default Compass;
