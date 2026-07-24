@@ -15,7 +15,7 @@ export default function RouteJourney() {
     { id: 10, name: 'SPP BANDUNG 40400', code: '40400', status: 'DESTINATION', isSkipped: false, load: 0 },
   ];
 
-  const [currentStopIndex, setCurrentStopIndex] = useState(3);
+  const [currentStopIndex, setCurrentStopIndex] = useState(0);
 
   const nextStop = () => {
     let nextIdx = currentStopIndex + 1;
@@ -93,7 +93,7 @@ export default function RouteJourney() {
           </div>
         </div>
 
-        {/* Horizontal Telemetry Node Graph with Route Connecting Lines */}
+        {/* Horizontal Telemetry Node Graph with Uniform Clean Connecting Lines */}
         <div 
           style={{ 
             marginTop: 24, 
@@ -112,7 +112,7 @@ export default function RouteJourney() {
 
               return (
                 <div key={stop.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
-                  {/* Connecting Route Line Segment between nodes */}
+                  {/* Clean Uniform Connecting Line Segment */}
                   {i < stops.length - 1 && (
                     <div
                       style={{
@@ -125,8 +125,7 @@ export default function RouteJourney() {
                           ? '#10b981' 
                           : i === currentStopIndex 
                           ? 'linear-gradient(90deg, #e8431f 0%, rgba(255,255,255,0.15) 100%)' 
-                          : 'rgba(255,255,255,0.12)',
-                        borderTop: stops[i + 1].isSkipped ? '2px dashed #ef4444' : 'none',
+                          : 'rgba(255,255,255,0.15)',
                         boxShadow: i < currentStopIndex ? '0 0 8px rgba(16,185,129,0.5)' : (i === currentStopIndex ? '0 0 8px rgba(232,67,31,0.5)' : 'none'),
                         zIndex: 1,
                         transition: 'all 0.3s ease'
