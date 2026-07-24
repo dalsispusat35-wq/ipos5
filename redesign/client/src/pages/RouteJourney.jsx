@@ -15,7 +15,7 @@ export default function RouteJourney() {
     { id: 10, name: 'SPP BANDUNG 40400', code: '40400', status: 'DESTINATION', isSkipped: false, load: 0 },
   ];
 
-  const [currentStopIndex, setCurrentStopIndex] = useState(0);
+  const [currentStopIndex, setCurrentStopIndex] = useState(3);
 
   const nextStop = () => {
     let nextIdx = currentStopIndex + 1;
@@ -93,7 +93,7 @@ export default function RouteJourney() {
           </div>
         </div>
 
-        {/* Horizontal Telemetry Node Graph */}
+        {/* Horizontal Telemetry Node Graph with Route Connecting Lines */}
         <div 
           style={{ 
             marginTop: 24, 
@@ -112,6 +112,28 @@ export default function RouteJourney() {
 
               return (
                 <div key={stop.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
+                  {/* Connecting Route Line Segment between nodes */}
+                  {i < stops.length - 1 && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: 14,
+                        left: '50%',
+                        width: '100%',
+                        height: 3,
+                        background: i < currentStopIndex 
+                          ? '#10b981' 
+                          : i === currentStopIndex 
+                          ? 'linear-gradient(90deg, #e8431f 0%, rgba(255,255,255,0.15) 100%)' 
+                          : 'rgba(255,255,255,0.12)',
+                        borderTop: stops[i + 1].isSkipped ? '2px dashed #ef4444' : 'none',
+                        boxShadow: i < currentStopIndex ? '0 0 8px rgba(16,185,129,0.5)' : (i === currentStopIndex ? '0 0 8px rgba(232,67,31,0.5)' : 'none'),
+                        zIndex: 1,
+                        transition: 'all 0.3s ease'
+                      }}
+                    />
+                  )}
+
                   {/* Active Vehicle Badge above Node */}
                   {isCurrent && (
                     <div 
@@ -137,8 +159,8 @@ export default function RouteJourney() {
                   <div
                     onClick={() => setCurrentStopIndex(i)}
                     style={{
-                      width: isCurrent ? 36 : 28,
-                      height: isCurrent ? 36 : 28,
+                      width: isCurrent ? 34 : 28,
+                      height: isCurrent ? 34 : 28,
                       borderRadius: '50%',
                       background: isCurrent ? '#e8431f' : isPassed ? '#10b981' : isSkipped ? 'rgba(255,255,255,0.08)' : '#0d1b38',
                       border: isCurrent ? '2px solid #fff' : isPassed ? '2px solid #10b981' : '2px solid rgba(255,255,255,0.15)',
@@ -149,9 +171,9 @@ export default function RouteJourney() {
                       fontSize: 12,
                       fontWeight: 800,
                       cursor: 'pointer',
-                      boxShadow: isCurrent ? '0 0 20px rgba(232,67,31,0.6)' : 'none',
+                      boxShadow: isCurrent ? '0 0 20px rgba(232,67,31,0.6)' : (isPassed ? '0 0 10px rgba(16,185,129,0.3)' : 'none'),
                       transition: 'all 0.3s ease',
-                      zIndex: 2,
+                      zIndex: 3,
                     }}
                   >
                     {isSkipped ? 'X' : isPassed ? <CheckCircle2 size={14} /> : stop.id}
