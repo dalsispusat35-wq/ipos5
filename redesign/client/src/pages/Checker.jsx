@@ -1,17 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, MapPin, CheckCircle2, Circle, Clock, ArrowRight, Package } from 'lucide-react';
+import { Search, MapPin, CheckCircle2, Circle, Clock, Package, Truck, Navigation, FileText } from 'lucide-react';
 import { api } from '../utils/api.js';
 
 const stages = [
-  { id: 0, label: 'Received at Cimahi', short: 'Received' },
-  { id: 1, label: 'In Manifest', short: 'Manifest' },
-  { id: 2, label: 'In Transit to Bandung SC', short: 'In Transit' },
-  { id: 3, label: 'Arrived at Destination SC', short: 'Arrived SC' },
-  { id: 4, label: 'Delivered', short: 'Delivered' },
+  { id: 0, label: 'Diterima di Counter / Entry', short: 'Received' },
+  { id: 1, label: 'Manifest & Bagging', short: 'Manifest' },
+  { id: 2, label: 'In Transit', short: 'In Transit' },
+  { id: 3, label: 'Tiba di Sorting Center', short: 'Arrived SC' },
+  { id: 4, label: 'Telah Diterima / Delivered', short: 'Delivered' },
 ];
 
-export default function Checker({ activeConnection }) {
+export default function Checker() {
   const [searchParams] = useSearchParams();
   const [query, setQuery] = useState(searchParams.get('code') || '');
   const [result, setResult] = useState(null);
@@ -20,11 +20,11 @@ export default function Checker({ activeConnection }) {
 
   const mapStateToStageIndex = (state) => {
     if (!state) return 0;
-    const s = state.toUpperCase();
-    if (s.includes('DELIVERED')) return 4;
-    if (s.includes('TIBA') || s.includes('ARRIVED')) return 3;
-    if (s.includes('TRANSIT')) return 2;
-    if (s.includes('MANIFEST')) return 1;
+    const s = String(state).toUpperCase();
+    if (s.includes('DELIVERED') || s.includes('SELESAI')) return 4;
+    if (s.includes('TIBA') || s.includes('ARRIVED') || s.includes('SORTING')) return 3;
+    if (s.includes('TRANSIT') || s.includes('IN_TRANSIT')) return 2;
+    if (s.includes('MANIFEST') || s.includes('BAGGING')) return 1;
     return 0;
   };
 
@@ -41,34 +41,42 @@ export default function Checker({ activeConnection }) {
 
         setResult({
           connote: tx.connote_code || term.trim(),
+          bookingCode: tx.connote_booking_code || '-',
           currentStage: currentStageIdx,
-          origin: tx.custom_field?.origin_kprk || 'KPRK Cimahi — Jl. Amir Mahmud No.553, Cimahi',
-          originCode: '40511',
-          destination: tx.custom_field?.destination_kprk || 'KCU Garut — Jl. Ciledug No.138, Garut',
-          destCode: '44114',
-          service: tx.connote?.connote_service || 'Pos Ekspres',
-          weight: tx.connote?.actual_weight ? `${tx.connote.actual_weight} kg` : '5.2 kg',
-          receiver: tx.connote?.connote_receiver_name || 'Budi Hartono',
-          timeline: (tx.tracking_history && tx.tracking_history.length > 0) 
+          stateStr: tx.connote_state || 'ENTRY',
+          origin: tx.location_name !== '-' ? tx.location_name : 'KPRK Cimahi (40511)',
+          destination: tx.destination_kprk !== '-' ? `${tx.destination_kprk} (${tx.destination_nopen || ''})` : tx.destination_nopen || 'SPP Bandung (40400)',
+          senderName: tx.connote_sender_name !== '-' ? tx.connote_sender_name : 'Pengirim POS',
+          senderAddress: tx.connote_sender_address !== '-' ? tx.connote_sender_address : 'Cimahi',
+          receiverAddress: tx.connote_receiver_address_detail !== '-' ? tx.connote_receiver_address_detail : (tx.connote_receiver_address !== '-' ? tx.connote_receiver_address : 'Tujuan Pos'),
+          service: tx.connote_service !== '-' ? tx.connote_service : 'Pos Reguler',
+          weight: tx.actual_weight !== '-' ? `${tx.actual_weight} kg` : '1.0 kg',
+          price: tx.connote_service_price !== '-' ? `Rp ${Number(tx.connote_service_price).toLocaleString('id-ID')}` : '-',
+          amount: tx.connote_amount !== '-' ? `Rp ${Number(tx.connote_amount).toLocaleString('id-ID')}` : '-',
+          routeMapping: res.data.route_mapping || null,
+          routeHeader: res.data.route_header || null,
+          routeStops: res.data.route_stops || [],
+          manifest: res.data.manifest || null,
+          milkRun: res.data.milk_run || null,
+          createdAt: tx.created_at !== '-' ? new Date(tx.created_at).toLocaleString('id-ID') : 'Hari ini',
+          timeline: (tx.tracking_history && tx.tracking_history.length > 0)
             ? tx.tracking_history.map((h) => ({
-                stage: h.to_state || h.state || 'Status Update',
-                note: h.notes || `Package status updated to ${h.to_state || h.state}`,
-                time: h.changedAt ? new Date(h.changedAt).toLocaleString('id-ID') : '24 Jul 2026, 08:30',
-                type: (h.to_state || '').toLowerCase().includes('transit') ? 'transit' : 'manifest'
+                stage: h.to || h.to_state || h.state || 'Status Update',
+                note: h.notes || `Status paket diperbarui menjadi ${h.to || h.to_state || h.state}`,
+                time: h.changedAt ? new Date(h.changedAt).toLocaleString('id-ID') : 'Terbaru',
+                type: (h.to || '').toLowerCase().includes('transit') ? 'transit' : 'manifest'
               }))
             : [
-                { stage: 'In Transit to Bandung SC', note: 'Departed from KPRK Cimahi, manifested in CODS-TRP-240724-008', time: '24 Jul 2026, 08:30', type: 'transit' },
-                { stage: 'In Manifest', note: 'Package consolidated into Manifest MNFST-240724-014 by operator Sari R.', time: '24 Jul 2026, 07:45', type: 'manifest' },
-                { stage: 'Received at Cimahi', note: 'Package received and weighed at KPRK Cimahi counter.', time: '24 Jul 2026, 07:12', type: 'received' },
+                { stage: tx.connote_state || 'ENTRY', note: `Resi ${tx.connote_code} telah tercatat di sistem IPOS5.`, time: tx.created_at ? new Date(tx.created_at).toLocaleString('id-ID') : 'Hari ini', type: 'received' }
               ]
         });
       } else {
-        setErrorMsg('Connote number not found in database.');
+        setErrorMsg(res.message || `Kode resi "${term.trim()}" tidak ditemukan dalam database transaksi.`);
         setResult(null);
       }
     } catch (e) {
       console.error('Checker search error:', e);
-      setErrorMsg('Failed to query package tracking from server.');
+      setErrorMsg(e.message || `Resi "${term.trim()}" tidak ditemukan atau terjadi kesalahan server.`);
       setResult(null);
     } finally {
       setLoading(false);
@@ -90,10 +98,10 @@ export default function Checker({ activeConnection }) {
       {/* Search Input Box */}
       <div className="gradient-border-card glow-orange" style={{ padding: 24 }}>
         <div style={{ fontWeight: 700, fontSize: 16, color: '#fff', marginBottom: 4 }}>
-          Track Package
+          Lacak Paket & Routing Resi Transaksi
         </div>
         <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', marginBottom: 18 }}>
-          Enter a connote number or tracking code to view shipment status
+          Masukkan nomor resi / connote code transaksi IPOS5 untuk melihat status dan rute perjalanan
         </div>
         <div style={{ display: 'flex', gap: 10, maxWidth: 660 }}>
           <div style={{ flex: 1, position: 'relative' }}>
@@ -107,22 +115,12 @@ export default function Checker({ activeConnection }) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              placeholder="e.g. 00130000110724003"
+              placeholder="Masukkan connote code (contoh: P2607150025574)..."
               style={{ paddingLeft: 38, fontSize: 14, letterSpacing: '0.04em' }}
             />
           </div>
-          <button className="btn-primary" onClick={() => handleSearch()} disabled={loading} style={{ whiteSpace: 'nowrap', padding: '9px 22px' }}>
-            {loading ? 'Searching…' : 'Track'}
-          </button>
-          <button
-            className="btn-ghost"
-            onClick={() => {
-              setQuery('00130000110724003');
-              handleSearch('00130000110724003');
-            }}
-            style={{ whiteSpace: 'nowrap', fontSize: 12 }}
-          >
-            Demo
+          <button className="btn-primary" onClick={() => handleSearch()} disabled={loading} style={{ whiteSpace: 'nowrap', padding: '9px 24px' }}>
+            {loading ? 'Mencari…' : 'Lacak Resi'}
           </button>
         </div>
         {errorMsg && (
@@ -136,34 +134,41 @@ export default function Checker({ activeConnection }) {
         <>
           {/* Result Metadata Header */}
           <div className="glass-card-solid" style={{ padding: 24 }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
               <div>
                 <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>
-                  Connote Number
+                  Connote / Resi Code
                 </div>
-                <div className="font-mono" style={{ fontSize: 22, fontWeight: 700, color: '#fff', letterSpacing: '0.06em' }}>
+                <div className="font-mono" style={{ fontSize: 22, fontWeight: 800, color: '#fff', letterSpacing: '0.04em' }}>
                   {result.connote}
                 </div>
+                {result.bookingCode !== '-' && (
+                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>
+                    Booking Code: <span className="font-mono" style={{ color: '#6ba3f0' }}>{result.bookingCode}</span>
+                  </div>
+                )}
               </div>
               <div>
-                <span className={`badge ${result.currentStage === 4 ? 'badge-emerald' : 'badge-orange'}`} style={{ fontSize: 12, padding: '5px 14px' }}>
-                  {stages[result.currentStage].label}
+                <span className={`badge ${result.currentStage === 4 ? 'badge-emerald' : 'badge-orange'}`} style={{ fontSize: 12, padding: '6px 16px' }}>
+                  {result.stateStr}
                 </span>
               </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
               {[
-                { label: 'Service', value: result.service },
-                { label: 'Weight', value: result.weight },
-                { label: 'Receiver', value: result.receiver },
-                { label: 'Est. Delivery', value: '25 Jul 2026' },
+                { label: 'Layanan', value: result.service },
+                { label: 'Berat Paket', value: result.weight },
+                { label: 'Kantor Asal', value: result.origin },
+                { label: 'Tujuan', value: result.destination },
+                { label: 'Pengirim', value: result.senderName },
+                { label: 'Tanggal Transaksi', value: result.createdAt },
               ].map((f) => (
                 <div key={f.label}>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 3 }}>
+                  <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 3 }}>
                     {f.label}
                   </div>
-                  <div style={{ fontSize: 13.5, fontWeight: 600, color: '#fff' }}>{f.value}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{f.value}</div>
                 </div>
               ))}
             </div>
@@ -172,9 +177,9 @@ export default function Checker({ activeConnection }) {
           {/* 5-Step Progress Tracker */}
           <div className="glass-card-solid" style={{ padding: 28 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 24 }}>
-              Shipment Progress
+              Progres Pengiriman Paket
             </div>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', overflowX: 'auto', paddingBottom: 8 }}>
               {stages.map((stage, i) => {
                 const isDone = i < currentStage;
                 const isCurrent = i === currentStage;
@@ -182,8 +187,8 @@ export default function Checker({ activeConnection }) {
                 const circleColor = isFinal && currentStage >= 4 ? '#10b981' : isDone || isCurrent ? '#e8431f' : '#1a3060';
 
                 return (
-                  <div key={stage.id} style={{ display: 'flex', alignItems: 'center', flex: i < stages.length - 1 ? 1 : 'none' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, minWidth: 90 }}>
+                  <div key={stage.id} style={{ display: 'flex', alignItems: 'center', flex: i < stages.length - 1 ? 1 : 'none', minWidth: 100 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, width: '100%' }}>
                       <div
                         style={{
                           width: 36,
@@ -194,7 +199,7 @@ export default function Checker({ activeConnection }) {
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          boxShadow: isCurrent ? `0 0 16px ${circleColor}60, 0 0 32px ${circleColor}30` : 'none',
+                          boxShadow: isCurrent ? `0 0 16px ${circleColor}60` : 'none',
                           flexShrink: 0,
                         }}
                       >
@@ -226,12 +231,12 @@ export default function Checker({ activeConnection }) {
             </div>
           </div>
 
-          {/* Timeline & Route Diagram */}
+          {/* Route & History Details */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 16 }}>
             {/* Audit Trail Timeline */}
             <div className="glass-card-solid" style={{ padding: 24 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 20 }}>
-                Status History
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Clock size={16} color="#e8431f" /> Riwayat Status & Audit Trail
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {result.timeline.map((ev, i) => (
@@ -245,8 +250,8 @@ export default function Checker({ activeConnection }) {
                         {ev.stage}
                       </span>
                       <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.8)', marginTop: 4 }}>{ev.note}</div>
-                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <Clock size={11} /> {ev.time}
+                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 4 }}>
+                        {ev.time}
                       </div>
                     </div>
                   </div>
@@ -254,62 +259,49 @@ export default function Checker({ activeConnection }) {
               </div>
             </div>
 
-            {/* Route Diagram Flow */}
-            <div className="glass-card-solid" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 8 }}>
-                Route Node Diagram
+            {/* Route Mapping Details */}
+            <div className="glass-card-solid" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Navigation size={16} color="#6ba3f0" /> Pemetaan Rute & Armada Transport
               </div>
 
-              <div style={{ padding: '14px 16px', borderRadius: 10, background: 'rgba(232,67,31,0.08)', border: '1px solid rgba(232,67,31,0.2)' }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                  <MapPin size={14} color="#e8431f" style={{ marginTop: 2, flexShrink: 0 }} />
-                  <div>
-                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Origin</div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{result.origin}</div>
-                    <div className="font-mono" style={{ fontSize: 11, color: '#e8431f', marginTop: 3 }}>40511</div>
+              {result.routeMapping && result.routeMapping.route_id !== '-' ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ padding: 12, borderRadius: 8, background: 'rgba(36,96,176,0.1)', border: '1px solid rgba(36,96,176,0.2)' }}>
+                    <div style={{ fontSize: 11, color: '#6ba3f0', fontWeight: 600 }}>Rute Terdaftar:</div>
+                    <div className="font-mono" style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginTop: 2 }}>
+                      {result.routeMapping.route_id}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 4 }}>
+                      Armada: <strong style={{ color: '#fff' }}>{result.routeMapping.vehicle_nopol || 'B 9910 PCX'}</strong>
+                    </div>
                   </div>
+
+                  {result.routeStops.length > 0 && (
+                    <div style={{ marginTop: 6 }}>
+                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', marginBottom: 8 }}>
+                        Urutan Stop Rute ({result.routeStops.length} Titik)
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {result.routeStops.map((st, idx) => (
+                          <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#fff' }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: idx === 0 ? '#e8431f' : '#10b981' }} />
+                            <span className="font-mono" style={{ fontSize: 11, color: '#6ba3f0', width: 44 }}>{st.nopend}</span>
+                            <span>{st.nama_nopend || st.nopend}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
-                <ArrowRight size={14} color="rgba(255,255,255,0.3)" style={{ transform: 'rotate(90deg)' }} />
-              </div>
-
-              <div style={{ padding: '14px 16px', borderRadius: 10, background: 'rgba(36,96,176,0.1)', border: '1px solid rgba(36,96,176,0.25)' }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                  <MapPin size={14} color="#6ba3f0" style={{ marginTop: 2, flexShrink: 0 }} />
-                  <div>
-                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Sorting Center</div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>Bandung Sorting Center</div>
-                    <div className="font-mono" style={{ fontSize: 11, color: '#6ba3f0', marginTop: 3 }}>40000</div>
-                  </div>
+              ) : (
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', lineHeight: 1.6 }}>
+                  Rute pengiriman khusus disesuaikan berdasarkan lokasi asal <strong style={{ color: '#fff' }}>{result.origin}</strong> menuju kantor tujuan <strong style={{ color: '#fff' }}>{result.destination}</strong>.
                 </div>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
-                <ArrowRight size={14} color="rgba(255,255,255,0.3)" style={{ transform: 'rotate(90deg)' }} />
-              </div>
-
-              <div style={{ padding: '14px 16px', borderRadius: 10, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                  <MapPin size={14} color="#10b981" style={{ marginTop: 2, flexShrink: 0 }} />
-                  <div>
-                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>Destination</div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{result.destination}</div>
-                    <div className="font-mono" style={{ fontSize: 11, color: '#10b981', marginTop: 3 }}>{result.destCode}</div>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         </>
-      )}
-
-      {!result && !loading && (
-        <div style={{ textAlign: 'center', padding: '60px 0', color: 'rgba(255,255,255,0.3)', fontSize: 14 }}>
-          <Package size={48} style={{ marginBottom: 12, opacity: 0.2 }} />
-          <div>Enter a connote number above to track a shipment</div>
-        </div>
       )}
     </div>
   );

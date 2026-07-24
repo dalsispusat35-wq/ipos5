@@ -1359,6 +1359,11 @@ class TransactionController {
     }
   }
 
+  // Alias method for routing checker endpoint
+  async checkRouting(req, res) {
+    return this.getByConnoteCode(req, res);
+  }
+
   // Get detail transaction by connote_code
   async getByConnoteCode(req, res) {
     try {

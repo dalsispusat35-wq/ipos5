@@ -40,7 +40,8 @@ export const api = {
   getDashboardStats: () => fetchApi('/dashboard-stats'),
 
   // Checker
-  checkRouting: (connoteCode) => fetchApi(`/checker/${connoteCode}`),
+  checkRouting: (connoteCode) => fetchApi(`/checker/${encodeURIComponent(connoteCode)}`),
+  getCheckerData: (connoteCode) => fetchApi(`/checker/${encodeURIComponent(connoteCode)}`),
 
   // Kantor
   getKantor: (params = '') => fetchApi(`/kantor?${params}`),
