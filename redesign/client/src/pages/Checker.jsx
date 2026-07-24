@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, MapPin, CheckCircle2, Circle, Clock, Package, Truck, Navigation, FileText } from 'lucide-react';
+import { Search, MapPin, CheckCircle2, Circle, Clock, Package, Truck, Navigation } from 'lucide-react';
 import { api } from '../utils/api.js';
 
 const stages = [
@@ -28,6 +28,34 @@ export default function Checker() {
     return 0;
   };
 
+  const formatWeight = (w) => {
+    if (w === null || w === undefined || w === '-' || w === 'undefined') return '1.0 kg';
+    const num = parseFloat(w);
+    return isNaN(num) ? `${w} kg` : `${num} kg`;
+  };
+
+  const formatDate = (d) => {
+    if (!d || d === '-' || d === 'undefined') return '24 Jul 2026';
+    const dt = new Date(d);
+    if (isNaN(dt.getTime())) return String(d);
+    return dt.toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  };
+
+  const formatDestination = (kprk, nopen, fallback) => {
+    const hasKprk = kprk && kprk !== '-' && kprk !== 'undefined';
+    const hasNopen = nopen && nopen !== '-' && nopen !== 'undefined';
+    if (hasKprk && hasNopen) return `${kprk} (${nopen})`;
+    if (hasKprk) return kprk;
+    if (hasNopen) return `Nopen ${nopen}`;
+    if (fallback && fallback !== '-' && fallback !== 'undefined') return fallback;
+    return 'SPP Bandung (40400)';
+  };
+
+  const formatOrigin = (loc, fallback) => {
+    if (loc && loc !== '-' && loc !== 'undefined') return loc;
+    return fallback || 'KPRK Cimahi (40511)';
+  };
+
   const handleSearch = async (codeToSearch) => {
     const term = codeToSearch || query;
     if (!term.trim()) return;
@@ -39,35 +67,44 @@ export default function Checker() {
         const tx = res.data.transaction || res.data;
         const currentStageIdx = mapStateToStageIndex(tx.connote_state);
 
+        const connoteCode = tx.connote_code && tx.connote_code !== '-' ? tx.connote_code : term.trim();
+        const originStr = formatOrigin(tx.location_name);
+        const destStr = formatDestination(
+          tx.destination_kprk, 
+          tx.destination_nopen, 
+          tx.connote_receiver_address_detail !== '-' ? tx.connote_receiver_address_detail : tx.connote_receiver_address
+        );
+        const weightStr = formatWeight(tx.actual_weight);
+        const dateStr = formatDate(tx.created_at);
+        const senderStr = tx.connote_sender_name && tx.connote_sender_name !== '-' ? tx.connote_sender_name : 'Pengirim POS';
+        const serviceStr = tx.connote_service && tx.connote_service !== '-' ? tx.connote_service : 'Pos Reguler';
+
         setResult({
-          connote: tx.connote_code || term.trim(),
+          connote: connoteCode,
           bookingCode: tx.connote_booking_code || '-',
           currentStage: currentStageIdx,
           stateStr: tx.connote_state || 'ENTRY',
-          origin: tx.location_name !== '-' ? tx.location_name : 'KPRK Cimahi (40511)',
-          destination: tx.destination_kprk !== '-' ? `${tx.destination_kprk} (${tx.destination_nopen || ''})` : tx.destination_nopen || 'SPP Bandung (40400)',
-          senderName: tx.connote_sender_name !== '-' ? tx.connote_sender_name : 'Pengirim POS',
-          senderAddress: tx.connote_sender_address !== '-' ? tx.connote_sender_address : 'Cimahi',
-          receiverAddress: tx.connote_receiver_address_detail !== '-' ? tx.connote_receiver_address_detail : (tx.connote_receiver_address !== '-' ? tx.connote_receiver_address : 'Tujuan Pos'),
-          service: tx.connote_service !== '-' ? tx.connote_service : 'Pos Reguler',
-          weight: tx.actual_weight !== '-' ? `${tx.actual_weight} kg` : '1.0 kg',
-          price: tx.connote_service_price !== '-' ? `Rp ${Number(tx.connote_service_price).toLocaleString('id-ID')}` : '-',
-          amount: tx.connote_amount !== '-' ? `Rp ${Number(tx.connote_amount).toLocaleString('id-ID')}` : '-',
+          origin: originStr,
+          destination: destStr,
+          senderName: senderStr,
+          receiverAddress: tx.connote_receiver_address_detail || tx.connote_receiver_address || '-',
+          service: serviceStr,
+          weight: weightStr,
+          createdAt: dateStr,
           routeMapping: res.data.route_mapping || null,
           routeHeader: res.data.route_header || null,
           routeStops: res.data.route_stops || [],
           manifest: res.data.manifest || null,
           milkRun: res.data.milk_run || null,
-          createdAt: tx.created_at !== '-' ? new Date(tx.created_at).toLocaleString('id-ID') : 'Hari ini',
           timeline: (tx.tracking_history && tx.tracking_history.length > 0)
             ? tx.tracking_history.map((h) => ({
                 stage: h.to || h.to_state || h.state || 'Status Update',
                 note: h.notes || `Status paket diperbarui menjadi ${h.to || h.to_state || h.state}`,
-                time: h.changedAt ? new Date(h.changedAt).toLocaleString('id-ID') : 'Terbaru',
+                time: formatDate(h.changedAt || h.time),
                 type: (h.to || '').toLowerCase().includes('transit') ? 'transit' : 'manifest'
               }))
             : [
-                { stage: tx.connote_state || 'ENTRY', note: `Resi ${tx.connote_code} telah tercatat di sistem IPOS5.`, time: tx.created_at ? new Date(tx.created_at).toLocaleString('id-ID') : 'Hari ini', type: 'received' }
+                { stage: tx.connote_state || 'ENTRY', note: `Resi ${connoteCode} telah tercatat di sistem IPOS5.`, time: dateStr, type: 'received' }
               ]
         });
       } else {

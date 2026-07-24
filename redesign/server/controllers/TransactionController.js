@@ -49,44 +49,29 @@ const getNestedValue = (obj, path, defaultValue = '-') => {
 export const normalizeTx = (doc) => {
   if (!doc) return null;
   
-  // Normalisasi connote_code
-  let connote_code = '-';
-  if (doc.connote_code) connote_code = doc.connote_code;
-  else if (doc.connote && doc.connote.connote_code) connote_code = doc.connote.connote_code;
-  else if (doc.connoteCode) connote_code = doc.connoteCode;
+  let connote_code = doc.connote_code || doc.connote?.connote_code || doc.connoteCode || doc._id || '-';
+  let connote_booking_code = doc.connote_booking_code || doc.connote?.connote_booking_code || '-';
 
-  // Booking code
-  const connote_booking_code = doc.connote?.connote_booking_code || '-';
+  let connote_sender_name = doc.connote_sender_name || doc.connote?.connote_sender_name || doc.sender_name || doc.customer_name || '-';
+  let connote_sender_address = doc.connote_sender_address || doc.connote?.connote_sender_address || doc.sender_address || '-';
+  let connote_sender_email = doc.connote_sender_email || doc.connote?.connote_sender_email || '-';
 
-  // Sender & receiver info
-  const connote_sender_name = doc.connote?.connote_sender_name || '-';
-  const connote_sender_address = doc.connote?.connote_sender_address || '-';
-  const connote_sender_email = doc.connote?.connote_sender_email || '-';
-  const connote_receiver_address = doc.connote?.connote_receiver_address || '-';
-  const connote_receiver_zipcode = doc.connote?.connote_receiver_zipcode || '-';
-  const connote_receiver_address_detail = doc.connote?.connote_receiver_address_detail || '-';
+  let connote_receiver_name = doc.connote_receiver_name || doc.connote?.connote_receiver_name || doc.receiver_name || '-';
+  let connote_receiver_address = doc.connote_receiver_address || doc.connote?.connote_receiver_address || doc.receiver_address || '-';
+  let connote_receiver_zipcode = doc.connote_receiver_zipcode || doc.connote?.connote_receiver_zipcode || doc.receiver_zipcode || '-';
+  let connote_receiver_address_detail = doc.connote_receiver_address_detail || doc.connote?.connote_receiver_address_detail || doc.connote_receiver_address || '-';
 
-  // Service, weight, price, amount
-  const connote_service = doc.connote?.connote_service || doc.connote_service || '-';
-  const actual_weight = doc.connote?.actual_weight !== undefined ? doc.connote.actual_weight : (doc.actual_weight !== undefined ? doc.actual_weight : '-');
-  const connote_service_price = doc.connote?.connote_service_price !== undefined ? doc.connote.connote_service_price : (doc.connote_service_price !== undefined ? doc.connote_service_price : '-');
-  const connote_amount = doc.connote?.connote_amount !== undefined ? doc.connote.connote_amount : (doc.connote_amount !== undefined ? doc.connote_amount : '-');
+  let connote_service = doc.connote_service || doc.connote?.connote_service || doc.service_code || '-';
+  let actual_weight = doc.actual_weight ?? doc.connote?.actual_weight ?? doc.weight ?? '-';
+  let connote_service_price = doc.connote_service_price ?? doc.connote?.connote_service_price ?? '-';
+  let connote_amount = doc.connote_amount ?? doc.connote?.connote_amount ?? doc.amount ?? '-';
 
-  // Normalisasi connote_state
-  let connote_state = '-';
-  if (doc.connote_state) connote_state = doc.connote_state;
-  else if (doc.connote && doc.connote.connote_state) connote_state = doc.connote.connote_state;
+  let connote_state = doc.connote_state || doc.connote?.connote_state || doc.state || 'ENTRY';
 
-  // Normalisasi created_at / tanggal transaksi
-  let created_at = '-';
-  if (doc.createdAt) created_at = doc.createdAt;
-  else if (doc.connote && doc.connote.created_at) created_at = doc.connote.created_at;
-  else if (doc.created_at) created_at = doc.created_at;
+  let created_at = doc.createdAt || doc.created_at || doc.connote?.created_at || doc.tanggal || null;
 
-  // Location name
-  const location_name = doc.location_data_created?.location_name || '-';
+  let location_name = doc.location_data_created?.location_name || doc.location_name || doc.origin_name || '-';
 
-  // Custom field destination values
   const getCustomField = (key) => {
     if (doc.location_data_created?.custom_field && doc.location_data_created.custom_field[key] !== undefined) {
       return doc.location_data_created.custom_field[key];
@@ -104,8 +89,7 @@ export const normalizeTx = (doc) => {
   const final_swp = getCustomField('final_swp');
   const final_swp_date_new = getCustomField('final_swp_date_new');
 
-  // Current location name
-  const current_location_name = doc.currentLocation?.name || '-';
+  const current_location_name = doc.currentLocation?.name || doc.current_location_name || '-';
 
   return {
     _id: doc._id,
@@ -114,6 +98,7 @@ export const normalizeTx = (doc) => {
     connote_sender_name,
     connote_sender_address,
     connote_sender_email,
+    connote_receiver_name,
     connote_receiver_address,
     connote_receiver_zipcode,
     connote_receiver_address_detail,
@@ -132,7 +117,8 @@ export const normalizeTx = (doc) => {
     final_swp_date_new,
     current_location_name,
     manifest_id: doc.manifest_id || '-',
-    tracking_history: doc.tracking_history || []
+    tracking_history: doc.tracking_history || [],
+    raw: doc
   };
 };
 
