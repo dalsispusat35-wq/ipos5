@@ -397,7 +397,7 @@ export default function EstimasiMilkRun() {
                 <Truck size={20} color="#38bdf8" />
               </div>
               <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: 0, letterSpacing: '-0.01em' }}>
-                Estimasi Milk Run (Visualisasi Kargo Truk & Manifest 4 Rute)
+                Estimasi(Dummy) (Visualisasi Kargo Truk & Manifest 4 Rute)
               </h2>
             </div>
             <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 4 }}>

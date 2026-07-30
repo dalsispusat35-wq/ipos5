@@ -237,7 +237,7 @@ function AppContent() {
     if (p.startsWith('/jadwal') && !p.startsWith('/jadwal-pickup')) return 'Transport Schedule';
     if (p.startsWith('/jadwal-pickup')) return 'Jadwal Pick Up SPP';
     if (p.startsWith('/route-journey')) return 'Milk Run Logistics Telemetry';
-    if (p.startsWith('/estimasi')) return 'Estimasi Milk Run';
+    if (p.startsWith('/estimasi')) return 'Estimasi(Dummy)';
     if (p.startsWith('/transit-monitoring')) return 'Gate Monitoring';
     if (p.startsWith('/transaksi')) return 'Data Transaksi Paket';
     if (p.startsWith('/compass')) return 'Database Viewer';
@@ -348,8 +348,8 @@ function AppContent() {
           <Link to="/route-journey" title="Milk Run Telemetry" className={`nav-item ${isLinkActive('/route-journey') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
             <Activity size={17} /> {!sidebarCollapsed && <span>Milk Run Telemetry</span>}
           </Link>
-          <Link to="/estimasi" title="Estimasi Milk Run" className={`nav-item ${isLinkActive('/estimasi') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
-            <TrendingUp size={17} /> {!sidebarCollapsed && <span>Estimasi Milk Run</span>}
+          <Link to="/estimasi" title="Estimasi(Dummy)" className={`nav-item ${isLinkActive('/estimasi') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
+            <TrendingUp size={17} /> {!sidebarCollapsed && <span>Estimasi(Dummy)</span>}
           </Link>
           <Link to="/transit-monitoring" title="Gate Monitoring" className={`nav-item ${isLinkActive('/transit-monitoring') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
             <ShieldCheck size={17} /> {!sidebarCollapsed && <span>Gate Monitoring</span>}
