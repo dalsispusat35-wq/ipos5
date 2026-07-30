@@ -1,13 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Truck, MapPin, ArrowRight, RotateCcw, Package, Scale, Clock, 
-  ChevronRight, Filter, Search, ArrowUpDown, CheckCircle2, AlertCircle,
-  FileText, User, Mail, Phone, Building, Tag, ShieldCheck, Camera, PenTool, Globe
+  ChevronRight, ChevronLeft, Filter, Search, ArrowUpDown, CheckCircle2, AlertCircle,
+  FileText, User, Mail, Phone, Building, Tag, ShieldCheck, Camera, PenTool, Globe, Play, Pause
 } from 'lucide-react';
 
 // Custom Cargo Truck Component that renders cargo height based on weight
-function CargoTruckVisual({ weight, maxWeight = 600, packagesCount, isSelected, onClick }) {
-  // Height scale: 0 when empty, max 52px when loaded (natural proportion)
+function CargoTruckVisual({ weight, maxWeight = 600, packagesCount, isSelected, onClick, currentStopName }) {
+  // Height scale: 0 when empty, max 50px when loaded (natural proportion)
   const ratio = Math.min(1, weight / maxWeight);
   const boxHeight = weight === 0 ? 0 : Math.max(14, Math.round(ratio * 50));
   
@@ -19,81 +19,90 @@ function CargoTruckVisual({ weight, maxWeight = 600, packagesCount, isSelected, 
         flexDirection: 'column',
         alignItems: 'center',
         cursor: 'pointer',
-        transition: 'transform 0.2s',
-        transform: isSelected ? 'scale(1.06)' : 'scale(1)',
+        filter: isSelected ? 'drop-shadow(0 0 12px rgba(56,189,248,0.7))' : 'none',
       }}
-      title={`Beban: ${weight} kg | ${packagesCount} paket (Klik untuk detail manifest)`}
+      title={`Beban Aktif: ${weight} kg | ${packagesCount} paket di ${currentStopName} (Klik untuk detail manifest)`}
     >
-      {/* Weight Badge above Truck */}
+      {/* Weight & Status Badge Floating Above the Single Truck */}
       <div style={{
-        fontSize: 11,
-        fontWeight: 700,
-        color: weight > 0 ? '#38bdf8' : 'rgba(255,255,255,0.4)',
-        background: weight > 0 ? 'rgba(56,189,248,0.12)' : 'rgba(255,255,255,0.05)',
-        border: `1px solid ${weight > 0 ? 'rgba(56,189,248,0.3)' : 'rgba(255,255,255,0.1)'}`,
-        padding: '2px 8px',
-        borderRadius: 12,
-        marginBottom: 6,
-        whiteSpace: 'nowrap'
+        fontSize: 11.5,
+        fontWeight: 800,
+        color: weight > 0 ? '#38bdf8' : '#cbd5e1',
+        background: weight > 0 ? 'rgba(6,13,31,0.92)' : 'rgba(15,23,42,0.9)',
+        border: `1.5px solid ${weight > 0 ? '#38bdf8' : 'rgba(255,255,255,0.2)'}`,
+        padding: '3px 10px',
+        borderRadius: 14,
+        marginBottom: 4,
+        whiteSpace: 'nowrap',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 5
       }}>
-        {weight === 0 ? 'Truk Kosong' : `${weight} kg · ${packagesCount} pkt`}
+        {weight === 0 ? (
+          <span>🚚 Truk Kosong (Awal Rute)</span>
+        ) : (
+          <>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#38bdf8', boxShadow: '0 0 8px #38bdf8' }} />
+            <span>{weight} kg · {packagesCount} pkt</span>
+          </>
+        )}
       </div>
 
-      {/* Dynamic SVG Truck with Cargo Box */}
+      {/* Dynamic SVG Truck Graphic */}
       <div style={{ height: 85, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-        <svg width="110" height="85" viewBox="0 0 110 85" fill="none" xmlns="http://www.w3.org/2000/svg">
-          {/* Ground Line */}
-          <line x1="5" y1="78" x2="105" y2="78" stroke="rgba(255,255,255,0.2)" strokeWidth="2" strokeDasharray="3 3" />
-          
+        <svg width="115" height="85" viewBox="0 0 115 85" fill="none" xmlns="http://www.w3.org/2000/svg">
+          {/* Ground Line Shadow */}
+          <ellipse cx="55" cy="77" rx="45" ry="3.5" fill="rgba(0,0,0,0.5)" />
+
           {/* Wheels */}
-          <circle cx="28" cy="72" r="7" fill="#1e293b" stroke="#38bdf8" strokeWidth="2.5" />
-          <circle cx="28" cy="72" r="2.5" fill="#38bdf8" />
+          <circle cx="30" cy="71" r="7.5" fill="#0f172a" stroke="#38bdf8" strokeWidth="2.5" />
+          <circle cx="30" cy="71" r="3" fill="#38bdf8" />
           
-          <circle cx="75" cy="72" r="7" fill="#1e293b" stroke="#38bdf8" strokeWidth="2.5" />
-          <circle cx="75" cy="72" r="2.5" fill="#38bdf8" />
+          <circle cx="80" cy="71" r="7.5" fill="#0f172a" stroke="#38bdf8" strokeWidth="2.5" />
+          <circle cx="80" cy="71" r="3" fill="#38bdf8" />
 
           {/* Truck Chassis / Base Frame */}
-          <rect x="12" y="66" x2="88" y2="70" width="76" height="4" rx="1" fill="#475569" />
+          <rect x="14" y="65" width="78" height="4" rx="1" fill="#475569" />
 
           {/* Driver Cabin (Front Right) */}
-          <path d="M 68 46 L 82 46 Q 88 46 90 52 L 94 62 Q 95 66 90 66 L 68 66 Z" fill="#0284c7" stroke="#38bdf8" strokeWidth="1.5" />
-          {/* Window */}
-          <path d="M 72 49 L 81 49 Q 84 49 86 53 L 87 58 L 72 58 Z" fill="#bae6fd" opacity="0.85" />
+          <path d="M 72 44 L 86 44 Q 92 44 94 50 L 98 60 Q 99 65 94 65 L 72 65 Z" fill="#0284c7" stroke="#38bdf8" strokeWidth="1.5" />
+          {/* Cabin Window */}
+          <path d="M 76 47 L 85 47 Q 88 47 90 51 L 91 56 L 76 56 Z" fill="#bae6fd" opacity="0.9" />
           {/* Headlight */}
-          <rect x="91" y="60" width="3" height="4" rx="1" fill="#fef08a" />
+          <rect x="95" y="58" width="3" height="4" rx="1" fill="#fef08a" />
 
-          {/* Cargo Box Mounted on Top (Dynamic Height) */}
+          {/* Cargo Box Mounted on Top (Dynamic Height according to Weight) */}
           {boxHeight > 0 && (
             <g>
               {/* Main Cargo Box */}
               <rect 
-                x="14" 
-                y={66 - boxHeight} 
-                width="53" 
+                x="16" 
+                y={65 - boxHeight} 
+                width="55" 
                 height={boxHeight} 
                 rx="3" 
-                fill={isSelected ? 'url(#boxGradientActive)' : 'url(#boxGradient)'}
-                stroke={isSelected ? '#e8431f' : '#0284c7'} 
+                fill="url(#boxGradientActiveSingle)"
+                stroke="#38bdf8" 
                 strokeWidth="1.8" 
               />
               {/* Cargo Door Seam */}
-              <line x1="40.5" y1={66 - boxHeight + 3} x2="40.5" y2={65} stroke="rgba(255,255,255,0.3)" strokeWidth="1" strokeDasharray="2 2" />
+              <line x1="43.5" y1={65 - boxHeight + 3} x2="43.5" y2={64} stroke="rgba(255,255,255,0.35)" strokeWidth="1" strokeDasharray="2 2" />
               {/* POS Indonesia Logo / Indicator Badge on Cargo */}
-              {boxHeight >= 24 && (
-                <rect x="22" y={66 - boxHeight + 6} width="14" height="10" rx="2" fill="rgba(232,67,31,0.85)" />
+              {boxHeight >= 22 && (
+                <g>
+                  <rect x="24" y={65 - boxHeight + 6} width="15" height="10" rx="2" fill="rgba(232,67,31,0.9)" />
+                  <text x="31.5" y={65 - boxHeight + 13} fontSize="6" fontWeight="bold" fill="#ffffff" textAnchor="middle">POS</text>
+                </g>
               )}
             </g>
           )}
 
           {/* Gradients */}
           <defs>
-            <linearGradient id="boxGradient" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id="boxGradientActiveSingle" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#38bdf8" />
               <stop offset="100%" stopColor="#0369a1" />
-            </linearGradient>
-            <linearGradient id="boxGradientActive" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#f97316" />
-              <stop offset="100%" stopColor="#ea580c" />
             </linearGradient>
           </defs>
         </svg>
@@ -325,12 +334,18 @@ const DUMMY_ROUTES = [
 ];
 
 export default function EstimasiMilkRun() {
-  const [routes, setRoutes] = useState(DUMMY_ROUTES);
+  const [routes] = useState(DUMMY_ROUTES);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('PLATE_ASC'); // PLATE_ASC, WEIGHT_DESC, PACKAGES_DESC, ETA_ASC
+  const [sortBy, setSortBy] = useState('PLATE_ASC');
   const [selectedManifest, setSelectedManifest] = useState(null);
-  const [selectedRouteId, setSelectedRouteId] = useState(null);
-  const [selectedStopId, setSelectedStopId] = useState(null);
+
+  // Active stop index for each route (1 single truck per route moving between stops)
+  const [activeStopMap, setActiveStopMap] = useState({
+    'RUTE-01': 3,
+    'RUTE-02': 2,
+    'RUTE-03': 3,
+    'RUTE-04': 1
+  });
 
   // Sorting and filtering handler
   const getFilteredAndSortedRoutes = () => {
@@ -357,13 +372,10 @@ export default function EstimasiMilkRun() {
     return result;
   };
 
-  const handleStopClick = (routeId, stop) => {
-    setSelectedRouteId(routeId);
-    setSelectedStopId(stop.id);
-    if (stop.manifest) {
+  const handleSetStopIndex = (routeId, stopIndex, stop) => {
+    setActiveStopMap(prev => ({ ...prev, [routeId]: stopIndex }));
+    if (stop && stop.manifest) {
       setSelectedManifest(stop.manifest);
-    } else {
-      setSelectedManifest(null);
     }
   };
 
@@ -452,38 +464,44 @@ export default function EstimasiMilkRun() {
       {/* Main 4 Routes Container */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         {filteredRoutes.map((route) => {
+          const currentStopIndex = activeStopMap[route.id] !== undefined ? activeStopMap[route.id] : 0;
+          const currentStop = route.stops[currentStopIndex] || route.stops[0];
+          
+          // Calculate percentage position of the 1 single truck along the node track
+          const truckPercentPos = (currentStopIndex / (route.stops.length - 1)) * 82 + 9;
+
           return (
             <div 
               key={route.id}
               className="glass-card"
               style={{
-                padding: '20px 24px',
-                borderRadius: 14,
-                background: 'rgba(10,22,46,0.75)',
-                border: '1px solid rgba(255,255,255,0.08)',
+                padding: '22px 26px',
+                borderRadius: 16,
+                background: 'rgba(10,22,46,0.85)',
+                border: '1px solid rgba(255,255,255,0.09)',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 16
+                gap: 18
               }}
             >
               {/* Route Card Header */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: 14 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                   <div style={{
-                    padding: '6px 12px',
+                    padding: '6px 14px',
                     borderRadius: 8,
-                    background: 'linear-gradient(135deg, rgba(232,67,31,0.2), rgba(232,67,31,0.05))',
-                    border: '1px solid rgba(232,67,31,0.3)',
+                    background: 'linear-gradient(135deg, rgba(232,67,31,0.25), rgba(232,67,31,0.08))',
+                    border: '1px solid rgba(232,67,31,0.4)',
                     fontWeight: 800,
-                    fontSize: 14,
+                    fontSize: 14.5,
                     color: '#ff6b4a',
                     letterSpacing: '0.05em'
                   }}>
                     {route.plateNumber}
                   </div>
                   <div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>
-                      {route.truckName} <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', fontWeight: 400 }}>({route.driver})</span>
+                    <div style={{ fontSize: 16.5, fontWeight: 700, color: '#fff' }}>
+                      {route.truckName} <span style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.45)', fontWeight: 400 }}>({route.driver})</span>
                     </div>
                     <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>
                       Kapasitas Maksimal: <strong style={{ color: '#cbd5e1' }}>{route.maxCapacityKg} Kg</strong>
@@ -491,8 +509,8 @@ export default function EstimasiMilkRun() {
                   </div>
                 </div>
 
-                {/* Summary Badges: Total Paket, Total Berat, ETA */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                {/* Summary Badges: Total Paket, Total Berat, ETA & Step Controls */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(56,189,248,0.1)', border: '1px solid rgba(56,189,248,0.25)', padding: '5px 12px', borderRadius: 8 }}>
                     <Package size={14} color="#38bdf8" />
                     <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>Total Paket:</span>
@@ -510,110 +528,217 @@ export default function EstimasiMilkRun() {
                     <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>Estimasi (ETA):</span>
                     <strong style={{ fontSize: 13, color: '#fbbf24' }}>{route.eta}</strong>
                   </div>
+
+                  {/* Step Buttons for moving the single truck */}
+                  <div style={{ display: 'flex', gap: 4, marginLeft: 8 }}>
+                    <button
+                      disabled={currentStopIndex === 0}
+                      onClick={() => handleSetStopIndex(route.id, currentStopIndex - 1, route.stops[currentStopIndex - 1])}
+                      style={{
+                        background: currentStopIndex === 0 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)',
+                        border: '1px solid rgba(255,255,255,0.12)',
+                        color: currentStopIndex === 0 ? 'rgba(255,255,255,0.2)' : '#fff',
+                        borderRadius: 6,
+                        padding: '4px 8px',
+                        cursor: currentStopIndex === 0 ? 'default' : 'pointer',
+                        fontSize: 12,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 2
+                      }}
+                      title="Mundurkan Truk ke Stop Sebelumnya"
+                    >
+                      <ChevronLeft size={14} /> Prev Stop
+                    </button>
+                    <button
+                      disabled={currentStopIndex === route.stops.length - 1}
+                      onClick={() => handleSetStopIndex(route.id, currentStopIndex + 1, route.stops[currentStopIndex + 1])}
+                      style={{
+                        background: currentStopIndex === route.stops.length - 1 ? 'rgba(255,255,255,0.03)' : 'rgba(2,132,199,0.25)',
+                        border: `1px solid ${currentStopIndex === route.stops.length - 1 ? 'rgba(255,255,255,0.12)' : 'rgba(56,189,248,0.5)'}`,
+                        color: currentStopIndex === route.stops.length - 1 ? 'rgba(255,255,255,0.2)' : '#38bdf8',
+                        borderRadius: 6,
+                        padding: '4px 10px',
+                        cursor: currentStopIndex === route.stops.length - 1 ? 'default' : 'pointer',
+                        fontSize: 12,
+                        fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 2
+                      }}
+                      title="Jalankan Truk ke Stop Berikutnya"
+                    >
+                      Next Stop <ChevronRight size={14} />
+                    </button>
+                  </div>
                 </div>
               </div>
 
               {/* Progress Bar Container */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>
-                  <span>Progress Perjalanan Milk Run</span>
-                  <span style={{ color: '#38bdf8', fontWeight: 700 }}>{route.progressPct}% Selesai</span>
+                  <span>Status Posisi Truk Terbaru</span>
+                  <span style={{ color: '#38bdf8', fontWeight: 700 }}>
+                    Stop {currentStopIndex + 1} dari {route.stops.length}: <strong style={{ color: '#fff' }}>{currentStop.name}</strong>
+                  </span>
                 </div>
                 <div style={{ width: '100%', height: 6, background: 'rgba(255,255,255,0.08)', borderRadius: 3, overflow: 'hidden' }}>
                   <div 
                     style={{ 
-                      width: `${route.progressPct}%`, 
+                      width: `${(currentStopIndex / (route.stops.length - 1)) * 100}%`, 
                       height: '100%', 
                       background: 'linear-gradient(90deg, #0284c7, #38bdf8)', 
                       borderRadius: 3,
-                      transition: 'width 0.5s ease'
+                      transition: 'width 0.6s cubic-bezier(0.4, 0, 0.2, 1)'
                     }} 
                   />
                 </div>
               </div>
 
-              {/* Horizontal Route Journey Visualiser with Custom Dynamic Box Truck Graphics */}
-              <div style={{ overflowX: 'auto', padding: '10px 0' }}>
-                <div style={{ display: 'flex', alignItems: 'center', minWidth: 680, justifyContent: 'space-between', padding: '0 10px' }}>
-                  {route.stops.map((stop, idx) => {
-                    const isSelected = selectedRouteId === route.id && selectedStopId === stop.id;
-                    const isFirstStop = idx === 0;
+              {/* DYNAMIC SINGLE TRUCK ROUTE TRACK (1 SINGLE TRUCK ANIMATED ALONG THE PATH) */}
+              <div style={{ overflowX: 'auto', padding: '16px 0 6px' }}>
+                <div 
+                  style={{ 
+                    position: 'relative', 
+                    minWidth: 720, 
+                    height: 175, 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    justifyContent: 'space-between',
+                    padding: '0 20px' 
+                  }}
+                >
+                  {/* Single Moving Truck Overlay Container */}
+                  <div 
+                    style={{ 
+                      position: 'absolute', 
+                      top: 0, 
+                      left: `${truckPercentPos}%`, 
+                      transform: 'translateX(-50%)', 
+                      zIndex: 10,
+                      transition: 'left 0.6s cubic-bezier(0.34, 1.3, 0.64, 1)' 
+                    }}
+                  >
+                    <CargoTruckVisual 
+                      weight={currentStop.weight}
+                      maxWeight={route.maxCapacityKg}
+                      packagesCount={currentStop.packages}
+                      isSelected={selectedManifest && selectedManifest.resi === (currentStop.manifest && currentStop.manifest.resi)}
+                      onClick={() => handleSetStopIndex(route.id, currentStopIndex, currentStop)}
+                      currentStopName={currentStop.name}
+                    />
+                  </div>
 
-                    return (
-                      <div key={stop.id} style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-                        
-                        {/* Stop Node Component */}
+                  {/* Route Track Line connecting all nodes */}
+                  <div 
+                    style={{ 
+                      position: 'absolute', 
+                      top: 105, 
+                      left: '9%', 
+                      right: '9%', 
+                      height: 3, 
+                      background: 'rgba(255,255,255,0.12)', 
+                      zIndex: 1 
+                    }} 
+                  >
+                    {/* Active Track Progress Line */}
+                    <div 
+                      style={{ 
+                        width: `${(currentStopIndex / (route.stops.length - 1)) * 100}%`, 
+                        height: '100%', 
+                        background: '#0284c7', 
+                        boxShadow: '0 0 10px #38bdf8',
+                        transition: 'width 0.6s ease' 
+                      }} 
+                    />
+                  </div>
+
+                  {/* Bottom Stop Nodes Row */}
+                  <div 
+                    style={{ 
+                      position: 'absolute', 
+                      top: 92, 
+                      left: 0, 
+                      right: 0, 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between', 
+                      padding: '0 9%',
+                      zIndex: 2 
+                    }}
+                  >
+                    {route.stops.map((stop, idx) => {
+                      const isActiveNode = idx === currentStopIndex;
+                      const isPassedNode = idx <= currentStopIndex;
+
+                      return (
                         <div 
+                          key={stop.id} 
+                          onClick={() => handleSetStopIndex(route.id, idx, stop)}
                           style={{ 
                             display: 'flex', 
                             flexDirection: 'column', 
                             alignItems: 'center', 
-                            position: 'relative',
-                            minWidth: 120
+                            cursor: 'pointer',
+                            width: 110
                           }}
                         >
-                          {/* Visual Truck Graphic */}
-                          <CargoTruckVisual 
-                            weight={stop.weight}
-                            maxWeight={route.maxCapacityKg}
-                            packagesCount={stop.packages}
-                            isSelected={isSelected}
-                            onClick={() => handleStopClick(route.id, stop)}
-                          />
-
-                          {/* Stop Node Circle & Label */}
+                          {/* Node Circle */}
                           <div 
-                            onClick={() => handleStopClick(route.id, stop)}
                             style={{ 
+                              width: 28, 
+                              height: 28, 
+                              borderRadius: '50%', 
+                              background: isActiveNode ? '#e8431f' : isPassedNode ? '#0284c7' : '#0f172a',
+                              border: `2.5px solid ${isActiveNode ? '#ff8c66' : isPassedNode ? '#38bdf8' : 'rgba(255,255,255,0.2)'}`,
                               display: 'flex', 
-                              flexDirection: 'column', 
-                              alignItems: 'center',
-                              cursor: 'pointer',
-                              marginTop: 8
+                              alignItems: 'center', 
+                              justifyContent: 'center',
+                              fontSize: 11.5,
+                              fontWeight: 800,
+                              color: '#fff',
+                              boxShadow: isActiveNode ? '0 0 14px rgba(232,67,31,0.8)' : isPassedNode ? '0 0 8px rgba(56,189,248,0.5)' : 'none',
+                              transition: 'all 0.3s ease'
                             }}
                           >
-                            <div 
-                              style={{ 
-                                width: 28, 
-                                height: 28, 
-                                borderRadius: '50%', 
-                                background: isSelected ? '#e8431f' : stop.weight > 0 ? '#0284c7' : 'rgba(255,255,255,0.1)',
-                                border: `2px solid ${isSelected ? '#ff8c66' : stop.weight > 0 ? '#38bdf8' : 'rgba(255,255,255,0.2)'}`,
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                justifyContent: 'center',
-                                fontSize: 11,
-                                fontWeight: 800,
-                                color: '#fff',
-                                boxShadow: isSelected ? '0 0 12px rgba(232,67,31,0.6)' : 'none'
-                              }}
-                            >
-                              {idx}
-                            </div>
-                            <span style={{ fontSize: 12.5, fontWeight: 700, color: '#fff', marginTop: 4, textAlign: 'center' }}>
+                            {idx}
+                          </div>
+
+                          {/* Node Text & Weight Badge */}
+                          <div style={{ marginTop: 8, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                            <span style={{ 
+                              fontSize: 12.5, 
+                              fontWeight: isActiveNode ? 800 : 600, 
+                              color: isActiveNode ? '#ff8c66' : isPassedNode ? '#fff' : 'rgba(255,255,255,0.4)',
+                              transition: 'color 0.3s'
+                            }}>
                               {stop.name}
                             </span>
                             <span style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.4)' }}>
                               {stop.time}
                             </span>
+                            <span style={{ 
+                              fontSize: 10, 
+                              fontWeight: 700, 
+                              color: stop.weight > 0 ? '#38bdf8' : 'rgba(255,255,255,0.3)',
+                              background: stop.weight > 0 ? 'rgba(56,189,248,0.1)' : 'transparent',
+                              padding: '1px 6px',
+                              borderRadius: 8,
+                              marginTop: 2
+                            }}>
+                              {stop.weight === 0 ? 'Truk Kosong' : `${stop.weight} kg (${stop.packages} pkt)`}
+                            </span>
                           </div>
                         </div>
+                      );
+                    })}
+                  </div>
 
-                        {/* Route Line Connector between stops */}
-                        {idx < route.stops.length - 1 && (
-                          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 4px', marginBottom: 20 }}>
-                            <div style={{ height: 2, flex: 1, background: idx < 2 ? '#38bdf8' : 'rgba(255,255,255,0.15)' }} />
-                            <ChevronRight size={14} color={idx < 2 ? '#38bdf8' : 'rgba(255,255,255,0.2)'} style={{ marginLeft: -4 }} />
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
                 </div>
               </div>
 
-              <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.4)', textAlign: 'right', fontStyle: 'italic' }}>
-                💡 Klik pada gambar truk / node stop di atas untuk melihat detail data manifest (40 Field Lengkap).
+              <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.45)', textAlign: 'center', fontStyle: 'italic', marginTop: -6 }}>
+                💡 Klik angka node stop (0-4) atau tombol <strong>Next Stop / Prev Stop</strong> untuk menggerakkan 1 Truk ke lokasi dan melihat penambahan beban kargonya.
               </div>
             </div>
           );
