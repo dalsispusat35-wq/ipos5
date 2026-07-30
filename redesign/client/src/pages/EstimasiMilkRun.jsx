@@ -372,9 +372,9 @@ export default function EstimasiMilkRun() {
     return result;
   };
 
-  const handleSetStopIndex = (routeId, stopIndex, stop) => {
+  const handleSetStopIndex = (routeId, stopIndex, stop, openModal = false) => {
     setActiveStopMap(prev => ({ ...prev, [routeId]: stopIndex }));
-    if (stop && stop.manifest) {
+    if (openModal && stop && stop.manifest) {
       setSelectedManifest(stop.manifest);
     }
   };
@@ -624,7 +624,7 @@ export default function EstimasiMilkRun() {
                       maxWeight={route.maxCapacityKg}
                       packagesCount={currentStop.packages}
                       isSelected={selectedManifest && selectedManifest.resi === (currentStop.manifest && currentStop.manifest.resi)}
-                      onClick={() => handleSetStopIndex(route.id, currentStopIndex, currentStop)}
+                      onClick={() => handleSetStopIndex(route.id, currentStopIndex, currentStop, true)}
                       currentStopName={currentStop.name}
                     />
                   </div>
@@ -674,7 +674,7 @@ export default function EstimasiMilkRun() {
                       return (
                         <div 
                           key={stop.id} 
-                          onClick={() => handleSetStopIndex(route.id, idx, stop)}
+                          onClick={() => handleSetStopIndex(route.id, idx, stop, false)}
                           style={{ 
                             display: 'flex', 
                             flexDirection: 'column', 
@@ -738,7 +738,7 @@ export default function EstimasiMilkRun() {
               </div>
 
               <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.45)', textAlign: 'center', fontStyle: 'italic', marginTop: -6 }}>
-                💡 Klik angka node stop (0-4) atau tombol <strong>Next Stop / Prev Stop</strong> untuk menggerakkan 1 Truk ke lokasi dan melihat penambahan beban kargonya.
+                💡 Klik tombol <strong>Next Stop / Prev Stop</strong> atau node stop (0-4) untuk menggerakkan Truk. Klik pada <strong>gambar MOBIL TRUK</strong> untuk membuka detail manifest kiriman (40 Field Lengkap).
               </div>
             </div>
           );
