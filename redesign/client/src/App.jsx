@@ -7,6 +7,7 @@ import {
   Search, Bell, ChevronDown, User, Activity, Menu, ChevronLeft, PanelLeftClose, PanelLeftOpen,
   TrendingUp
 } from 'lucide-react';
+import logoImg from './assets/logo.png';
 
 // Import Pages
 import Dashboard from './pages/Dashboard.jsx';
@@ -271,17 +272,15 @@ function AppContent() {
                 style={{
                   width: 36,
                   height: 36,
-                  borderRadius: 10,
-                  background: 'linear-gradient(135deg, #e8431f, #b82d0e)',
-                  border: '1px solid rgba(255,255,255,0.15)',
-                  boxShadow: '0 4px 12px rgba(232, 67, 31, 0.3)',
+                  borderRadius: 9,
+                  background: 'transparent',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   flexShrink: 0,
                 }}
               >
-                <Package size={20} color="#ffffff" />
+                <img src={logoImg} alt="IPOS5 Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               </div>
               {!sidebarCollapsed && (
                 <div>
