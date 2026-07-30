@@ -4,7 +4,8 @@ import { api } from './utils/api.js';
 import { 
   LayoutDashboard, Package, Building2, Tag, Truck, Map, 
   CalendarClock, Calendar, ShieldCheck, Database, Settings, 
-  Search, Bell, ChevronDown, User, Activity, Menu, ChevronLeft, PanelLeftClose, PanelLeftOpen
+  Search, Bell, ChevronDown, User, Activity, Menu, ChevronLeft, PanelLeftClose, PanelLeftOpen,
+  TrendingUp
 } from 'lucide-react';
 import logoImg from './assets/logo.png';
 
@@ -23,6 +24,7 @@ import GateMonitoring from './pages/GateMonitoring.jsx';
 import JadwalPickup from './pages/JadwalPickup.jsx';
 import Transaksi from './pages/Transaksi.jsx';
 import RouteJourney from './pages/RouteJourney.jsx';
+import EstimasiMilkRun from './pages/EstimasiMilkRun.jsx';
 import Profile from './pages/Profile.jsx';
 
 function Header({ title, sidebarCollapsed, onToggleSidebar }) {
@@ -235,6 +237,7 @@ function AppContent() {
     if (p.startsWith('/jadwal') && !p.startsWith('/jadwal-pickup')) return 'Transport Schedule';
     if (p.startsWith('/jadwal-pickup')) return 'Jadwal Pick Up SPP';
     if (p.startsWith('/route-journey')) return 'Milk Run Logistics Telemetry';
+    if (p.startsWith('/estimasi')) return 'Estimasi Milk Run';
     if (p.startsWith('/transit-monitoring')) return 'Gate Monitoring';
     if (p.startsWith('/transaksi')) return 'Data Transaksi Paket';
     if (p.startsWith('/compass')) return 'Database Viewer';
@@ -345,6 +348,9 @@ function AppContent() {
           <Link to="/route-journey" title="Milk Run Telemetry" className={`nav-item ${isLinkActive('/route-journey') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
             <Activity size={17} /> {!sidebarCollapsed && <span>Milk Run Telemetry</span>}
           </Link>
+          <Link to="/estimasi" title="Estimasi Milk Run" className={`nav-item ${isLinkActive('/estimasi') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
+            <TrendingUp size={17} /> {!sidebarCollapsed && <span>Estimasi Milk Run</span>}
+          </Link>
           <Link to="/transit-monitoring" title="Gate Monitoring" className={`nav-item ${isLinkActive('/transit-monitoring') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
             <ShieldCheck size={17} /> {!sidebarCollapsed && <span>Gate Monitoring</span>}
           </Link>
@@ -427,6 +433,7 @@ function AppContent() {
             <Route path="/jadwal" element={<JadwalTransportasi />} />
             <Route path="/jadwal-pickup" element={<JadwalPickup />} />
             <Route path="/route-journey" element={<RouteJourney />} />
+            <Route path="/estimasi" element={<EstimasiMilkRun />} />
             <Route path="/transit-monitoring" element={<GateMonitoring />} />
             <Route path="/transaksi" element={<Transaksi />} />
             <Route path="/compass" element={<Compass activeConnection={activeConnection} />} />
