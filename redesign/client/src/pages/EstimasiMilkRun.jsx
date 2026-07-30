@@ -2,11 +2,72 @@ import { useState, useEffect } from 'react';
 import { 
   Truck, MapPin, ArrowRight, RotateCcw, Package, Scale, Clock, 
   ChevronRight, ChevronLeft, Filter, Search, ArrowUpDown, CheckCircle2, AlertCircle,
-  FileText, User, Mail, Phone, Building, Tag, ShieldCheck, Camera, PenTool, Globe, Play, Pause
+  FileText, User, Mail, Phone, Building, Tag, ShieldCheck, Camera, PenTool, Globe, Play, Pause, RefreshCw
 } from 'lucide-react';
 
-// Custom Cargo Truck Component that renders cargo height based on weight
-function CargoTruckVisual({ weight, maxWeight = 600, packagesCount, isSelected, onClick, currentStopName }) {
+// Embedded Responsive & Animation CSS Styles
+const RESPONSIVE_STYLES = `
+  @keyframes wheelSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  @keyframes pulseGlow {
+    0% { filter: drop-shadow(0 0 6px rgba(56,189,248,0.5)); }
+    50% { filter: drop-shadow(0 0 16px rgba(56,189,248,0.9)); }
+    100% { filter: drop-shadow(0 0 6px rgba(56,189,248,0.5)); }
+  }
+  .spinning-wheel {
+    animation: wheelSpin 1.2s linear infinite;
+    transform-origin: center;
+  }
+  .truck-hover-card {
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.25s ease;
+  }
+  .truck-hover-card:hover {
+    transform: translateY(-4px) scale(1.03);
+    filter: drop-shadow(0 8px 20px rgba(56,189,248,0.5)) !important;
+  }
+  .filter-pill {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+  }
+  .filter-pill.active {
+    background: rgba(56,189,248,0.18);
+    border-color: rgba(56,189,248,0.5);
+    color: #38bdf8;
+    box-shadow: 0 0 12px rgba(56,189,248,0.25);
+  }
+  .filter-pill.inactive {
+    background: rgba(255,255,255,0.04);
+    border-color: rgba(255,255,255,0.08);
+    color: rgba(255,255,255,0.5);
+  }
+  .filter-pill.inactive:hover {
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+  }
+  @media (max-width: 768px) {
+    .responsive-header-row {
+      flex-direction: column !important;
+      align-items: flex-start !important;
+    }
+    .responsive-controls-group {
+      width: 100% !important;
+      justify-content: space-between !important;
+    }
+    .responsive-modal-grid {
+      grid-template-columns: 1fr !important;
+    }
+  }
+`;
+
+// Custom Cargo Truck Component that renders cargo height based on weight with animations
+function CargoTruckVisual({ weight, maxWeight = 600, packagesCount, isSelected, isMoving, onClick, currentStopName }) {
   // Height scale: 0 when empty, max 50px when loaded (natural proportion)
   const ratio = Math.min(1, weight / maxWeight);
   const boxHeight = weight === 0 ? 0 : Math.max(14, Math.round(ratio * 50));
@@ -14,12 +75,13 @@ function CargoTruckVisual({ weight, maxWeight = 600, packagesCount, isSelected, 
   return (
     <div 
       onClick={onClick}
+      className="truck-hover-card"
       style={{
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         cursor: 'pointer',
-        filter: isSelected ? 'drop-shadow(0 0 12px rgba(56,189,248,0.7))' : 'none',
+        filter: isSelected ? 'drop-shadow(0 0 16px rgba(56,189,248,0.9))' : 'none',
       }}
       title={`Beban Aktif: ${weight} kg | ${packagesCount} paket di ${currentStopName} (Klik untuk detail manifest)`}
     >
@@ -28,22 +90,28 @@ function CargoTruckVisual({ weight, maxWeight = 600, packagesCount, isSelected, 
         fontSize: 11.5,
         fontWeight: 800,
         color: weight > 0 ? '#38bdf8' : '#cbd5e1',
-        background: weight > 0 ? 'rgba(6,13,31,0.92)' : 'rgba(15,23,42,0.9)',
+        background: weight > 0 ? 'rgba(6,13,31,0.95)' : 'rgba(15,23,42,0.9)',
         border: `1.5px solid ${weight > 0 ? '#38bdf8' : 'rgba(255,255,255,0.2)'}`,
-        padding: '3px 10px',
+        padding: '3px 12px',
         borderRadius: 14,
         marginBottom: 4,
         whiteSpace: 'nowrap',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+        boxShadow: '0 4px 14px rgba(0,0,0,0.6)',
         display: 'flex',
         alignItems: 'center',
-        gap: 5
+        gap: 6
       }}>
         {weight === 0 ? (
           <span>🚚 Truk Kosong (Awal Rute)</span>
         ) : (
           <>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#38bdf8', boxShadow: '0 0 8px #38bdf8' }} />
+            <span style={{ 
+              width: 7, 
+              height: 7, 
+              borderRadius: '50%', 
+              background: isMoving ? '#34d399' : '#38bdf8', 
+              boxShadow: isMoving ? '0 0 10px #34d399' : '0 0 8px #38bdf8' 
+            }} />
             <span>{weight} kg · {packagesCount} pkt</span>
           </>
         )}
@@ -55,12 +123,20 @@ function CargoTruckVisual({ weight, maxWeight = 600, packagesCount, isSelected, 
           {/* Ground Line Shadow */}
           <ellipse cx="55" cy="77" rx="45" ry="3.5" fill="rgba(0,0,0,0.5)" />
 
-          {/* Wheels */}
-          <circle cx="30" cy="71" r="7.5" fill="#0f172a" stroke="#38bdf8" strokeWidth="2.5" />
-          <circle cx="30" cy="71" r="3" fill="#38bdf8" />
-          
-          <circle cx="80" cy="71" r="7.5" fill="#0f172a" stroke="#38bdf8" strokeWidth="2.5" />
-          <circle cx="80" cy="71" r="3" fill="#38bdf8" />
+          {/* Animated Wheels */}
+          <g className={isMoving ? 'spinning-wheel' : ''} style={{ transformOrigin: '30px 71px' }}>
+            <circle cx="30" cy="71" r="7.5" fill="#0f172a" stroke="#38bdf8" strokeWidth="2.5" />
+            <circle cx="30" cy="71" r="3" fill="#38bdf8" />
+            <line x1="30" y1="63.5" x2="30" y2="78.5" stroke="#38bdf8" strokeWidth="1" />
+            <line x1="22.5" y1="71" x2="37.5" y2="71" stroke="#38bdf8" strokeWidth="1" />
+          </g>
+
+          <g className={isMoving ? 'spinning-wheel' : ''} style={{ transformOrigin: '80px 71px' }}>
+            <circle cx="80" cy="71" r="7.5" fill="#0f172a" stroke="#38bdf8" strokeWidth="2.5" />
+            <circle cx="80" cy="71" r="3" fill="#38bdf8" />
+            <line x1="80" y1="63.5" x2="80" y2="78.5" stroke="#38bdf8" strokeWidth="1" />
+            <line x1="72.5" y1="71" x2="87.5" y2="71" stroke="#38bdf8" strokeWidth="1" />
+          </g>
 
           {/* Truck Chassis / Base Frame */}
           <rect x="14" y="65" width="78" height="4" rx="1" fill="#475569" />
@@ -69,8 +145,11 @@ function CargoTruckVisual({ weight, maxWeight = 600, packagesCount, isSelected, 
           <path d="M 72 44 L 86 44 Q 92 44 94 50 L 98 60 Q 99 65 94 65 L 72 65 Z" fill="#0284c7" stroke="#38bdf8" strokeWidth="1.5" />
           {/* Cabin Window */}
           <path d="M 76 47 L 85 47 Q 88 47 90 51 L 91 56 L 76 56 Z" fill="#bae6fd" opacity="0.9" />
-          {/* Headlight */}
+          {/* Headlight (Pulsing when moving) */}
           <rect x="95" y="58" width="3" height="4" rx="1" fill="#fef08a" />
+          {isMoving && (
+            <polygon points="98,56 112,50 112,66 98,62" fill="rgba(254,240,138,0.25)" />
+          )}
 
           {/* Cargo Box Mounted on Top (Dynamic Height according to Weight) */}
           {boxHeight > 0 && (
@@ -337,9 +416,10 @@ export default function EstimasiMilkRun() {
   const [routes] = useState(DUMMY_ROUTES);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('PLATE_ASC');
+  const [statusFilter, setStatusFilter] = useState('ALL'); // ALL, EN_ROUTE, LOADING, SCHEDULED
   const [selectedManifest, setSelectedManifest] = useState(null);
 
-  // Active stop index for each route (1 single truck per route moving between stops)
+  // Active stop index for each route
   const [activeStopMap, setActiveStopMap] = useState({
     'RUTE-01': 3,
     'RUTE-02': 2,
@@ -347,9 +427,40 @@ export default function EstimasiMilkRun() {
     'RUTE-04': 1
   });
 
+  // Auto Simulation State (Play / Pause for each route)
+  const [playingRouteId, setPlayingRouteId] = useState(null);
+  const [isGlobalPlaying, setIsGlobalPlaying] = useState(false);
+
+  // Auto Drive Interval simulation effect
+  useEffect(() => {
+    let interval = null;
+    if (isGlobalPlaying || playingRouteId) {
+      interval = setInterval(() => {
+        setActiveStopMap(prev => {
+          const nextState = { ...prev };
+          routes.forEach(r => {
+            if (isGlobalPlaying || playingRouteId === r.id) {
+              const curIdx = nextState[r.id] || 0;
+              const nextIdx = (curIdx + 1) % r.stops.length;
+              nextState[r.id] = nextIdx;
+            }
+          });
+          return nextState;
+        });
+      }, 2200);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isGlobalPlaying, playingRouteId, routes]);
+
   // Sorting and filtering handler
   const getFilteredAndSortedRoutes = () => {
     let result = [...routes];
+
+    if (statusFilter !== 'ALL') {
+      result = result.filter(r => r.status === statusFilter);
+    }
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -379,19 +490,38 @@ export default function EstimasiMilkRun() {
     }
   };
 
+  const toggleRoutePlay = (routeId) => {
+    if (playingRouteId === routeId) {
+      setPlayingRouteId(null);
+    } else {
+      setIsGlobalPlaying(false);
+      setPlayingRouteId(routeId);
+    }
+  };
+
+  const toggleGlobalPlay = () => {
+    if (isGlobalPlaying) {
+      setIsGlobalPlaying(false);
+    } else {
+      setPlayingRouteId(null);
+      setIsGlobalPlaying(true);
+    }
+  };
+
   const filteredRoutes = getFilteredAndSortedRoutes();
   const grandTotalPackages = routes.reduce((acc, r) => acc + r.totalPackages, 0);
   const grandTotalWeight = routes.reduce((acc, r) => acc + r.totalWeightKg, 0).toFixed(1);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20, color: '#fff' }}>
-      
+      <style>{RESPONSIVE_STYLES}</style>
+
       {/* Top Header Card */}
       <div 
         className="glass-card-solid gradient-border-card" 
         style={{ padding: '22px 26px', background: 'linear-gradient(135deg, rgba(13,27,56,0.95), rgba(6,13,31,0.95))' }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+        <div className="responsive-header-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
               <div 
@@ -421,15 +551,40 @@ export default function EstimasiMilkRun() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+          {/* Interactive Global Simulation & Search Controls */}
+          <div className="responsive-controls-group" style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+            
+            {/* Global Auto Simulation Play/Pause Button */}
+            <button
+              onClick={toggleGlobalPlay}
+              style={{
+                background: isGlobalPlaying ? 'rgba(232,67,31,0.2)' : 'rgba(56,189,248,0.18)',
+                border: `1px solid ${isGlobalPlaying ? 'rgba(232,67,31,0.5)' : 'rgba(56,189,248,0.4)'}`,
+                color: isGlobalPlaying ? '#ff6b4a' : '#38bdf8',
+                borderRadius: 10,
+                padding: '8px 16px',
+                fontWeight: 700,
+                fontSize: 12.5,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                boxShadow: isGlobalPlaying ? '0 0 14px rgba(232,67,31,0.4)' : '0 0 12px rgba(56,189,248,0.25)',
+                transition: 'all 0.25s'
+              }}
+            >
+              {isGlobalPlaying ? <Pause size={16} /> : <Play size={16} />}
+              <span>{isGlobalPlaying ? 'Jeda Simulasi' : 'Simulasi Jalan Otomatis'}</span>
+            </button>
+
             {/* Search Filter */}
-            <div style={{ position: 'relative', width: 220 }}>
+            <div style={{ position: 'relative', width: 200 }}>
               <Search size={14} color="rgba(255,255,255,0.4)" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
               <input 
                 className="input-navy"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Cari Plat / Mobil / Stop..."
+                placeholder="Cari Plat / Mobil..."
                 style={{ paddingLeft: 30, fontSize: 12.5 }}
               />
             </div>
@@ -457,7 +612,24 @@ export default function EstimasiMilkRun() {
                 <option value="PROGRESS_DESC" style={{ background: '#0b1830' }}>Progress SLA (Terjauh)</option>
               </select>
             </div>
+
           </div>
+        </div>
+
+        {/* Interactive Filter Pills */}
+        <div style={{ display: 'flex', gap: 8, marginTop: 16, pt: 12, borderTop: '1px solid rgba(255,255,255,0.06)', flexWrap: 'wrap' }}>
+          <button onClick={() => setStatusFilter('ALL')} className={`filter-pill ${statusFilter === 'ALL' ? 'active' : 'inactive'}`}>
+            Semua Rute ({routes.length})
+          </button>
+          <button onClick={() => setStatusFilter('EN_ROUTE')} className={`filter-pill ${statusFilter === 'EN_ROUTE' ? 'active' : 'inactive'}`}>
+            Berjalan / En Route ({routes.filter(r => r.status === 'EN_ROUTE').length})
+          </button>
+          <button onClick={() => setStatusFilter('LOADING')} className={`filter-pill ${statusFilter === 'LOADING' ? 'active' : 'inactive'}`}>
+            Proses Muat / Loading ({routes.filter(r => r.status === 'LOADING').length})
+          </button>
+          <button onClick={() => setStatusFilter('SCHEDULED')} className={`filter-pill ${statusFilter === 'SCHEDULED' ? 'active' : 'inactive'}`}>
+            Terjadwal / Scheduled ({routes.filter(r => r.status === 'SCHEDULED').length})
+          </button>
         </div>
       </div>
 
@@ -466,6 +638,7 @@ export default function EstimasiMilkRun() {
         {filteredRoutes.map((route) => {
           const currentStopIndex = activeStopMap[route.id] !== undefined ? activeStopMap[route.id] : 0;
           const currentStop = route.stops[currentStopIndex] || route.stops[0];
+          const isRouteSimulating = isGlobalPlaying || playingRouteId === route.id;
           
           // Calculate percentage position of the 1 single truck along the node track
           const truckPercentPos = (currentStopIndex / (route.stops.length - 1)) * 82 + 9;
@@ -530,10 +703,31 @@ export default function EstimasiMilkRun() {
                   </div>
 
                   {/* Step Buttons for moving the single truck */}
-                  <div style={{ display: 'flex', gap: 4, marginLeft: 8 }}>
+                  <div style={{ display: 'flex', gap: 4, marginLeft: 6 }}>
+                    <button
+                      onClick={() => toggleRoutePlay(route.id)}
+                      style={{
+                        background: isRouteSimulating ? 'rgba(232,67,31,0.2)' : 'rgba(56,189,248,0.15)',
+                        border: `1px solid ${isRouteSimulating ? 'rgba(232,67,31,0.4)' : 'rgba(56,189,248,0.3)'}`,
+                        color: isRouteSimulating ? '#ff6b4a' : '#38bdf8',
+                        borderRadius: 6,
+                        padding: '4px 10px',
+                        cursor: 'pointer',
+                        fontSize: 12,
+                        fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4
+                      }}
+                      title="Simulasi Perjalanan Rute Ini"
+                    >
+                      {isRouteSimulating ? <Pause size={13} /> : <Play size={13} />}
+                      <span>{isRouteSimulating ? 'Stop' : 'Play'}</span>
+                    </button>
+
                     <button
                       disabled={currentStopIndex === 0}
-                      onClick={() => handleSetStopIndex(route.id, currentStopIndex - 1, route.stops[currentStopIndex - 1])}
+                      onClick={() => handleSetStopIndex(route.id, currentStopIndex - 1, route.stops[currentStopIndex - 1], false)}
                       style={{
                         background: currentStopIndex === 0 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)',
                         border: '1px solid rgba(255,255,255,0.12)',
@@ -548,11 +742,11 @@ export default function EstimasiMilkRun() {
                       }}
                       title="Mundurkan Truk ke Stop Sebelumnya"
                     >
-                      <ChevronLeft size={14} /> Prev Stop
+                      <ChevronLeft size={14} /> Prev
                     </button>
                     <button
                       disabled={currentStopIndex === route.stops.length - 1}
-                      onClick={() => handleSetStopIndex(route.id, currentStopIndex + 1, route.stops[currentStopIndex + 1])}
+                      onClick={() => handleSetStopIndex(route.id, currentStopIndex + 1, route.stops[currentStopIndex + 1], false)}
                       style={{
                         background: currentStopIndex === route.stops.length - 1 ? 'rgba(255,255,255,0.03)' : 'rgba(2,132,199,0.25)',
                         border: `1px solid ${currentStopIndex === route.stops.length - 1 ? 'rgba(255,255,255,0.12)' : 'rgba(56,189,248,0.5)'}`,
@@ -568,7 +762,7 @@ export default function EstimasiMilkRun() {
                       }}
                       title="Jalankan Truk ke Stop Berikutnya"
                     >
-                      Next Stop <ChevronRight size={14} />
+                      Next <ChevronRight size={14} />
                     </button>
                   </div>
                 </div>
@@ -624,6 +818,7 @@ export default function EstimasiMilkRun() {
                       maxWeight={route.maxCapacityKg}
                       packagesCount={currentStop.packages}
                       isSelected={selectedManifest && selectedManifest.resi === (currentStop.manifest && currentStop.manifest.resi)}
+                      isMoving={isRouteSimulating}
                       onClick={() => handleSetStopIndex(route.id, currentStopIndex, currentStop, true)}
                       currentStopName={currentStop.name}
                     />
@@ -738,14 +933,14 @@ export default function EstimasiMilkRun() {
               </div>
 
               <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.45)', textAlign: 'center', fontStyle: 'italic', marginTop: -6 }}>
-                💡 Klik tombol <strong>Next Stop / Prev Stop</strong> atau node stop (0-4) untuk menggerakkan Truk. Klik pada <strong>gambar MOBIL TRUK</strong> untuk membuka detail manifest kiriman (40 Field Lengkap).
+                💡 Klik tombol <strong>Next / Prev</strong> atau node stop (0-4) untuk menggerakkan Truk. Klik pada <strong>gambar MOBIL TRUK</strong> untuk membuka detail manifest kiriman (40 Field Lengkap).
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Manifest Detail Modal (40 Fields Exact Format) */}
+      {/* Manifest Detail Modal (40 Fields Exact Format Responsive Layout) */}
       {selectedManifest && (
         <div style={{
           position: 'fixed',
@@ -753,33 +948,33 @@ export default function EstimasiMilkRun() {
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'rgba(3,8,22,0.85)',
-          backdropFilter: 'blur(12px)',
+          background: 'rgba(3,8,22,0.88)',
+          backdropFilter: 'blur(14px)',
           zIndex: 999,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: 24
+          padding: 16
         }}>
           <div 
             className="glass-card-solid"
             style={{
               width: '100%',
-              maxWidth: 900,
+              maxWidth: 920,
               maxHeight: '90vh',
               overflowY: 'auto',
               borderRadius: 16,
               background: '#09152e',
-              border: '1px solid rgba(56,189,248,0.3)',
-              padding: 28,
-              boxShadow: '0 20px 50px rgba(0,0,0,0.8)'
+              border: '1px solid rgba(56,189,248,0.35)',
+              padding: '24px 28px',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.85)'
             }}
           >
             {/* Modal Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 16, marginBottom: 20 }}>
               <div>
                 <div style={{ fontSize: 11, color: '#38bdf8', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                  Detail Data Manifest Kiriman (40 Field)
+                  Detail Data Manifest Kiriman (40 Field Lengkap)
                 </div>
                 <h3 style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: '4px 0 0' }}>
                   Resi: {selectedManifest.resi}
@@ -788,13 +983,13 @@ export default function EstimasiMilkRun() {
               <button 
                 onClick={() => setSelectedManifest(null)}
                 style={{
-                  background: 'rgba(255,255,255,0.08)',
-                  border: '1px solid rgba(255,255,255,0.15)',
-                  color: '#fff',
+                  background: 'rgba(232,67,31,0.15)',
+                  border: '1px solid rgba(232,67,31,0.4)',
+                  color: '#ff6b4a',
                   borderRadius: 8,
                   padding: '6px 16px',
                   fontSize: 13,
-                  fontWeight: 600,
+                  fontWeight: 700,
                   cursor: 'pointer'
                 }}
               >
@@ -827,7 +1022,7 @@ export default function EstimasiMilkRun() {
                 <h4 style={{ fontSize: 13, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
                   <User size={15} /> 2. Data Pengirim & Penerima Lengkap
                 </h4>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div className="responsive-modal-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                   {/* Pengirim Box */}
                   <div style={{ background: 'rgba(255,255,255,0.03)', padding: 14, borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)' }}>
                     <div style={{ fontWeight: 700, color: '#fbbf24', fontSize: 12, marginBottom: 8 }}>DOKUMEN PENGIRIM</div>
@@ -895,7 +1090,7 @@ export default function EstimasiMilkRun() {
                 <h4 style={{ fontSize: 13, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
                   <Camera size={15} /> 5. Bukti Lampiran Visual (Photo1, Photo2, TTD)
                 </h4>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
+                <div className="responsive-modal-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
                   {/* Photo 1 */}
                   <div style={{ background: 'rgba(255,255,255,0.03)', padding: 10, borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)' }}>
                     <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>37. Photo1 (Paket FISIK)</div>
