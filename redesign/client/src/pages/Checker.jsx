@@ -174,16 +174,26 @@ export default function Checker() {
           finalSwpDate: tx.finalSwpDate || '-',
           
           // Tracking Event Timeline
-          timeline: (res.data.trackingHistory && res.data.trackingHistory.length > 0)
-            ? res.data.trackingHistory.map(h => ({
+          timeline: (() => {
+            const rawList = (res.data.trackingHistory && res.data.trackingHistory.length > 0)
+              ? res.data.trackingHistory
+              : (res.data.data?.trackingHistory && res.data.data.trackingHistory.length > 0)
+                ? res.data.data.trackingHistory
+                : [];
+
+            if (rawList.length > 0) {
+              return rawList.map(h => ({
                 stage: h.stage || h.to_state || 'EVENT',
                 note: h.note || `Status paket: ${h.stage}`,
                 time: formatDateDisplay(h.time),
                 location: h.office_name || h.location || '-'
-              }))
-            : [
-                { stage: tx.state || 'ENTRY', note: `Paket ${cleanTerm} tercatat di sistem IPOS5.`, time: formatDateDisplay(tx.createdAt), location: tx.originName || 'KCU Cimahi' }
-              ],
+              }));
+            }
+
+            return [
+              { stage: tx.state || 'ENTRY', note: `Paket ${cleanTerm} tercatat di sistem IPOS5.`, time: formatDateDisplay(tx.createdAt), location: tx.originName || 'KCU Cimahi' }
+            ];
+          })(),
 
           // Real-Time Vehicle Journey & Capacity
           milkRun: milk,
