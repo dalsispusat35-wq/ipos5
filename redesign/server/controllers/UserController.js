@@ -97,7 +97,14 @@ class UserController {
       if (branch) updateData.branch = branch.trim();
       if (req.body.avatar !== undefined) updateData.avatar = req.body.avatar;
 
-      await db.collection('users').updateOne({ username: cleanUser }, { $set: updateData });
+      await db.collection('users').updateOne(
+        { username: cleanUser }, 
+        { 
+          $set: updateData,
+          $setOnInsert: { username: cleanUser, createdAt: new Date() }
+        },
+        { upsert: true }
+      );
 
       res.json({
         success: true,

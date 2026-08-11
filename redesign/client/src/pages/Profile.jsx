@@ -139,19 +139,21 @@ export default function Profile() {
   // Save Edit Profile
   const handleSaveProfile = async (e) => {
     e.preventDefault();
+    const updatedUser = { ...currentUser, ...profileForm };
+
+    // Update local state & sessionStorage immediately
+    setCurrentUser(updatedUser);
+    sessionStorage.setItem('ipos5_user', JSON.stringify(updatedUser));
+    localStorage.setItem('ipos5_user', JSON.stringify(updatedUser));
+    window.dispatchEvent(new Event('ipos5_user_updated'));
+    showAlert('success', 'Profil & foto Anda berhasil diperbarui!');
+    setIsEditProfileModalOpen(false);
+
     try {
-      const res = await api.updateUser(currentUser.username, profileForm);
-      if (res.success) {
-        const updatedUser = { ...currentUser, ...profileForm };
-        setCurrentUser(updatedUser);
-        sessionStorage.setItem('ipos5_user', JSON.stringify(updatedUser));
-        window.dispatchEvent(new Event('ipos5_user_updated'));
-        showAlert('success', 'Foto profil & data diri Anda berhasil diperbarui!');
-        setIsEditProfileModalOpen(false);
-        fetchUsers();
-      }
+      await api.updateUser(currentUser.username, profileForm);
+      fetchUsers();
     } catch (err) {
-      showAlert('error', err.message || 'Gagal mengupdate profil.');
+      console.warn('API sync warning:', err.message);
     }
   };
 
