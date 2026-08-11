@@ -214,8 +214,11 @@ function AppContent() {
     }
     setAuthToken('');
     sessionStorage.removeItem('ipos5_user');
+    localStorage.removeItem('ipos5_user');
+    sessionStorage.removeItem('ipos5_jwt_token');
+    localStorage.removeItem('ipos5_jwt_token');
     setCurrentUser(null);
-    navigate('/login');
+    navigate('/login', { replace: true });
   };
 
   useEffect(() => {
@@ -338,9 +341,6 @@ function AppContent() {
   );
 
   if (location.pathname === '/login') {
-    if (DISABLE_AUTH) {
-      return <Navigate to="/" replace />;
-    }
     return <Login onLoginSuccess={handleLoginSuccess} />;
   }
 
