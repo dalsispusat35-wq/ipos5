@@ -182,5 +182,12 @@ export const api = {
   deleteImportBatch: (batchId) => fetchApi(`/daily-operation/import-batch/${encodeURIComponent(batchId)}`, {
     method: 'DELETE',
     headers: { 'x-dev-access': 'true' }
-  })
+  }),
+
+  // User Management & Profile CRUD
+  getUsers: () => fetchApi('/users'),
+  createUser: (data) => fetchApi('/users', { method: 'POST', body: data }),
+  updateUser: (username, data) => fetchApi(`/users/${encodeURIComponent(username)}`, { method: 'PUT', body: data }),
+  updateUserPassword: (username, data) => fetchApi(`/users/${encodeURIComponent(username)}/password`, { method: 'PUT', body: data }),
+  deleteUser: (username) => fetchApi(`/users/${encodeURIComponent(username)}`, { method: 'DELETE' })
 };

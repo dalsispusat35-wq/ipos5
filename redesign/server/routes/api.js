@@ -12,6 +12,7 @@ import ManifestController from '../controllers/ManifestController.js';
 import PickupScheduleController from '../controllers/PickupScheduleController.js';
 import RouteJourneyController from '../controllers/RouteJourneyController.js';
 import DailyOperationController from '../controllers/DailyOperationController.js';
+import UserController from '../controllers/UserController.js';
 
 import KantorModel from '../models/KantorModel.js';
 import ProdukModel from '../models/ProdukModel.js';
@@ -179,5 +180,12 @@ router.post('/compass/documents/:collectionName', requireDb, (req, res) => Compa
 router.put('/compass/documents/:collectionName/:id', requireDb, (req, res) => CompassController.updateDocument(req, res));
 router.delete('/compass/documents/:collectionName/:id', requireDb, (req, res) => CompassController.deleteDocument(req, res));
 router.get('/compass/indexes/:collectionName', requireDb, (req, res) => CompassController.listIndexes(req, res));
+
+// ─── User Management & Profile Routes ─────────────────────────────────────────
+router.get('/users', requireDb, (req, res) => UserController.getAll(req, res));
+router.post('/users', requireDb, (req, res) => UserController.create(req, res));
+router.put('/users/:username', requireDb, (req, res) => UserController.update(req, res));
+router.put('/users/:username/password', requireDb, (req, res) => UserController.updatePassword(req, res));
+router.delete('/users/:username', requireDb, (req, res) => UserController.delete(req, res));
 
 export default router;

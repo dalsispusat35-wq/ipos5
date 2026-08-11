@@ -193,8 +193,8 @@ const Login = ({ onLoginSuccess }) => {
             <Sparkles size={12} color="#48cae4" /> Akun Demo Pengujian RBAC:
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center', fontSize: 11 }}>
-            <span style={{ background: 'rgba(255,255,255,0.06)', padding: '3px 8px', borderRadius: 4 }}>
-              <strong>Admin:</strong> admin / admin123
+            <span style={{ background: 'rgba(72,202,228,0.15)', border: '1px solid rgba(72,202,228,0.3)', padding: '3px 8px', borderRadius: 4, color: '#48cae4' }}>
+              <strong>Admin:</strong> admin / admin
             </span>
             <span style={{ background: 'rgba(255,255,255,0.06)', padding: '3px 8px', borderRadius: 4 }}>
               <strong>Supervisor:</strong> sari / sari123
