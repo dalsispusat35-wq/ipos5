@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { 
   Search, MapPin, CheckCircle2, Circle, Clock, Package, Truck, Navigation, 
@@ -19,11 +19,14 @@ const SAMPLE_RESIS = [
 
 export default function Checker() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [query, setQuery] = useState(searchParams.get('code') || 'P20260724000001');
+  const [query, setQuery] = useState(() => searchParams.get('code') || '');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [copied, setCopied] = useState(false);
+
+  // Track previous URL param code to prevent useEffect re-firing while user is typing in input
+  const lastParamCodeRef = useRef(undefined);
 
   // ─── Daily Operation Date Context State ────────────────────────────────────
   const [selectedDate, setSelectedDate] = useState(() => {
@@ -127,13 +130,23 @@ export default function Checker() {
     setExpandedDestGroups(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // Search Connote Tracker Handler
+  // Search Connote Tracker Handler (Does NOT depend on query state in useCallback)
   const handleSearch = useCallback(async (codeToSearch, dateToSearch) => {
-    const term = codeToSearch || query;
-    if (!term || !term.trim()) return;
-    const cleanTerm = term.trim();
     const targetDate = dateToSearch || selectedDate;
+    const termToUse = codeToSearch !== undefined ? codeToSearch : '';
+
+    if (!termToUse || !termToUse.trim()) {
+      setQuery('');
+      setResult(null);
+      setErrorMsg('');
+      lastParamCodeRef.current = '';
+      setSearchParams({ code: '', date: targetDate });
+      return;
+    }
+
+    const cleanTerm = termToUse.trim();
     setQuery(cleanTerm);
+    lastParamCodeRef.current = cleanTerm;
     setSearchParams({ code: cleanTerm, date: targetDate });
     setLoading(true);
     setErrorMsg('');
@@ -197,13 +210,27 @@ export default function Checker() {
     } finally {
       setLoading(false);
     }
-  }, [query, selectedDate, setSearchParams]);
+  }, [selectedDate, setSearchParams]);
 
   useEffect(() => {
-    const code = searchParams.get('code') || 'P20260724000001';
+    const codeParam = searchParams.get('code');
     const dateParam = searchParams.get('date') || selectedDate;
-    handleSearch(code, dateParam);
-  }, [searchParams, handleSearch]);
+
+    // Only run if the code in URL parameter has actually changed from external navigation
+    if (codeParam !== lastParamCodeRef.current) {
+      lastParamCodeRef.current = codeParam;
+      if (codeParam && codeParam.trim()) {
+        handleSearch(codeParam, dateParam);
+      } else if (codeParam === null) {
+        // Initial load when URL has no ?code parameter -> load default demo resi
+        handleSearch('P20260724000001', dateParam);
+      } else {
+        setQuery('');
+        setResult(null);
+        setErrorMsg('');
+      }
+    }
+  }, [searchParams, selectedDate, handleSearch]);
 
   const handleCopyCode = () => {
     if (result?.connote) {
@@ -305,15 +332,22 @@ export default function Checker() {
               className="input-navy font-mono"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch(query, selectedDate)}
               placeholder={searchByVehicle ? 'Cari berdasarkan plat (contoh: B 9910 PCX)...' : 'Lacak nomor resi / connote (contoh: P20260724000001)...'}
               style={{ paddingLeft: 38, paddingRight: 36, height: 42, fontSize: 13.5 }}
             />
             {query && (
               <button
-                onClick={() => { setQuery(''); setResult(null); setErrorMsg(''); setSearchParams({}); }}
+                onClick={() => {
+                  setQuery('');
+                  setResult(null);
+                  setErrorMsg('');
+                  lastParamCodeRef.current = '';
+                  setSearchParams({ code: '', date: selectedDate });
+                }}
                 style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
                   background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}
+                title="Hapus / Reset Pencarian"
               >
                 <X size={15} />
               </button>
@@ -322,7 +356,7 @@ export default function Checker() {
 
           <button 
             className="btn-primary" 
-            onClick={() => handleSearch()} 
+            onClick={() => handleSearch(query, selectedDate)} 
             disabled={loading}
             style={{ height: 42, padding: '0 20px', fontWeight: 800, gap: 8 }}
           >

@@ -1,5 +1,6 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import L from 'leaflet';
+
 import { 
   X, 
   Truck, 
@@ -37,39 +38,87 @@ const OFFICE_COORDINATES = {
   '10000': { lat: -6.168541, lng: 106.833512, name: 'MPC JAKARTA (10000)', address: 'Lapangan Banteng Utara No.1, Jakarta' }
 };
 
-// Helper to generate realistic road curvature waypoints following West Java primary arteries
+// Helper to generate realistic high-precision road waypoints following West Java & Bandung primary arterial roads (GAMBAR 1 REFERENSI)
 const getDetailedRoadWaypoints = (stopsCoords) => {
   const roadPoints = [];
+
   for (let i = 0; i < stopsCoords.length; i++) {
     const current = stopsCoords[i];
     roadPoints.push([current.lat, current.lng]);
 
     if (i < stopsCoords.length - 1) {
       const next = stopsCoords[i + 1];
+      const curNopen = String(current.nopen);
+      const nextNopen = String(next.nopen);
 
-      // Route-specific curvature along major road corridors
-      if (current.nopen === '40511' && next.nopen === '40395C1') {
-        roadPoints.push([-6.8880, 107.5250]); // Baros / Leuwigajah Junction
-        roadPoints.push([-6.8990, 107.5120]); // Batujajar Highway
-      } else if (current.nopen === '40395C1' && next.nopen === '40400') {
-        roadPoints.push([-6.9200, 107.5450]); // Margaasih / Kopo Gate
-        roadPoints.push([-6.9380, 107.5850]); // Soekarno-Hatta West Corridor
-      } else if (current.nopen === '40395' && next.nopen === '40400') {
-        roadPoints.push([-6.9350, 107.5100]); // Patrol Junction
-        roadPoints.push([-6.9380, 107.5850]); // Soekarno-Hatta Corridor
-      } else if (current.nopen === '40400' && next.nopen === '40394') {
-        roadPoints.push([-6.9450, 107.6800]); // Gedebage / Cibiru Outer Ring Road
-        roadPoints.push([-6.9550, 107.7500]); // Rancaekek Main Highway
-      } else if (current.nopen === '40400' && next.nopen === '40381') {
-        roadPoints.push([-6.9700, 107.6600]); // Bojongsoang Corridor
-        roadPoints.push([-7.0000, 107.6900]); // Baleendah Laswi Arterial Road
-      } else {
-        const midLat = (current.lat + next.lat) / 2;
-        const midLng = (current.lng + next.lng) / 2;
-        roadPoints.push([midLat - 0.003, midLng + 0.003]);
+      // Segment: KPC Cimahi Utama (40511) -> AGEN ARVINET (40395C1)
+      if (curNopen === '40511' && nextNopen === '40395C1') {
+        roadPoints.push([-6.8765, 107.5412]); // Jl. Gandawijaya
+        roadPoints.push([-6.8850, 107.5385]); // Baros Junction
+        roadPoints.push([-6.8925, 107.5360]); // Leuwigajah Flyover
+        roadPoints.push([-6.8970, 107.5315]); // Jl. Kerkof Leuwigajah
+        roadPoints.push([-6.9015, 107.5210]); // Simpang Lagadar Jembatan Cimahi
+        roadPoints.push([-6.9050, 107.5110]); // Jl. Raya Batujajar East
+        roadPoints.push([-6.9065, 107.5080]); // Batujajar Main Corridor
+      }
+      // Segment: AGEN ARVINET (40395C1) -> SPP BANDUNG (40400) — GAMBAR 1 REFERENSI BENAR
+      else if ((curNopen === '40395C1' || curNopen === '40395') && nextNopen === '40400') {
+        roadPoints.push([-6.9065, 107.5080]); // Batujajar Main Corridor
+        roadPoints.push([-6.9120, 107.5250]); // Jl. Raya Margaasih
+        roadPoints.push([-6.9185, 107.5390]); // Simpang Nanjung Margaasih
+        roadPoints.push([-6.9240, 107.5510]); // Jembatan Tol Margaasih / Nanjung
+        roadPoints.push([-6.9325, 107.5750]); // Bundaran Kopo / Margahayu
+        roadPoints.push([-6.9360, 107.5855]); // Simpang Kopo Soekarno-Hatta
+        roadPoints.push([-6.9385, 107.6040]); // Simpang Moh. Toha Soekarno-Hatta
+        roadPoints.push([-6.9400, 107.6210]); // Simpang Buahbatu Soekarno-Hatta
+      }
+      // Segment: KPC Cimahi (40511) -> KCP Cimahi Selatan (40512)
+      else if (curNopen === '40511' && nextNopen === '40512') {
+        roadPoints.push([-6.8785, 107.5405]);
+        roadPoints.push([-6.8852, 107.5388]);
+        roadPoints.push([-6.8900, 107.5440]);
+      }
+      // Segment: KCP Cimahi Selatan (40512) -> AGEN ARVINET (40395C1)
+      else if (curNopen === '40512' && nextNopen === '40395C1') {
+        roadPoints.push([-6.8950, 107.5410]);
+        roadPoints.push([-6.8985, 107.5320]);
+        roadPoints.push([-6.9015, 107.5245]);
+        roadPoints.push([-6.9045, 107.5140]);
+      }
+      // Segment: AGEN ARVINET (40395C1) -> KCP Padalarang (40553)
+      else if (curNopen === '40395C1' && nextNopen === '40553') {
+        roadPoints.push([-6.8950, 107.5020]);
+        roadPoints.push([-6.8650, 107.4910]);
+        roadPoints.push([-6.8480, 107.4820]);
+      }
+      // Segment: KCP Padalarang (40553) -> KCU Bandung (40000)
+      else if (curNopen === '40553' && nextNopen === '40000') {
+        roadPoints.push([-6.8620, 107.5150]);
+        roadPoints.push([-6.8920, 107.5610]);
+        roadPoints.push([-6.9050, 107.5950]);
+        roadPoints.push([-6.9140, 107.6050]);
+      }
+      // Segment: KCU Bandung (40000) -> SPP Bandung (40400)
+      else if (curNopen === '40000' && nextNopen === '40400') {
+        roadPoints.push([-6.9215, 107.6125]);
+        roadPoints.push([-6.9270, 107.6210]);
+        roadPoints.push([-6.9355, 107.6275]);
+        roadPoints.push([-6.9400, 107.6300]);
+      }
+      // Generic interpolator with subtle street curves for any other route
+      else {
+        const steps = 5;
+        for (let s = 1; s < steps; s++) {
+          const ratio = s / steps;
+          const lat = current.lat + (next.lat - current.lat) * ratio;
+          const lng = current.lng + (next.lng - current.lng) * ratio;
+          const curveOffset = Math.sin(ratio * Math.PI) * 0.0035;
+          roadPoints.push([lat + (s % 2 === 0 ? curveOffset : -curveOffset), lng + curveOffset]);
+        }
       }
     }
   }
+
   return roadPoints;
 };
 
@@ -90,48 +139,142 @@ export default function LiveGpsMapModal({
 }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
+  const hasFittedRef = useRef(false);
 
-  // Normalize stops to exact GPS coordinates
-  const stopsCoords = (stops.length > 0 ? stops : [
-    { seq: 1, nopen: '40511', officeName: 'KPC CIMAHI (40511)', role: 'ORIGIN' },
-    { seq: 2, nopen: '40395C1', officeName: 'AGEN ARVINET (40395C1)', role: 'TRANSIT' },
-    { seq: 3, nopen: '40400', officeName: 'SPP BANDUNG (40400)', role: 'DESTINATION' }
-  ]).map((st) => {
-    const matched = OFFICE_COORDINATES[st.nopen];
-    const fallbackLat = -6.9175 + (st.seq * 0.025);
-    const fallbackLng = 107.5422 + (st.seq * 0.035);
-    return {
-      ...st,
-      lat: matched ? matched.lat : fallbackLat,
-      lng: matched ? matched.lng : fallbackLng,
-      address: matched ? matched.address : `Nopen ${st.nopen}`
+  // Normalize stops to exact GPS coordinates (Memoized synchronously)
+  const stopsCoords = useMemo(() => {
+    const rawStops = stops && stops.length > 0 ? stops : [
+      { seq: 1, nopen: '40511', officeName: 'KPC CIMAHI (40511)', role: 'ORIGIN' },
+      { seq: 2, nopen: '40395C1', officeName: 'AGEN ARVINET (40395C1)', role: 'TRANSIT' },
+      { seq: 3, nopen: '40400', officeName: 'SPP BANDUNG (40400)', role: 'DESTINATION' }
+    ];
+
+    return rawStops.map((st) => {
+      const matched = OFFICE_COORDINATES[st.nopen];
+      const fallbackLat = -6.9175 + (st.seq * 0.025);
+      const fallbackLng = 107.5422 + (st.seq * 0.035);
+      return {
+        ...st,
+        lat: matched ? matched.lat : fallbackLat,
+        lng: matched ? matched.lng : fallbackLng,
+        address: matched ? matched.address : `Nopen ${st.nopen}`
+      };
+    });
+  }, [stops]);
+
+  // Synchronous static fallback waypoints (GAMBAR 1 REFERENSI BENAR)
+  const staticFallbackWaypoints = useMemo(() => {
+    return getDetailedRoadWaypoints(stopsCoords);
+  }, [stopsCoords]);
+
+  // OSRM fetched geometry state
+  const [osrmPolylineCoords, setOsrmPolylineCoords] = useState([]);
+
+  // String primitive key for stable useEffect dependency comparison
+  const stopsKey = useMemo(() => stopsCoords.map(s => `${s.nopen}-${s.lat}-${s.lng}`).join('|'), [stopsCoords]);
+
+  // Fetch OSRM Road Geometry ONCE when modal opens or stopsKey changes (Single Source of Truth)
+  useEffect(() => {
+    if (!isOpen || stopsCoords.length === 0) {
+      setOsrmPolylineCoords([]);
+      return;
+    }
+
+    let isSubscribed = true;
+    const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${stopsCoords.map(s => `${s.lng},${s.lat}`).join(';')}?overview=full&geometries=geojson`;
+
+    fetch(osrmUrl)
+      .then(res => res.json())
+      .then(data => {
+        if (isSubscribed && data && data.routes && data.routes[0] && data.routes[0].geometry) {
+          const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+          if (coords && coords.length > 0) {
+            setOsrmPolylineCoords(coords);
+          }
+        }
+      })
+      .catch((err) => console.warn('OSRM Route fetch fallback', err));
+
+    return () => {
+      isSubscribed = false;
     };
-  });
+  }, [isOpen, stopsKey]);
+
+  // Active polyline is OSRM geometry if fetched, otherwise staticFallbackWaypoints (Single Source of Truth)
+  const activePolylineCoords = osrmPolylineCoords.length > 0 ? osrmPolylineCoords : staticFallbackWaypoints;
 
   // Map Initialization & Destruction Cleanup Lifecycle
   useEffect(() => {
-    if (!isOpen || !mapContainerRef.current) return;
+    if (!isOpen) {
+      hasFittedRef.current = false;
+      return;
+    }
+    if (!mapContainerRef.current) return;
 
     if (mapInstanceRef.current) {
       mapInstanceRef.current.remove();
       mapInstanceRef.current = null;
     }
 
+    hasFittedRef.current = false;
+
     const firstCoord = stopsCoords[0] ? [stopsCoords[0].lat, stopsCoords[0].lng] : [-6.872412, 107.542468];
     const map = L.map(mapContainerRef.current, {
       center: firstCoord,
       zoom: 12,
-      zoomControl: true
+      zoomControl: true,
+      fadeAnimation: true,
+      zoomAnimation: true
     });
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; POS Indonesia Telemetry &copy; CARTO',
-      maxZoom: 19
-    }).addTo(map);
+    // 🗺️ 1. OpenStreetMap Standard Layer (Primary Default Tile Layer)
+    const osmStandard = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors | PT Pos Indonesia'
+    });
+
+    // 🌙 2. OpenStreetMap Dark Theme (CartoDB Dark)
+    const osmDark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors &copy; CARTO'
+    });
+
+    // 🚲 3. OpenStreetMap HOT (Humanitarian High Contrast)
+    const osmHot = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors, France'
+    });
+
+    // Add Default OpenStreetMap Standard Tile Layer to map
+    osmStandard.addTo(map);
+
+    // Add Interactive Layer Switcher Control at top-right
+    const baseMaps = {
+      "🗺️ OpenStreetMap Standard": osmStandard,
+      "🌙 OpenStreetMap Dark Mode": osmDark,
+      "🚲 OpenStreetMap HOT (High Contrast)": osmHot
+    };
+    L.control.layers(baseMaps, null, { position: 'topright' }).addTo(map);
 
     mapInstanceRef.current = map;
 
+    // Responsive invalidateSize timer & window resize listener
+    const timer = setTimeout(() => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    }, 250);
+
+    const handleResize = () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    };
+    window.addEventListener('resize', handleResize);
+
     return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', handleResize);
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
@@ -139,46 +282,60 @@ export default function LiveGpsMapModal({
     };
   }, [isOpen]);
 
-  // Update Truck Position, Curved Road Polylines, and Markers when activeSeq or stopsCoords changes
+  // Synchronous Map Render Effect for Markers, Vehicle Pin, and Polylines (NO FLICKERING & ZERO BLANK SCREEN)
   useEffect(() => {
-    if (!isOpen || !mapInstanceRef.current) return;
+    if (!isOpen || !mapInstanceRef.current || activePolylineCoords.length === 0) return;
 
     const map = mapInstanceRef.current;
 
-    // Clear existing markers & polylines
+    // Clear existing markers & polylines synchronously before drawing new frame
     map.eachLayer((layer) => {
       if (layer instanceof L.Marker || layer instanceof L.Polyline) {
         map.removeLayer(layer);
       }
     });
 
-    const stopsLatLngs = stopsCoords.map(s => [s.lat, s.lng]);
-    const passedIndex = Math.min(activeSeq - 1, stopsCoords.length - 1);
-
-    // Render static fallback waypoints immediately
-    const fallbackWaypoints = getDetailedRoadWaypoints(stopsCoords);
-    const fullPolyline = L.polyline(fallbackWaypoints, {
-      color: '#38bdf8',
-      weight: 4.5,
-      dashArray: '6, 6',
-      opacity: 0.85
+    // Draw single solid blue polyline from Single Source of Truth activePolylineCoords
+    L.polyline(activePolylineCoords, {
+      color: '#0284c7',
+      weight: 5.5,
+      opacity: 0.95
     }).addTo(map);
 
-    // Keep entire route framed perfectly in viewport
-    if (stopsLatLngs.length > 0) {
+    // Keep entire route framed perfectly ONLY ON INITIAL OPEN
+    const stopsLatLngs = stopsCoords.map(s => [s.lat, s.lng]);
+    if (stopsLatLngs.length > 0 && !hasFittedRef.current) {
       const bounds = L.latLngBounds(stopsLatLngs);
-      map.fitBounds(bounds, { padding: [70, 70], maxZoom: 13 });
+      const isMobile = window.innerWidth < 768;
+      map.fitBounds(bounds, { padding: isMobile ? [30, 30] : [60, 60], maxZoom: 13 });
+      hasFittedRef.current = true;
     }
 
-    // Draw passed polyline segment up to current active stop
+    const passedIndex = Math.min(activeSeq - 1, stopsCoords.length - 1);
+
+    // Draw passed polyline segment up to current active stop (SOLID GREEN LINE)
     if (passedIndex > 0) {
-      const passedStopsSubset = stopsCoords.slice(0, passedIndex + 1);
-      const passedWaypoints = getDetailedRoadWaypoints(passedStopsSubset);
-      L.polyline(passedWaypoints, {
-        color: '#10b981',
-        weight: 6,
-        opacity: 0.95
-      }).addTo(map);
+      const targetPassedCoord = [stopsCoords[passedIndex].lat, stopsCoords[passedIndex].lng];
+      let splitIdx = 0;
+      let minDistance = Infinity;
+
+      for (let k = 0; k < activePolylineCoords.length; k++) {
+        const pt = activePolylineCoords[k];
+        const dist = Math.hypot(pt[0] - targetPassedCoord[0], pt[1] - targetPassedCoord[1]);
+        if (dist < minDistance) {
+          minDistance = dist;
+          splitIdx = k;
+        }
+      }
+
+      const passedSegment = activePolylineCoords.slice(0, splitIdx + 1);
+      if (passedSegment.length > 1) {
+        L.polyline(passedSegment, {
+          color: '#16a34a',
+          weight: 6.5,
+          opacity: 0.95
+        }).addTo(map);
+      }
     }
 
     // Add Office Markers with Permanent Visual Floating Name Badges
@@ -188,15 +345,14 @@ export default function LiveGpsMapModal({
       const isOrigin = st.seq === 1;
       const isDest = st.seq === stopsCoords.length;
 
-      let pinColor = isPassed ? '#10b981' : isCurrent ? '#ff7b59' : isOrigin ? '#10b981' : isDest ? '#e8431f' : '#38bdf8';
+      let pinColor = isPassed ? '#16a34a' : isCurrent ? '#ea580c' : isOrigin ? '#16a34a' : isDest ? '#dc2626' : '#0284c7';
 
       const customIcon = L.divIcon({
         className: 'custom-leaflet-pin',
         html: `
           <div style="display: flex; flex-direction: column; align-items: center; position: relative;">
-            <!-- Permanent Floating Visual Name Badge -->
             <div style="
-              background: rgba(4,8,16,0.92);
+              background: rgba(15,23,42,0.92);
               color: #fff;
               border: 1.5px solid ${pinColor};
               border-radius: 8px;
@@ -204,7 +360,7 @@ export default function LiveGpsMapModal({
               font-size: 10px;
               font-weight: 800;
               white-space: nowrap;
-              box-shadow: 0 4px 14px rgba(0,0,0,0.7);
+              box-shadow: 0 4px 14px rgba(0,0,0,0.4);
               margin-bottom: 5px;
               letter-spacing: 0.02em;
               display: flex;
@@ -215,7 +371,6 @@ export default function LiveGpsMapModal({
               <span>${st.officeName}</span>
             </div>
 
-            <!-- Sequence Pinhead Pin -->
             <div style="
               width: 32px;
               height: 32px;
@@ -230,6 +385,7 @@ export default function LiveGpsMapModal({
               font-weight: 900;
               font-size: 12px;
               font-family: sans-serif;
+              cursor: pointer;
             ">
               ${st.seq}
             </div>
@@ -241,17 +397,28 @@ export default function LiveGpsMapModal({
 
       const marker = L.marker([st.lat, st.lng], { icon: customIcon }).addTo(map);
       marker.bindPopup(`
-        <div style="font-family: sans-serif; padding: 4px;">
-          <b style="font-size: 13px; color: #060d1f;">${st.officeName} (Nopen: ${st.nopen})</b><br/>
-          <span style="font-size: 11px; color: #666;">${st.address}</span><br/>
-          <span style="font-size: 11px; font-weight: bold; color: ${pinColor};">
-            ${isPassed ? '✓ PASSED (Selesai Muat)' : isCurrent ? '📍 POSISI KENDARAAN AKTIF' : 'Upcoming Stop'}
-          </span>
+        <div style="font-family: system-ui, sans-serif; padding: 6px 4px; min-width: 200px;">
+          <div style="font-size: 13px; font-weight: 800; color: #0f172a; margin-bottom: 4px;">
+            ${st.officeName} <span style="font-family: monospace; color: #0284c7;">(${st.nopen})</span>
+          </div>
+          <div style="font-size: 11px; color: #475569; margin-bottom: 6px; line-height: 1.4;">
+            📍 ${st.address}
+          </div>
+          <div style="font-size: 11px; font-weight: 700; color: ${pinColor}; margin-bottom: 8px;">
+            ${isPassed ? '✓ TERKIRIM / SELESAI' : isCurrent ? '📍 POSISI KENDARAAN AKTIF saat ini' : '⏱️ Stop Selanjutnya (Transit)'}
+          </div>
+          <div style="font-size: 10px; color: #64748b;">
+            Stop Ke-${st.seq} dari ${stopsCoords.length} Waypoints
+          </div>
         </div>
       `);
+
+      marker.on('click', () => {
+        map.flyTo([st.lat, st.lng], 14, { duration: 0.8 });
+      });
     });
 
-    // Add Live Moving Truck Marker at current position (without force panning map away)
+    // Add Live Moving Truck Marker at current position
     const currentPos = stopsCoords[passedIndex] || stopsCoords[0];
     const truckIcon = L.divIcon({
       className: 'custom-truck-pin',
@@ -279,29 +446,7 @@ export default function LiveGpsMapModal({
 
     L.marker([currentPos.lat, currentPos.lng], { icon: truckIcon }).addTo(map);
 
-    // Fetch real OSRM road geometry asynchronously for 100% exact road navigation
-    const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${stopsCoords.map(s => `${s.lng},${s.lat}`).join(';')}?overview=full&geometries=geojson`;
-    fetch(osrmUrl)
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.routes && data.routes[0] && data.routes[0].geometry) {
-          const roadPolylineCoords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
-          if (roadPolylineCoords.length > 0) {
-            // Replace fallback polyline with exact OSRM navigation driving route!
-            map.removeLayer(fullPolyline);
-            const osrmPolyline = L.polyline(roadPolylineCoords, {
-              color: '#38bdf8',
-              weight: 5,
-              opacity: 0.9
-            }).addTo(map);
-
-            map.fitBounds(osrmPolyline.getBounds(), { padding: [60, 60], maxZoom: 13 });
-          }
-        }
-      })
-      .catch((err) => console.warn('OSRM Route fetch fallback', err));
-
-  }, [isOpen, activeSeq, stopsCoords, vehicleNopol]);
+  }, [isOpen, activeSeq, activePolylineCoords, vehicleNopol]);
 
   if (!isOpen) return null;
 
@@ -551,6 +696,19 @@ export default function LiveGpsMapModal({
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <button
+                  onClick={() => {
+                    if (mapInstanceRef.current && stopsCoords.length > 0) {
+                      const bounds = L.latLngBounds(stopsCoords.map(s => [s.lat, s.lng]));
+                      mapInstanceRef.current.fitBounds(bounds, { padding: [60, 60], maxZoom: 13 });
+                    }
+                  }}
+                  className="btn-ghost"
+                  style={{ padding: '5px 12px', fontSize: 11, fontWeight: 700, borderRadius: 8, gap: 6, color: '#38bdf8', borderColor: 'rgba(56,189,248,0.3)', background: 'rgba(56,189,248,0.1)' }}
+                  title="Kembalikan fokus peta ke seluruh rute"
+                >
+                  🎯 Reset Kamera Peta
+                </button>
                 <span className="badge badge-emerald" style={{ fontSize: 10, padding: '4px 10px' }}>
                   GPS COORDINATES ACTIVE 📡
                 </span>

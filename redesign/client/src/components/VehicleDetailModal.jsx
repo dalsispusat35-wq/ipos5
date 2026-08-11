@@ -2,12 +2,15 @@ import { useState, useEffect } from 'react';
 import { api } from '../utils/api.js';
 import { 
   X, Truck, ShieldAlert, Clock, MapPin, ClipboardList, Info, 
-  ChevronLeft, ChevronRight, RefreshCw, BarChart2, Package 
+  ChevronLeft, ChevronRight, RefreshCw, BarChart2, Package, Route 
 } from 'lucide-react';
+import RouteDetailModal from './RouteDetailModal.jsx';
 
 export default function VehicleDetailModal({ nopol, onClose, onViewTransaction }) {
   const [activeTab, setActiveTab] = useState('summary'); // summary, route, shipments
   const [data, setData] = useState(null);
+  const [capacityData, setCapacityData] = useState(null);
+  const [inspectRouteTx, setInspectRouteTx] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
@@ -27,11 +30,18 @@ export default function VehicleDetailModal({ nopol, onClose, onViewTransaction }
         service: serviceFilter
       }).toString();
       
-      const res = await api.getVehicleDetail(nopol, params);
+      const [res, capRes] = await Promise.all([
+        api.getVehicleDetail(nopol, params),
+        api.getVehicleCapacity(nopol).catch(() => null)
+      ]);
+
       if (res.success) {
         setData(res.data);
       } else {
         setError(res.message || 'Gagal memuat detail kendaraan.');
+      }
+      if (capRes && capRes.success) {
+        setCapacityData(capRes.data);
       }
     } catch (err) {
       setError(err.message || 'Koneksi ke server gagal.');
@@ -77,8 +87,24 @@ export default function VehicleDetailModal({ nopol, onClose, onViewTransaction }
     return { label: 'LAINNYA', color: '#94a3b8', bg: 'rgba(148, 163, 184, 0.05)' };
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && !inspectRouteTx) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose, inspectRouteTx]);
+
   return (
-    <div className="modal-overlay" style={{ zIndex: 1000 }}>
+    <div 
+      className="modal-overlay" 
+      style={{ zIndex: 1000 }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !inspectRouteTx) onClose();
+      }}
+    >
       <div className="modal-content animate-fade-in" style={{ maxWidth: '900px', width: '95%', maxHeight: '90vh', display: 'flex', flexDirection: 'column', padding: 0 }}>
         {/* Header */}
         <div className="modal-header" style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-light)' }}>
@@ -190,6 +216,61 @@ export default function VehicleDetailModal({ nopol, onClose, onViewTransaction }
                       </table>
                     </div>
                   </div>
+
+                  {/* Vehicle Load Capacity Gauge Feature (FR-MR-001) */}
+                  {capacityData && (
+                    <div className="glass-card" style={{ padding: '20px', background: 'linear-gradient(135deg, rgba(11,25,44,0.92), rgba(15,23,42,0.95))', border: '1px solid rgba(56,189,248,0.25)', marginBottom: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <div style={{ padding: '8px', borderRadius: '8px', background: 'rgba(56,189,248,0.12)', color: '#38bdf8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <BarChart2 size={18} />
+                          </div>
+                          <div>
+                            <h4 style={{ color: 'white', margin: 0, fontSize: '15px', fontWeight: 800 }}>Kapasitas Muatan Kendaraan (Load Capacity Gauge)</h4>
+                            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                              Rute: <strong style={{ color: '#fff' }}>{capacityData.rute?.nama_rute || 'Rute Logistik'}</strong>
+                            </span>
+                          </div>
+                        </div>
+                        <span className={`badge ${capacityData.status_kapasitas === 'OVERLOAD' ? 'badge-danger' : capacityData.status_kapasitas === 'WARNING' ? 'badge-warning' : 'badge-success'}`} style={{ fontSize: '12px', padding: '6px 12px', fontWeight: 700 }}>
+                          STATUS: {capacityData.status_kapasitas}
+                        </span>
+                      </div>
+
+                      {/* Progress Bar Gauge */}
+                      <div style={{ background: 'rgba(255,255,255,0.06)', height: '14px', borderRadius: '7px', overflow: 'hidden', position: 'relative', margin: '14px 0 8px' }}>
+                        <div 
+                          style={{
+                            width: `${Math.min(100, capacityData.persentase_terpakai)}%`,
+                            height: '100%',
+                            background: capacityData.persentase_terpakai >= 100 
+                              ? 'linear-gradient(90deg, #f43f5e, #ef4444)' 
+                              : capacityData.persentase_terpakai >= 80 
+                              ? 'linear-gradient(90deg, #eab308, #f59e0b)' 
+                              : 'linear-gradient(90deg, #38bdf8, #10b981)',
+                            borderRadius: '7px',
+                            transition: 'width 0.6s cubic-bezier(0.4, 0, 0.2, 1)'
+                          }}
+                        />
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                        <div style={{ color: 'var(--text-secondary)' }}>
+                          Total muatan <strong style={{ color: 'white' }}>{formatWeight(capacityData.total_berat_terpakai_kg)}</strong> terpakai dari kapasitas maks <strong style={{ color: 'var(--accent-cyan)' }}>{formatWeight(capacityData.kapasitas_maksimum_kg)}</strong> ({capacityData.total_paket} Paket)
+                        </div>
+                        <div style={{ fontWeight: 800, fontSize: '16px', color: capacityData.persentase_terpakai >= 100 ? '#f43f5e' : capacityData.persentase_terpakai >= 80 ? '#eab308' : '#38bdf8' }}>
+                          {capacityData.persentase_terpakai}%
+                        </div>
+                      </div>
+
+                      {capacityData.unweighted_count > 0 && (
+                        <div style={{ marginTop: '10px', fontSize: '11.5px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Info size={13} style={{ color: 'var(--accent-yellow)' }} />
+                          <span>Terdapat <strong style={{ color: '#fff' }}>{capacityData.unweighted_count} paket</strong> belum ditimbang (0 kg) yang belum masuk dalam kalkulasi total berat.</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Summary Metric Cards */}
                   <div className="grid-4" style={{ gap: '15px' }}>
@@ -433,13 +514,20 @@ export default function VehicleDetailModal({ nopol, onClose, onViewTransaction }
                                 <td style={{ textAlign: 'right', verticalAlign: 'middle' }}>
                                   <button 
                                     className="btn btn-secondary" 
-                                    onClick={() => {
-                                      onClose();
-                                      onViewTransaction(tx.connote_code);
+                                    onClick={() => setInspectRouteTx(tx)}
+                                    style={{ 
+                                      padding: '4px 10px', 
+                                      fontSize: '11px',
+                                      color: '#38bdf8',
+                                      background: 'rgba(56,189,248,0.08)',
+                                      border: '1px solid rgba(56,189,248,0.3)',
+                                      borderRadius: '6px',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px'
                                     }}
-                                    style={{ padding: '4px 8px', fontSize: '11px' }}
                                   >
-                                    Cek Rute
+                                    <Route size={12} /> Cek Rute
                                   </button>
                                 </td>
                               </tr>
@@ -480,9 +568,18 @@ export default function VehicleDetailModal({ nopol, onClose, onViewTransaction }
           ) : null}
         </div>
 
+        {/* Route Detail Sub-Modal */}
+        {inspectRouteTx && (
+          <RouteDetailModal 
+            connoteCode={inspectRouteTx.connote_code}
+            txData={inspectRouteTx}
+            onClose={() => setInspectRouteTx(null)}
+          />
+        )}
+
         {/* Footer */}
         <div className="modal-footer" style={{ padding: '16px 24px', borderTop: '1px solid var(--border-light)' }}>
-          <button onClick={onClose} className="btn btn-secondary">
+          <button onClick={onClose} className="btn btn-secondary" style={{ border: '1px solid rgba(56,189,248,0.3)', color: '#38bdf8', background: 'rgba(56,189,248,0.08)' }}>
             Tutup
           </button>
         </div>

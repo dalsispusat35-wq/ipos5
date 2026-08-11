@@ -364,6 +364,144 @@ class KendaraanController extends BaseController {
       res.status(500).json({ success: false, message: 'Server error' });
     }
   }
+
+  // Calculate vehicle load capacity (Vehicle Load Capacity Gauge Feature)
+  async getKapasitas(req, res) {
+    try {
+      const { noKendaraan } = req.params;
+      const { rute_id, tanggal } = req.query;
+
+      const db = await DbConnection.getDb();
+      const cleanNopol = noKendaraan.replace(/\s+/g, '').toUpperCase();
+
+      let vehicle = await db.collection('master_kendaraan').findOne({
+        $or: [
+          { nopol: noKendaraan },
+          { nopol: new RegExp(cleanNopol, 'i') },
+          { kendaraan_id: noKendaraan }
+        ]
+      });
+
+      let maxCapacityKg = parseFloat(vehicle?.max_capacity_kg || vehicle?.kapasitas_maksimum_kg) || 5000;
+      if (!vehicle?.max_capacity_kg && !vehicle?.kapasitas_maksimum_kg && vehicle?.jenis_kendaraan) {
+        const jenis = (vehicle.jenis_kendaraan || '').toUpperCase();
+        if (jenis.includes('HEAVY') || jenis.includes('10')) maxCapacityKg = 10000;
+        else if (jenis.includes('FUSO') || jenis.includes('TRUK')) maxCapacityKg = 8000;
+        else if (jenis.includes('CDD') || jenis.includes('DOUBLE') || jenis.includes('4')) maxCapacityKg = 5000;
+        else if (jenis.includes('CDE') || jenis.includes('ENGKEL') || jenis.includes('3')) maxCapacityKg = 3500;
+        else if (jenis.includes('VAN') || jenis.includes('PICKUP') || jenis.includes('BLIND')) maxCapacityKg = 1500;
+      }
+
+      let assignedRouteId = rute_id || vehicle?.assigned_route_id || vehicle?.rute_default_id || 'RTE-6';
+      
+      let targetNopends = ["40000", "40500", "40253A", "40100", "40395C1", "40395U1", "40381U2", "40382U1", "40382B2", "40393U3", "40393S8"];
+      let destinationPrefixes = ["1", "2", "3", "7", "9"];
+      let ruteName = "Rute 6 — SPP Bandung ke SPP Jakarta / Hub Regional";
+      let ruteAsal = "SPP Bandung (40000)";
+      let ruteTujuan = "SPP Jakarta Timur (10000)";
+
+      if (assignedRouteId) {
+        const routeDoc = await db.collection('master_route_nopen').findOne({
+          $or: [
+            { route_id: assignedRouteId },
+            { route_code: assignedRouteId },
+            { kd_route: assignedRouteId }
+          ]
+        });
+        if (routeDoc) {
+          ruteName = routeDoc.nama_rute || routeDoc.route_name || routeDoc.route_id || assignedRouteId;
+          ruteAsal = routeDoc.asal_nama || routeDoc.origin || ruteAsal;
+          ruteTujuan = routeDoc.tujuan_nama || routeDoc.destination || ruteTujuan;
+          if (routeDoc.origin_nopen_list && Array.isArray(routeDoc.origin_nopen_list) && routeDoc.origin_nopen_list.length > 0) {
+            targetNopends = routeDoc.origin_nopen_list;
+          } else if (routeDoc.daftar_nopend_asal && Array.isArray(routeDoc.daftar_nopend_asal) && routeDoc.daftar_nopend_asal.length > 0) {
+            targetNopends = routeDoc.daftar_nopend_asal;
+          }
+          if (routeDoc.destination_prefix_filter && Array.isArray(routeDoc.destination_prefix_filter) && routeDoc.destination_prefix_filter.length > 0) {
+            destinationPrefixes = routeDoc.destination_prefix_filter;
+          }
+        }
+      }
+
+      const targetDateStr = tanggal || new Date().toISOString().slice(0, 10);
+      const destinationRegex = new RegExp(`^(${destinationPrefixes.join('|')})`);
+
+      const matchConditions = [
+        {
+          $or: [
+            { 'location_data_created.custom_field.nopen': { $in: targetNopends } },
+            { 'location_data_created.custom_field.destination_nopen': { $in: targetNopends } },
+            { 'custom_field.destination_nopen': { $regex: destinationRegex } },
+            { 'custom_field.final_swp': { $in: [6, '6'] } }
+          ]
+        },
+        {
+          'connote_state': { $nin: ['CANCEL', 'CANCELLED', 'RETURNED'] }
+        }
+      ];
+
+      const allTxDocs = await db.collection('transaksi').find({ $and: matchConditions }).toArray();
+
+      let totalWeightKg = 0;
+      let totalPaket = 0;
+      let unweightedCount = 0;
+
+      allTxDocs.forEach(doc => {
+        const weight = parseFloat(doc.connote?.actual_weight || doc.actual_weight || 0);
+        if (weight <= 0) {
+          unweightedCount++;
+        } else {
+          totalWeightKg += weight;
+        }
+        totalPaket++;
+      });
+
+      // Load Partitioning: Cap Trip 1 at maxCapacityKg, route excess to overflow queue
+      const activeTripLoadKg = Math.min(totalWeightKg, maxCapacityKg);
+      const overflowQueueKg = Math.max(0, totalWeightKg - maxCapacityKg);
+
+      const persentaseTerpakai = maxCapacityKg > 0 ? parseFloat(((activeTripLoadKg / maxCapacityKg) * 100).toFixed(1)) : 0;
+      let statusKapasitas = 'NORMAL';
+      if (activeTripLoadKg >= maxCapacityKg) {
+        statusKapasitas = 'TERISI PENUH (FULL)';
+      } else if (persentaseTerpakai >= 80) {
+        statusKapasitas = 'WARNING';
+      }
+
+      res.json({
+        success: true,
+        data: {
+          no_kendaraan: vehicle?.nopol || noKendaraan,
+          nama_kendaraan: vehicle?.nama_kendaraan || 'Armada Logistik',
+          jenis_kendaraan: vehicle?.jenis_kendaraan || 'Truk Box',
+          assigned_route_id: assignedRouteId,
+          rute: {
+            rute_id: assignedRouteId,
+            nama_rute: ruteName,
+            asal: ruteAsal,
+            tujuan: ruteTujuan,
+            origin_nopen_list: targetNopends,
+            destination_prefix_filter: destinationPrefixes
+          },
+          kapasitas_maksimum_kg: maxCapacityKg,
+          total_berat_terpakai_kg: parseFloat(activeTripLoadKg.toFixed(2)),
+          used_capacity_kg: parseFloat(activeTripLoadKg.toFixed(2)),
+          total_berat_akumulasi_kg: parseFloat(totalWeightKg.toFixed(2)),
+          overflow_queue_kg: parseFloat(overflowQueueKg.toFixed(2)),
+          has_overflow: overflowQueueKg > 0,
+          total_paket: totalPaket,
+          unweighted_count: unweightedCount,
+          persentase_terpakai: persentaseTerpakai,
+          percentage_used: persentaseTerpakai,
+          status_kapasitas: statusKapasitas,
+          tanggal: targetDateStr
+        }
+      });
+    } catch (error) {
+      console.error('Error in getKapasitas kendaraan:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
 }
 
 export default new KendaraanController();

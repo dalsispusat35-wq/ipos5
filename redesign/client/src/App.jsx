@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
-import { api } from './utils/api.js';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate, Navigate } from 'react-router-dom';
+import { api, getAuthToken, setAuthToken } from './utils/api.js';
 import { 
   LayoutDashboard, Package, Building2, Tag, Truck, Map, 
   CalendarClock, Calendar, ShieldCheck, Database, Settings, 
   Search, Bell, ChevronDown, User, Activity, Menu, ChevronLeft, PanelLeftClose, PanelLeftOpen,
-  TrendingUp
+  TrendingUp, LogOut
 } from 'lucide-react';
 import logoImg from './assets/logo.png';
 
@@ -24,10 +24,11 @@ import GateMonitoring from './pages/GateMonitoring.jsx';
 import JadwalPickup from './pages/JadwalPickup.jsx';
 import Transaksi from './pages/Transaksi.jsx';
 import RouteJourney from './pages/RouteJourney.jsx';
-import EstimasiMilkRun from './pages/EstimasiMilkRun.jsx';
+import EstimasiMilkRun from './pages/estimasi/index.jsx';
 import Profile from './pages/Profile.jsx';
+import Login from './pages/Login.jsx';
 
-function Header({ title, sidebarCollapsed, onToggleSidebar }) {
+function Header({ title, sidebarCollapsed, onToggleSidebar, onToggleMobileMenu, currentUser, onLogout }) {
   const [searchVal, setSearchVal] = useState('');
   const navigate = useNavigate();
 
@@ -47,15 +48,35 @@ function Header({ title, sidebarCollapsed, onToggleSidebar }) {
         borderBottom: '1px solid rgba(255,255,255,0.07)',
         display: 'flex',
         alignItems: 'center',
-        padding: '0 24px',
-        gap: 16,
+        padding: '0 16px',
+        gap: 12,
         flexShrink: 0,
         position: 'relative',
         zIndex: 10,
       }}
     >
-      {/* Sidebar Toggle Button */}
       <button
+        className="mobile-only"
+        onClick={onToggleMobileMenu}
+        style={{
+          background: 'rgba(255,255,255,0.06)',
+          border: '1px solid rgba(255,255,255,0.12)',
+          borderRadius: 8,
+          width: 36,
+          height: 36,
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          color: '#fff',
+          flexShrink: 0,
+        }}
+        title="Toggle Mobile Menu"
+      >
+        <Menu size={20} />
+      </button>
+
+      <button
+        className="desktop-only"
         onClick={onToggleSidebar}
         style={{
           background: 'rgba(255,255,255,0.05)',
@@ -63,7 +84,6 @@ function Header({ title, sidebarCollapsed, onToggleSidebar }) {
           borderRadius: 8,
           width: 34,
           height: 34,
-          display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           cursor: 'pointer',
@@ -76,148 +96,155 @@ function Header({ title, sidebarCollapsed, onToggleSidebar }) {
         {sidebarCollapsed ? <PanelLeftOpen size={17} /> : <PanelLeftClose size={17} />}
       </button>
 
-      <div style={{ flex: '0 0 auto' }}>
-        <h1 style={{ fontWeight: 800, fontSize: 16, color: '#fff', margin: 0, letterSpacing: '-0.01em' }}>
+      <div style={{ flex: '0 1 auto', minWidth: 0 }}>
+        <h1 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#fff', letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {title}
         </h1>
       </div>
 
-      <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.1)', flexShrink: 0 }} />
-
-      <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', whiteSpace: 'nowrap' }}>
-        Cimahi Main Branch · KPC 40511
-      </div>
-
-      {/* Global Quick Search */}
-      <div style={{ flex: 1, maxWidth: 400, position: 'relative' }}>
-        <Search
-          size={14}
-          color="rgba(255,255,255,0.35)"
-          style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }}
-        />
-        <input
-          className="input-navy"
-          value={searchVal}
-          onChange={(e) => setSearchVal(e.target.value)}
-          onKeyDown={handleSearchSubmit}
-          placeholder="Quick search connote, post office..."
-          style={{ paddingLeft: 34, fontSize: 13 }}
-        />
-      </div>
-
-      {/* Header Actions */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 'auto' }}>
-        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', whiteSpace: 'nowrap' }}>
-          Thu, 24 Jul 2026
+      <div style={{ flex: 1, display: 'flex', justifyContent: 'center', padding: '0 12px' }}>
+        <div style={{ position: 'relative', width: '100%', maxWidth: 360 }}>
+          <Search size={14} color="rgba(255,255,255,0.35)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
+          <input
+            className="input-navy"
+            value={searchVal}
+            onChange={(e) => setSearchVal(e.target.value)}
+            onKeyDown={handleSearchSubmit}
+            placeholder="Cari connote resi (misal: P2607150025574)..."
+            style={{ width: '100%', paddingLeft: 34, paddingRight: 12, height: 34, fontSize: 12.5 }}
+          />
         </div>
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+        {currentUser && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.1)' }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#48cae4' }}>{currentUser.name}</span>
+            <span style={{ fontSize: 10, background: 'rgba(72,202,228,0.15)', color: '#48cae4', padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>
+              {currentUser.role}
+            </span>
+          </div>
+        )}
 
         <button
+          onClick={onLogout}
+          title="Logout"
           style={{
-            width: 34,
-            height: 34,
-            borderRadius: 9,
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.09)',
+            background: 'rgba(239, 68, 68, 0.12)',
+            border: '1px solid rgba(239, 68, 68, 0.25)',
+            borderRadius: 8,
+            padding: '6px 10px',
+            color: '#fca5a5',
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            position: 'relative',
+            gap: 6
           }}
-          title="System Notifications"
         >
-          <Bell size={15} color="rgba(255,255,255,0.6)" />
-          <div
-            style={{
-              position: 'absolute',
-              top: 6,
-              right: 6,
-              width: 6,
-              height: 6,
-              borderRadius: '50%',
-              background: '#e8431f',
-              border: '1px solid #060d1f',
-            }}
-          />
+          <LogOut size={14} /> <span className="desktop-only">Logout</span>
         </button>
-
-        {/* User Profile Badge */}
-        <Link
-          to="/profile"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '5px 10px 5px 5px',
-            borderRadius: 10,
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.09)',
-            cursor: 'pointer',
-            textDecoration: 'none'
-          }}
-        >
-          <div
-            style={{
-              width: 26,
-              height: 26,
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #1a4080, #0b1830)',
-              border: '1.5px solid rgba(232,67,31,0.5)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 10,
-              fontWeight: 700,
-              color: '#fff',
-            }}
-          >
-            SR
-          </div>
-          <span style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>Sari R.</span>
-          <ChevronDown size={12} color="rgba(255,255,255,0.4)" />
-        </Link>
       </div>
     </header>
   );
 }
 
+const DISABLE_AUTH = import.meta.env.VITE_DISABLE_AUTH === 'true';
+
+function RequireAuth({ children, currentUser, requiredRole }) {
+  if (DISABLE_AUTH) {
+    return children;
+  }
+
+  const token = getAuthToken();
+  if (!token || !currentUser) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (requiredRole && currentUser.role !== requiredRole) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+}
+
 function AppContent() {
-  const location = useLocation();
   const [activeConnection, setActiveConnection] = useState(null);
   const [refreshStatsTrigger, setRefreshStatsTrigger] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  const fetchActiveConnection = async () => {
-    try {
-      const res = await api.getActiveConnection();
-      if (res.success && res.data && res.connected) {
-        setActiveConnection(res.data);
-      } else {
-        setActiveConnection(null);
-      }
-    } catch (e) {
-      console.error('Error fetching active connection:', e);
-      setActiveConnection(null);
+  const [currentUser, setCurrentUser] = useState(() => {
+    const saved = sessionStorage.getItem('ipos5_user');
+    if (saved) return JSON.parse(saved);
+    if (DISABLE_AUTH) return { username: 'sari', name: 'Sari Rahayu', role: 'SUPER_ADMIN' };
+    return null;
+  });
+
+  useEffect(() => {
+    const token = getAuthToken();
+    if (token && !currentUser) {
+      api.getMe()
+        .then(res => {
+          if (res.success && res.data?.user) {
+            setCurrentUser(res.data.user);
+            sessionStorage.setItem('ipos5_user', JSON.stringify(res.data.user));
+          }
+        })
+        .catch(() => {
+          setAuthToken('');
+          sessionStorage.removeItem('ipos5_user');
+          setCurrentUser(null);
+        });
     }
+  }, []);
+
+  const handleLoginSuccess = (userData) => {
+    setCurrentUser(userData);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await api.logout();
+    } catch (e) {
+      // ignore
+    }
+    setAuthToken('');
+    sessionStorage.removeItem('ipos5_user');
+    setCurrentUser(null);
+    navigate('/login');
   };
 
   useEffect(() => {
-    fetchActiveConnection();
-  }, []);
+    if (getAuthToken()) {
+      api.getActiveConnection()
+        .then((res) => {
+          if (res.success) {
+            setActiveConnection(res.data);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [location.pathname]);
 
-  const handleConnectionSwitch = (newConn) => {
-    setActiveConnection(newConn);
-    setRefreshStatsTrigger(prev => prev + 1);
+  const handleConnectionSwitch = async () => {
+    try {
+      const res = await api.getActiveConnection();
+      if (res.success) {
+        setActiveConnection(res.data);
+      }
+      setRefreshStatsTrigger((prev) => prev + 1);
+    } catch (error) {
+      console.error('Failed to refresh active connection state:', error);
+    }
   };
 
-  const handleDisconnect = async () => {
-    try {
-      await api.disconnectDb();
-      setActiveConnection(null);
-    } catch (e) {
-      console.error('Error disconnecting:', e);
-      setActiveConnection(null);
-    }
+  const handleDisconnect = () => {
+    setActiveConnection(null);
+    setRefreshStatsTrigger((prev) => prev + 1);
   };
 
   const isLinkActive = (path) => {
@@ -237,7 +264,7 @@ function AppContent() {
     if (p.startsWith('/jadwal') && !p.startsWith('/jadwal-pickup')) return 'Transport Schedule';
     if (p.startsWith('/jadwal-pickup')) return 'Jadwal Pick Up SPP';
     if (p.startsWith('/route-journey')) return 'Milk Run Logistics Telemetry';
-    if (p.startsWith('/estimasi')) return 'Estimasi(Dummy)';
+    if (p.startsWith('/estimasi')) return 'Estimasi Milk Run Logistik';
     if (p.startsWith('/transit-monitoring')) return 'Gate Monitoring';
     if (p.startsWith('/transaksi')) return 'Data Transaksi Paket';
     if (p.startsWith('/compass')) return 'Database Viewer';
@@ -247,11 +274,157 @@ function AppContent() {
   };
 
   const sidebarWidth = sidebarCollapsed ? 68 : 232;
+  const isSuperAdmin = DISABLE_AUTH || currentUser?.role === 'SUPER_ADMIN';
+
+  const renderNavLinks = (isMobile = false) => (
+    <>
+      {(!sidebarCollapsed || isMobile) && <div className="section-header">Operations</div>}
+      <Link to="/" title="Dashboard" className={`nav-item ${isLinkActive('/') ? 'active' : ''}`} style={{ justifyContent: (sidebarCollapsed && !isMobile) ? 'center' : 'flex-start', padding: (sidebarCollapsed && !isMobile) ? '10px 0' : '9px 12px' }}>
+        <LayoutDashboard size={17} /> {(!sidebarCollapsed || isMobile) && <span>Dashboard</span>}
+      </Link>
+      <Link to="/checker" title="Package Tracking" className={`nav-item ${isLinkActive('/checker') ? 'active' : ''}`} style={{ justifyContent: (sidebarCollapsed && !isMobile) ? 'center' : 'flex-start', padding: (sidebarCollapsed && !isMobile) ? '10px 0' : '9px 12px' }}>
+        <Package size={17} /> {(!sidebarCollapsed || isMobile) && <span>Package Tracking</span>}
+      </Link>
+      <Link to="/kantor" title="Post Offices" className={`nav-item ${isLinkActive('/kantor') ? 'active' : ''}`} style={{ justifyContent: (sidebarCollapsed && !isMobile) ? 'center' : 'flex-start', padding: (sidebarCollapsed && !isMobile) ? '10px 0' : '9px 12px' }}>
+        <Building2 size={17} /> {(!sidebarCollapsed || isMobile) && <span>Post Offices</span>}
+      </Link>
+
+      {(!sidebarCollapsed || isMobile) && <div className="section-header" style={{ marginTop: 12 }}>Master Data</div>}
+      <Link to="/produk" title="Products & Services" className={`nav-item ${isLinkActive('/produk') ? 'active' : ''}`} style={{ justifyContent: (sidebarCollapsed && !isMobile) ? 'center' : 'flex-start', padding: (sidebarCollapsed && !isMobile) ? '10px 0' : '9px 12px' }}>
+        <Tag size={17} /> {(!sidebarCollapsed || isMobile) && <span>Products & Services</span>}
+      </Link>
+      <Link to="/kendaraan" title="Fleet" className={`nav-item ${isLinkActive('/kendaraan') ? 'active' : ''}`} style={{ justifyContent: (sidebarCollapsed && !isMobile) ? 'center' : 'flex-start', padding: (sidebarCollapsed && !isMobile) ? '10px 0' : '9px 12px' }}>
+        <Truck size={17} /> {(!sidebarCollapsed || isMobile) && <span>Fleet</span>}
+      </Link>
+      <Link to="/route" title="Routes" className={`nav-item ${isLinkActive('/route') ? 'active' : ''}`} style={{ justifyContent: (sidebarCollapsed && !isMobile) ? 'center' : 'flex-start', padding: (sidebarCollapsed && !isMobile) ? '10px 0' : '9px 12px' }}>
+        <Map size={17} /> {(!sidebarCollapsed || isMobile) && <span>Routes</span>}
+      </Link>
+
+      {(!sidebarCollapsed || isMobile) && <div className="section-header" style={{ marginTop: 12 }}>Logistics</div>}
+      <Link to="/template" title="Schedule Templates" className={`nav-item ${isLinkActive('/template') ? 'active' : ''}`} style={{ justifyContent: (sidebarCollapsed && !isMobile) ? 'center' : 'flex-start', padding: (sidebarCollapsed && !isMobile) ? '10px 0' : '9px 12px' }}>
+        <CalendarClock size={17} /> {(!sidebarCollapsed || isMobile) && <span>Schedule Templates</span>}
+      </Link>
+      <Link to="/jadwal" title="Transport Schedule" className={`nav-item ${isLinkActive('/jadwal') ? 'active' : ''}`} style={{ justifyContent: (sidebarCollapsed && !isMobile) ? 'center' : 'flex-start', padding: (sidebarCollapsed && !isMobile) ? '10px 0' : '9px 12px' }}>
+        <Calendar size={17} /> {(!sidebarCollapsed || isMobile) && <span>Transport Schedule</span>}
+      </Link>
+      <Link to="/route-journey" title="Milk Run Telemetry" className={`nav-item ${isLinkActive('/route-journey') ? 'active' : ''}`} style={{ justifyContent: (sidebarCollapsed && !isMobile) ? 'center' : 'flex-start', padding: (sidebarCollapsed && !isMobile) ? '10px 0' : '9px 12px' }}>
+        <Activity size={17} /> {(!sidebarCollapsed || isMobile) && <span>Milk Run Telemetry</span>}
+      </Link>
+      <Link to="/estimasi" title="Estimasi Milk Run" className={`nav-item ${isLinkActive('/estimasi') ? 'active' : ''}`} style={{ justifyContent: (sidebarCollapsed && !isMobile) ? 'center' : 'flex-start', padding: (sidebarCollapsed && !isMobile) ? '10px 0' : '9px 12px' }}>
+        <TrendingUp size={17} /> {(!sidebarCollapsed || isMobile) && <span>Estimasi Milk Run</span>}
+      </Link>
+      <Link to="/transit-monitoring" title="Gate Monitoring" className={`nav-item ${isLinkActive('/transit-monitoring') ? 'active' : ''}`} style={{ justifyContent: (sidebarCollapsed && !isMobile) ? 'center' : 'flex-start', padding: (sidebarCollapsed && !isMobile) ? '10px 0' : '9px 12px' }}>
+        <ShieldCheck size={17} /> {(!sidebarCollapsed || isMobile) && <span>Gate Monitoring</span>}
+      </Link>
+
+      {/* Restricted System Modules: Only visible to SUPER_ADMIN */}
+      {isSuperAdmin && (
+        <>
+          {(!sidebarCollapsed || isMobile) && <div className="section-header" style={{ marginTop: 12 }}>System (Restricted)</div>}
+          <Link to="/compass" title="Database Viewer" className={`nav-item ${isLinkActive('/compass') ? 'active' : ''}`} style={{ justifyContent: (sidebarCollapsed && !isMobile) ? 'center' : 'flex-start', padding: (sidebarCollapsed && !isMobile) ? '10px 0' : '9px 12px' }}>
+            <Database size={17} /> {(!sidebarCollapsed || isMobile) && <span>Database Viewer</span>}
+          </Link>
+          <Link to="/settings" title="Settings" className={`nav-item ${isLinkActive('/settings') ? 'active' : ''}`} style={{ justifyContent: (sidebarCollapsed && !isMobile) ? 'center' : 'flex-start', padding: (sidebarCollapsed && !isMobile) ? '10px 0' : '9px 12px' }}>
+            <Settings size={17} /> {(!sidebarCollapsed || isMobile) && <span>Settings</span>}
+          </Link>
+        </>
+      )}
+
+      {(!sidebarCollapsed || isMobile) && <div className="section-header" style={{ marginTop: 12 }}>Account</div>}
+      <Link to="/profile" title="Profile" className={`nav-item ${isLinkActive('/profile') ? 'active' : ''}`} style={{ justifyContent: (sidebarCollapsed && !isMobile) ? 'center' : 'flex-start', padding: (sidebarCollapsed && !isMobile) ? '10px 0' : '9px 12px' }}>
+        <User size={17} /> {(!sidebarCollapsed || isMobile) && <span>Profile</span>}
+      </Link>
+    </>
+  );
+
+  if (location.pathname === '/login') {
+    if (DISABLE_AUTH) {
+      return <Navigate to="/" replace />;
+    }
+    return <Login onLoginSuccess={handleLoginSuccess} />;
+  }
 
   return (
     <div style={{ display: 'flex', width: '100vw', height: '100vh', overflow: 'hidden', background: '#04091a' }}>
-      {/* Sidebar Navigation */}
+      <div 
+        className={`mobile-drawer-overlay ${mobileMenuOpen ? 'active' : ''}`} 
+        onClick={() => setMobileMenuOpen(false)} 
+      />
+
+      <aside className={`mobile-drawer ${mobileMenuOpen ? 'open' : ''}`}>
+        <div style={{ padding: '20px 18px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <img src={logoImg} alt="IPOS5 Logo" style={{ width: 32, height: 32, objectFit: 'contain' }} />
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 16, color: '#fff', letterSpacing: '-0.01em', lineHeight: 1.1 }}>
+                IPOS5
+              </div>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: 1 }}>
+                PT Pos Indonesia
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => setMobileMenuOpen(false)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'rgba(255,255,255,0.5)',
+              cursor: 'pointer',
+              padding: 4,
+            }}
+          >
+            ✕
+          </button>
+        </div>
+
+        <nav style={{ flex: 1, padding: '12px 10px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {renderNavLinks(true)}
+        </nav>
+
+        <Link 
+          to="/profile"
+          style={{
+            padding: '14px 16px',
+            borderTop: '1px solid rgba(255,255,255,0.06)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            textDecoration: 'none',
+            color: 'inherit'
+          }}
+        >
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #1a4080, #0b1830)',
+              border: '2px solid rgba(72,202,228,0.4)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 12,
+              fontWeight: 700,
+              color: '#fff',
+              flexShrink: 0,
+            }}
+          >
+            {currentUser?.name ? currentUser.name.slice(0, 2).toUpperCase() : 'US'}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {currentUser?.name || 'User Sesi'}
+            </div>
+            <div style={{ fontSize: 10.5, color: '#48cae4' }}>
+              {currentUser?.role || 'Operator'}
+            </div>
+          </div>
+        </Link>
+      </aside>
+
       <aside
+        className="desktop-only"
         style={{
           width: sidebarWidth,
           minWidth: sidebarWidth,
@@ -264,7 +437,6 @@ function AppContent() {
           transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
-        {/* Sidebar Logo */}
         <div style={{ padding: sidebarCollapsed ? '16px 12px' : '20px 18px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'space-between', gap: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -314,63 +486,13 @@ function AppContent() {
           </div>
         </div>
 
-        {/* Navigation Sections */}
         <nav style={{ flex: 1, padding: '12px 8px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {!sidebarCollapsed && <div className="section-header">Operations</div>}
-          <Link to="/" title="Dashboard" className={`nav-item ${isLinkActive('/') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
-            <LayoutDashboard size={17} /> {!sidebarCollapsed && <span>Dashboard</span>}
-          </Link>
-          <Link to="/checker" title="Package Tracking" className={`nav-item ${isLinkActive('/checker') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
-            <Package size={17} /> {!sidebarCollapsed && <span>Package Tracking</span>}
-          </Link>
-          <Link to="/kantor" title="Post Offices" className={`nav-item ${isLinkActive('/kantor') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
-            <Building2 size={17} /> {!sidebarCollapsed && <span>Post Offices</span>}
-          </Link>
-
-          {!sidebarCollapsed && <div className="section-header" style={{ marginTop: 12 }}>Master Data</div>}
-          <Link to="/produk" title="Products & Services" className={`nav-item ${isLinkActive('/produk') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
-            <Tag size={17} /> {!sidebarCollapsed && <span>Products & Services</span>}
-          </Link>
-          <Link to="/kendaraan" title="Fleet" className={`nav-item ${isLinkActive('/kendaraan') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
-            <Truck size={17} /> {!sidebarCollapsed && <span>Fleet</span>}
-          </Link>
-          <Link to="/route" title="Routes" className={`nav-item ${isLinkActive('/route') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
-            <Map size={17} /> {!sidebarCollapsed && <span>Routes</span>}
-          </Link>
-
-          {!sidebarCollapsed && <div className="section-header" style={{ marginTop: 12 }}>Logistics</div>}
-          <Link to="/template" title="Schedule Templates" className={`nav-item ${isLinkActive('/template') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
-            <CalendarClock size={17} /> {!sidebarCollapsed && <span>Schedule Templates</span>}
-          </Link>
-          <Link to="/jadwal" title="Transport Schedule" className={`nav-item ${isLinkActive('/jadwal') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
-            <Calendar size={17} /> {!sidebarCollapsed && <span>Transport Schedule</span>}
-          </Link>
-          <Link to="/route-journey" title="Milk Run Telemetry" className={`nav-item ${isLinkActive('/route-journey') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
-            <Activity size={17} /> {!sidebarCollapsed && <span>Milk Run Telemetry</span>}
-          </Link>
-          <Link to="/estimasi" title="Estimasi(Dummy)" className={`nav-item ${isLinkActive('/estimasi') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
-            <TrendingUp size={17} /> {!sidebarCollapsed && <span>Estimasi(Dummy)</span>}
-          </Link>
-          <Link to="/transit-monitoring" title="Gate Monitoring" className={`nav-item ${isLinkActive('/transit-monitoring') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
-            <ShieldCheck size={17} /> {!sidebarCollapsed && <span>Gate Monitoring</span>}
-          </Link>
-
-          {!sidebarCollapsed && <div className="section-header" style={{ marginTop: 12 }}>System</div>}
-          <Link to="/compass" title="Database Viewer" className={`nav-item ${isLinkActive('/compass') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
-            <Database size={17} /> {!sidebarCollapsed && <span>Database Viewer</span>}
-          </Link>
-          <Link to="/settings" title="Settings" className={`nav-item ${isLinkActive('/settings') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
-            <Settings size={17} /> {!sidebarCollapsed && <span>Settings</span>}
-          </Link>
-          <Link to="/profile" title="Profile" className={`nav-item ${isLinkActive('/profile') ? 'active' : ''}`} style={{ justifyContent: sidebarCollapsed ? 'center' : 'flex-start', padding: sidebarCollapsed ? '10px 0' : '9px 12px' }}>
-            <User size={17} /> {!sidebarCollapsed && <span>Profile</span>}
-          </Link>
+          {renderNavLinks(false)}
         </nav>
 
-        {/* Sidebar Footer */}
         <Link 
           to="/profile"
-          title="Sari Rahayu Profile"
+          title={`${currentUser?.name || 'User'} Profile`}
           style={{
             padding: sidebarCollapsed ? '14px 0' : '14px 16px',
             borderTop: '1px solid rgba(255,255,255,0.06)',
@@ -388,7 +510,7 @@ function AppContent() {
               height: 32,
               borderRadius: '50%',
               background: 'linear-gradient(135deg, #1a4080, #0b1830)',
-              border: '2px solid rgba(232,67,31,0.4)',
+              border: '2px solid rgba(72,202,228,0.4)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -398,47 +520,50 @@ function AppContent() {
               flexShrink: 0,
             }}
           >
-            SR
+            {currentUser?.name ? currentUser.name.slice(0, 2).toUpperCase() : 'US'}
           </div>
           {!sidebarCollapsed && (
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                Sari Rahayu
+                {currentUser?.name || 'User Sesi'}
               </div>
-              <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.35)' }}>
-                Logistics Operator
+              <div style={{ fontSize: 10.5, color: '#48cae4' }}>
+                {currentUser?.role || 'Operator'}
               </div>
             </div>
           )}
         </Link>
       </aside>
 
-      {/* Main Container */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
         <Header 
           title={getPageTitle()} 
           sidebarCollapsed={sidebarCollapsed} 
           onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)} 
+          onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
+          currentUser={currentUser}
+          onLogout={handleLogout}
         />
 
-        <main style={{ flex: 1, padding: 24, overflowY: 'auto', background: '#04091a' }}>
+        <main style={{ flex: 1, padding: 16, overflowY: 'auto', background: '#04091a' }}>
           <Routes>
-            <Route path="/" element={<Dashboard activeConnection={activeConnection} refreshStatsTrigger={refreshStatsTrigger} />} />
-            <Route path="/checker" element={<Checker activeConnection={activeConnection} />} />
-            <Route path="/kantor" element={<MasterKantor />} />
-            <Route path="/produk" element={<MasterProduk />} />
-            <Route path="/kendaraan" element={<MasterKendaraan />} />
-            <Route path="/route" element={<MasterRoute />} />
-            <Route path="/template" element={<TemplateJadwal />} />
-            <Route path="/jadwal" element={<JadwalTransportasi />} />
-            <Route path="/jadwal-pickup" element={<JadwalPickup />} />
-            <Route path="/route-journey" element={<RouteJourney />} />
-            <Route path="/estimasi" element={<EstimasiMilkRun />} />
-            <Route path="/transit-monitoring" element={<GateMonitoring />} />
-            <Route path="/transaksi" element={<Transaksi />} />
-            <Route path="/compass" element={<Compass activeConnection={activeConnection} />} />
-            <Route path="/settings" element={<SettingsPage activeConnection={activeConnection} onConnectionSwitch={handleConnectionSwitch} onDisconnect={handleDisconnect} />} />
-            <Route path="/profile" element={<Profile />} />
+            <Route path="/login" element={<Login onLoginSuccess={handleLoginSuccess} />} />
+            <Route path="/" element={<RequireAuth currentUser={currentUser}><Dashboard activeConnection={activeConnection} refreshStatsTrigger={refreshStatsTrigger} /></RequireAuth>} />
+            <Route path="/checker" element={<RequireAuth currentUser={currentUser}><Checker activeConnection={activeConnection} /></RequireAuth>} />
+            <Route path="/kantor" element={<RequireAuth currentUser={currentUser}><MasterKantor /></RequireAuth>} />
+            <Route path="/produk" element={<RequireAuth currentUser={currentUser}><MasterProduk /></RequireAuth>} />
+            <Route path="/kendaraan" element={<RequireAuth currentUser={currentUser}><MasterKendaraan /></RequireAuth>} />
+            <Route path="/route" element={<RequireAuth currentUser={currentUser}><MasterRoute /></RequireAuth>} />
+            <Route path="/template" element={<RequireAuth currentUser={currentUser}><TemplateJadwal /></RequireAuth>} />
+            <Route path="/jadwal" element={<RequireAuth currentUser={currentUser}><JadwalTransportasi /></RequireAuth>} />
+            <Route path="/jadwal-pickup" element={<RequireAuth currentUser={currentUser}><JadwalPickup /></RequireAuth>} />
+            <Route path="/route-journey" element={<RequireAuth currentUser={currentUser}><RouteJourney /></RequireAuth>} />
+            <Route path="/estimasi" element={<RequireAuth currentUser={currentUser}><EstimasiMilkRun /></RequireAuth>} />
+            <Route path="/transit-monitoring" element={<RequireAuth currentUser={currentUser}><GateMonitoring /></RequireAuth>} />
+            <Route path="/transaksi" element={<RequireAuth currentUser={currentUser}><Transaksi /></RequireAuth>} />
+            <Route path="/compass" element={<RequireAuth currentUser={currentUser} requiredRole="SUPER_ADMIN"><Compass activeConnection={activeConnection} /></RequireAuth>} />
+            <Route path="/settings" element={<RequireAuth currentUser={currentUser} requiredRole="SUPER_ADMIN"><SettingsPage activeConnection={activeConnection} onConnectionSwitch={handleConnectionSwitch} onDisconnect={handleDisconnect} /></RequireAuth>} />
+            <Route path="/profile" element={<RequireAuth currentUser={currentUser}><Profile /></RequireAuth>} />
           </Routes>
         </main>
       </div>

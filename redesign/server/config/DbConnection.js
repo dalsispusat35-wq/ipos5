@@ -7,19 +7,19 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const CONNECTIONS_FILE = path.join(__dirname, 'connections.json');
 
-const DEFAULT_CONNECTIONS = [
+const getDefaultConnections = () => [
   {
     id: 'default',
-    name: 'R (192.168.5.219)',
-    uri: 'mongodb://admin:Pos3eu8XDH6BJ8LBB6XUpZ8bhWVCqCgErxD@192.168.5.219:27017/?authSource=admin',
-    database: 'ipos5_reporting',
+    name: 'Primary MongoDB Server',
+    uri: process.env.MONGO_URI_DEFAULT || 'mongodb://127.0.0.1:27017/ipos5_reporting',
+    database: process.env.MONGO_DB_NAME || 'ipos5_reporting',
     color: '#059669'
   },
   {
     id: 'local',
     name: 'Local MongoDB',
-    uri: 'mongodb://localhost:27017',
-    database: 'ipos5_reporting',
+    uri: process.env.MONGO_URI_LOCAL || 'mongodb://127.0.0.1:27017/ipos5_reporting',
+    database: process.env.MONGO_DB_NAME || 'ipos5_reporting',
     color: '#4f46e5'
   }
 ];
@@ -31,16 +31,17 @@ class DbConnection {
 
   static loadConnections() {
     try {
+      const defaults = getDefaultConnections();
       if (fs.existsSync(CONNECTIONS_FILE)) {
         const data = fs.readFileSync(CONNECTIONS_FILE, 'utf8');
         return JSON.parse(data);
       } else {
-        fs.writeFileSync(CONNECTIONS_FILE, JSON.stringify(DEFAULT_CONNECTIONS, null, 2), 'utf8');
-        return DEFAULT_CONNECTIONS;
+        fs.writeFileSync(CONNECTIONS_FILE, JSON.stringify(defaults, null, 2), 'utf8');
+        return defaults;
       }
     } catch (error) {
       console.error('Error loading connections list:', error);
-      return DEFAULT_CONNECTIONS;
+      return getDefaultConnections();
     }
   }
 

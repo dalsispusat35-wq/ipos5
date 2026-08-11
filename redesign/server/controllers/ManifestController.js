@@ -3,8 +3,8 @@ import TransactionModel from '../models/TransactionModel.js';
 import DbConnection from '../config/DbConnection.js';
 
 const VALID_STATES = [
-  'DITERIMA_DI_CILILIN',
   'DITERIMA_DI_CIMAHI',
+  'IN_MANIFEST',
   'TRANSIT_SPP_BANDUNG',
   'TIBA_DI_SPP_TUJUAN',
   'DELIVERED'
@@ -22,14 +22,14 @@ export function validateStateTransition(currentState, newState) {
   }
 
   if (currentIndex === -1) {
-    if (target === 'DITERIMA_DI_CILILIN' || target === 'DITERIMA_DI_CIMAHI') {
+    if (target === 'DITERIMA_DI_CIMAHI') {
       return true;
     }
-    throw new Error(`Status saat ini "${currentState}" tidak berada dalam pipeline linear. Paket harus mulai dari KCP Cililin atau KC Cimahi.`);
+    throw new Error(`Status saat ini "${currentState}" tidak berada dalam pipeline linear. Paket harus mulai dari KC Cimahi.`);
   }
 
   if (targetIndex !== currentIndex + 1) {
-    throw new Error(`Transisi status tidak valid: tidak bisa melompati status atau mundur dari "${currentState}" ke "${newState}". Urutan harus: KCP Cililin -> KC Cimahi -> Transit SPP Bandung -> SPP Tujuan -> Delivered.`);
+    throw new Error(`Transisi status tidak valid: tidak bisa melompati status atau mundur dari "${currentState}" ke "${newState}". Urutan harus: DITERIMA_DI_CIMAHI -> IN_MANIFEST -> TRANSIT_SPP_BANDUNG -> TIBA_DI_SPP_TUJUAN -> DELIVERED.`);
   }
 
   return true;
@@ -102,28 +102,61 @@ class ManifestController {
 
       const client = await DbConnection.getClient();
       const db = await DbConnection.getDb();
-      const session = client.startSession();
-      try {
-        await session.withTransaction(async () => {
-          await db.collection('manifests').insertOne(newManifest, { session });
-          const operations = connote_codes.map(code => ({
-            updateOne: {
-              filter: { $and: [TransactionModel.connoteFilter(code), { manifest_id: null }] },
-              update: { $set: { manifest_id: manifestCode, updatedAt: new Date() } }
-            }
-          }));
-          const updateResult = await db.collection('transaksi').bulkWrite(operations, { session });
-          if (updateResult.matchedCount !== connote_codes.length) {
-            throw new Error('Sebagian paket berubah atau sudah masuk manifest. Pembuatan dibatalkan.');
+
+      const runInSessionOrFallback = async (workFn) => {
+        try {
+          const session = client.startSession();
+          try {
+            await session.withTransaction(async () => {
+              await workFn(session);
+            });
+          } finally {
+            await session.endSession();
           }
-        });
-      } finally {
-        await session.endSession();
-      }
+        } catch (err) {
+          if (err.message && err.message.includes('Transaction numbers are only allowed')) {
+            await workFn(null);
+          } else {
+            throw err;
+          }
+        }
+      };
+
+      await runInSessionOrFallback(async (session) => {
+        const sessionOpt = session ? { session } : {};
+        await db.collection('manifests').insertOne(newManifest, sessionOpt);
+        const operations = connote_codes.map(code => ({
+          updateOne: {
+            filter: { $and: [TransactionModel.connoteFilter(code), { manifest_id: null }] },
+            update: { 
+              $set: { 
+                manifest_id: manifestCode, 
+                connote_state: 'IN_MANIFEST',
+                'connote.connote_state': 'IN_MANIFEST',
+                updatedAt: new Date() 
+              },
+              $push: {
+                tracking_history: {
+                  from_state: 'DITERIMA_DI_CIMAHI',
+                  to_state: 'IN_MANIFEST',
+                  from: 'DITERIMA_DI_CIMAHI',
+                  to: 'IN_MANIFEST',
+                  changedAt: new Date(),
+                  manifest_id: manifestCode
+                }
+              }
+            }
+          }
+        }));
+        const updateResult = await db.collection('transaksi').bulkWrite(operations, sessionOpt);
+        if (updateResult.matchedCount !== connote_codes.length) {
+          throw new Error('Sebagian paket berubah atau sudah masuk manifest. Pembuatan dibatalkan.');
+        }
+      });
 
       res.status(201).json({
         success: true,
-        message: `Manifest "${manifestCode}" berhasil dibuat dengan ${connote_codes.length} paket.`,
+        message: `Manifest "${manifestCode}" berhasil dibuat dengan ${connote_codes.length} paket. Status resi berubah menjadi IN_MANIFEST.`,
         data: newManifest
       });
 
@@ -150,14 +183,17 @@ class ManifestController {
 
       // Validate the complete manifest before starting transaction
       let errorMessages = [];
+      const connoteDocsMap = new Map();
       for (const code of manifest.connote_codes) {
         const { document } = await TransactionModel.findByConnoteCode(code);
         if (!document) {
           errorMessages.push(`Paket "${code}" tidak ditemukan.`);
           continue;
         }
+        const currentState = document.connote?.connote_state || document.connote_state || '';
         try {
-          validateStateTransition(document.connote?.connote_state || document.connote_state || '', 'TRANSIT_SPP_BANDUNG');
+          validateStateTransition(currentState, 'TRANSIT_SPP_BANDUNG');
+          connoteDocsMap.set(code, document);
         } catch (error) {
           errorMessages.push(`Paket "${code}": ${error.message}`);
         }
@@ -169,25 +205,44 @@ class ManifestController {
 
       const client = await DbConnection.getClient();
       const db = await DbConnection.getDb();
-      const session = client.startSession();
       const changedAt = new Date();
       let updatedCount = 0;
 
-      try {
-        await session.withTransaction(async () => {
-          // 1. Update manifest status to Transit
-          const updateManifestRes = await db.collection('manifests').updateOne(
-            { master_manifest_code, status_perjalanan: 'Draft' },
-            { $set: { status_perjalanan: 'Transit', updatedAt: changedAt } },
-            { session }
-          );
-
-          if (updateManifestRes.matchedCount === 0) {
-            throw new Error('Manifest status_perjalanan bukan Draft atau manifest telah berubah.');
+      const runInSessionOrFallback = async (workFn) => {
+        try {
+          const session = client.startSession();
+          try {
+            await session.withTransaction(async () => {
+              await workFn(session);
+            });
+          } finally {
+            await session.endSession();
           }
+        } catch (err) {
+          if (err.message && err.message.includes('Transaction numbers are only allowed')) {
+            await workFn(null);
+          } else {
+            throw err;
+          }
+        }
+      };
 
-          // 2. Bulk update connotes status & history
-          const operations = manifest.connote_codes.map(code => ({
+      await runInSessionOrFallback(async (session) => {
+        const sessionOpt = session ? { session } : {};
+        const updateManifestRes = await db.collection('manifests').updateOne(
+          { master_manifest_code, status_perjalanan: 'Draft' },
+          { $set: { status_perjalanan: 'Transit', updatedAt: changedAt } },
+          sessionOpt
+        );
+
+        if (updateManifestRes.matchedCount === 0) {
+          throw new Error('Manifest status_perjalanan bukan Draft atau manifest telah berubah.');
+        }
+
+        const operations = manifest.connote_codes.map(code => {
+          const doc = connoteDocsMap.get(code);
+          const prevState = doc ? (doc.connote?.connote_state || doc.connote_state || 'IN_MANIFEST') : 'IN_MANIFEST';
+          return {
             updateOne: {
               filter: TransactionModel.connoteFilter(code),
               update: {
@@ -198,7 +253,9 @@ class ManifestController {
                 },
                 $push: {
                   tracking_history: {
-                    from: 'DITERIMA_DI_CIMAHI',
+                    from_state: prevState,
+                    to_state: 'TRANSIT_SPP_BANDUNG',
+                    from: prevState,
                     to: 'TRANSIT_SPP_BANDUNG',
                     changedAt,
                     manifest_id: master_manifest_code
@@ -206,18 +263,16 @@ class ManifestController {
                 }
               }
             }
-          }));
-
-          const updateResult = await db.collection('transaksi').bulkWrite(operations, { session });
-          updatedCount = updateResult.matchedCount;
-
-          if (updatedCount !== manifest.connote_codes.length) {
-            throw new Error('Sebagian paket dalam manifest gagal diperbarui di database.');
-          }
+          };
         });
-      } finally {
-        await session.endSession();
-      }
+
+        const updateResult = await db.collection('transaksi').bulkWrite(operations, sessionOpt);
+        updatedCount = updateResult.matchedCount;
+
+        if (updatedCount !== manifest.connote_codes.length) {
+          throw new Error('Sebagian paket dalam manifest gagal diperbarui di database.');
+        }
+      });
 
       res.json({
         success: true,
@@ -249,14 +304,17 @@ class ManifestController {
 
       // Validate the complete manifest before starting transaction
       let errorMessages = [];
+      const connoteDocsMap = new Map();
       for (const code of manifest.connote_codes) {
         const { document } = await TransactionModel.findByConnoteCode(code);
         if (!document) {
           errorMessages.push(`Paket "${code}" tidak ditemukan.`);
           continue;
         }
+        const currentState = document.connote?.connote_state || document.connote_state || '';
         try {
-          validateStateTransition(document.connote?.connote_state || document.connote_state || '', 'TIBA_DI_SPP_TUJUAN');
+          validateStateTransition(currentState, 'TIBA_DI_SPP_TUJUAN');
+          connoteDocsMap.set(code, document);
         } catch (error) {
           errorMessages.push(`Paket "${code}": ${error.message}`);
         }
@@ -268,25 +326,44 @@ class ManifestController {
 
       const client = await DbConnection.getClient();
       const db = await DbConnection.getDb();
-      const session = client.startSession();
       const changedAt = new Date();
       let updatedCount = 0;
 
-      try {
-        await session.withTransaction(async () => {
-          // 1. Update manifest status to Arrived
-          const updateManifestRes = await db.collection('manifests').updateOne(
-            { master_manifest_code, status_perjalanan: 'Transit' },
-            { $set: { status_perjalanan: 'Arrived', updatedAt: changedAt } },
-            { session }
-          );
-
-          if (updateManifestRes.matchedCount === 0) {
-            throw new Error('Manifest status_perjalanan bukan Transit atau manifest telah berubah.');
+      const runInSessionOrFallback = async (workFn) => {
+        try {
+          const session = client.startSession();
+          try {
+            await session.withTransaction(async () => {
+              await workFn(session);
+            });
+          } finally {
+            await session.endSession();
           }
+        } catch (err) {
+          if (err.message && err.message.includes('Transaction numbers are only allowed')) {
+            await workFn(null);
+          } else {
+            throw err;
+          }
+        }
+      };
 
-          // 2. Bulk update connotes status & history
-          const operations = manifest.connote_codes.map(code => ({
+      await runInSessionOrFallback(async (session) => {
+        const sessionOpt = session ? { session } : {};
+        const updateManifestRes = await db.collection('manifests').updateOne(
+          { master_manifest_code, status_perjalanan: 'Transit' },
+          { $set: { status_perjalanan: 'Arrived', updatedAt: changedAt } },
+          sessionOpt
+        );
+
+        if (updateManifestRes.matchedCount === 0) {
+          throw new Error('Manifest status_perjalanan bukan Transit atau manifest telah berubah.');
+        }
+
+        const operations = manifest.connote_codes.map(code => {
+          const doc = connoteDocsMap.get(code);
+          const prevState = doc ? (doc.connote?.connote_state || doc.connote_state || 'TRANSIT_SPP_BANDUNG') : 'TRANSIT_SPP_BANDUNG';
+          return {
             updateOne: {
               filter: TransactionModel.connoteFilter(code),
               update: {
@@ -297,7 +374,9 @@ class ManifestController {
                 },
                 $push: {
                   tracking_history: {
-                    from: 'TRANSIT_SPP_BANDUNG',
+                    from_state: prevState,
+                    to_state: 'TIBA_DI_SPP_TUJUAN',
+                    from: prevState,
                     to: 'TIBA_DI_SPP_TUJUAN',
                     changedAt,
                     manifest_id: master_manifest_code
@@ -305,18 +384,16 @@ class ManifestController {
                 }
               }
             }
-          }));
-
-          const updateResult = await db.collection('transaksi').bulkWrite(operations, { session });
-          updatedCount = updateResult.matchedCount;
-
-          if (updatedCount !== manifest.connote_codes.length) {
-            throw new Error('Sebagian paket dalam manifest gagal diperbarui di database.');
-          }
+          };
         });
-      } finally {
-        await session.endSession();
-      }
+
+        const updateResult = await db.collection('transaksi').bulkWrite(operations, sessionOpt);
+        updatedCount = updateResult.matchedCount;
+
+        if (updatedCount !== manifest.connote_codes.length) {
+          throw new Error('Sebagian paket dalam manifest gagal diperbarui di database.');
+        }
+      });
 
       res.json({
         success: true,

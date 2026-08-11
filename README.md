@@ -57,18 +57,23 @@ ipos5/
     ├── client/             # Single Page Application (React + Vite)
     │   ├── dist/           # Production Build Output
     │   ├── src/
-    │   │   ├── pages/      # 11 Modul Halaman Utama Aplikasi
+    │   │   ├── pages/      # 16 Modul Halaman Utama Aplikasi
     │   │   │   ├── Dashboard.jsx
+    │   │   │   ├── Transaksi.jsx
     │   │   │   ├── Checker.jsx
     │   │   │   ├── MasterKantor.jsx
     │   │   │   ├── MasterProduk.jsx
     │   │   │   ├── MasterKendaraan.jsx
     │   │   │   ├── MasterRoute.jsx
+    │   │   │   ├── JadwalPickup.jsx
     │   │   │   ├── TemplateJadwal.jsx
     │   │   │   ├── JadwalTransportasi.jsx
+    │   │   │   ├── RouteJourney.jsx
+    │   │   │   ├── EstimasiMilkRun.jsx
     │   │   │   ├── GateMonitoring.jsx
     │   │   │   ├── Compass.jsx
-    │   │   │   └── Settings.jsx
+    │   │   │   ├── Settings.jsx
+    │   │   │   └── Profile.jsx
     │   │   ├── utils/      # Integrasi API (api.js) & Helper
     │   │   ├── App.jsx     # Navigation Layout & Route Provider
     │   │   ├── main.jsx    # Client Entrypoint
@@ -96,39 +101,66 @@ ipos5/
    - Graphic Breakdown Status Paket 1-to-1 dengan key basis data (`DITERIMA_DI_CIMAHI`, `IN_MANIFEST`, `TRANSIT_SPP_BANDUNG`, `TIBA_DI_SPP_TUJUAN`, `DELIVERED`).
    - Interaksi filter status paket dinamis.
 
-2. **Routing & Tracking Checker (`Checker.jsx`)**
+2. **Data Transaksi Kiriman (`Transaksi.jsx`)**
+   - Manajemen dan pencarian data transaksi kiriman massal (Connotes).
+   - Pencarian cepat resi, filter status linier, filter jenis layanan produk, filter Nopend tujuan, dan rentang tanggal.
+   - Fitur ekspor data dan modal rincian armada pengirim.
+
+3. **Routing & Tracking Checker (`Checker.jsx`)**
    - Lacak posisi dan rute pengiriman berdasarkan Connote Code / Nomor Resi.
    - Visualisasi alur transportasi dari kantor asal hingga tujuan.
    - Timeline Audit Trail perjalanan berdasarkan array `tracking_history`.
 
-3. **Master Kantor (`MasterKantor.jsx`)**
+4. **Master Kantor (`MasterKantor.jsx`)**
    - Manajemen data Nopend (Nomor Pendirian) Kantor Pos (KPRK/KCU/KCP).
    - Fitur pencarian cepat dan pagination data legacy (>13.000 kantor pos).
 
-4. **Master Layanan & Produk (`MasterProduk.jsx`)**
+5. **Master Layanan & Produk (`MasterProduk.jsx`)**
    - Pengelolaan kode produk dan nama layanan Pos Indonesia (misal: Pos Sameday, Nextday, Kilat Khusus).
 
-5. **Master Kendaraan / Armada (`MasterKendaraan.jsx`)**
+6. **Master Kendaraan / Armada (`MasterKendaraan.jsx`)**
    - Pengelolaan armada truk dan nopol transportasi logistik.
 
-6. **Master Rute Logistik (`MasterRoute.jsx`)**
+7. **Master Rute Logistik (`MasterRoute.jsx`)**
    - Pemetaan rute utama asal-tujuan beserta urutan *priority checkpoint*.
    - Autocomplete otomatis kantor pos berdasarkan Nopend.
 
-7. **Template & Penjadwalan Transportasi (`TemplateJadwal.jsx` & `JadwalTransportasi.jsx`)**
-   - Pengaturan template jadwal rutin mingguan.
-   - Bulk-generate jadwal pengiriman bulanan otomatis.
+8. **Jadwal Pick Up SPP (`JadwalPickup.jsx`)**
+   - Monitoring rute pickup berkala dari SPP Bandung menuju KCU Cimahi dan KCP-KCP area.
+   - Estimasi jam kedatangan (ETA) otomatis di setiap stop point, opsi menyembunyikan titik yang di-skip, dan pencarian cepat Nopend.
 
-8. **Transit & Gate Monitoring (`GateMonitoring.jsx`)**
-   - Checkpoint 1: Pembuatan Manifest & Konsolidasi Bagging.
-   - Checkpoint 2: Inbound Transit SPP Bandung secara massal.
-   - Checkpoint 3: Arrival Last-Mile SPP Tujuan & Penyelesaian Status `DELIVERED`.
+9. **Template Jadwal Transportasi (`TemplateJadwal.jsx`)**
+   - Pengaturan template pola perjalanan rutin mingguan armada logistik.
 
-9. **MongoDB Compass GUI (`Compass.jsx`)**
-   - Client MongoDB visual bawaan di dalam web app untuk memantau koleksi, skema, dan indeks database secara langsung.
+10. **Penjadwalan Transportasi Bulanan (`JadwalTransportasi.jsx`)**
+    - Pembuat jadwal dinamis bulanan berdasarkan template jadwal yang aktif.
+    - Bulk-generate jadwal sebulan penuh dengan mengabaikan hari libur/Minggu.
 
-10. **Pengaturan Koneksi (`Settings.jsx`)**
+11. **Milk Run Telemetry (`RouteJourney.jsx`)**
+    - Telemetri perjalanan rute Milk Run real-time.
+    - Pemantauan progres titik perhentian (waypoint), status stop (Waiting, Skipped, Completed).
+    - **Load Partitioning Control Meter:** Membatasi muatan aktif Trip 1 pada batas aman **1.500 kg (100% TERISI PENUH - SAFE)** dan memisahkan sisa muatan **12,9 Ton** ke panel antrean melimpah (*Overspill Queue*) untuk Trip 2 / Armada Tambahan.
+
+12. **Estimasi Milk Run Logistik (`EstimasiMilkRun.jsx`)**
+    - Simulator interaktif optimasi dan estimasi rute Milk Run.
+    - **Slider Kecepatan Armada:** Simulasi Kecepatan (20 km/j Macet, 40 km/j Standar, 80 km/j Tol).
+    - Input waktu muat (*dwell time*) dan jam berangkat untuk mengkalkulasi estimasi jam tiba (ETA) presisi di SPP Bandung.
+    - Visualisasi pergerakan armada, simulasi muatan kontainer, dan deteksi kendaraan aktif.
+
+13. **Transit & Gate Monitoring (`GateMonitoring.jsx`)**
+    - Checkpoint 1: Pembuatan Manifest & Konsolidasi Bagging.
+    - Checkpoint 2: Inbound Transit SPP Bandung secara massal.
+    - Checkpoint 3: Arrival Last-Mile SPP Tujuan & Penyelesaian Status `DELIVERED`.
+
+14. **MongoDB Compass GUI (`Compass.jsx`)**
+    - Client MongoDB visual bawaan di dalam web app untuk memantau koleksi, skema, dan indeks database secara langsung.
+
+15. **Pengaturan Koneksi (`Settings.jsx`)**
     - Manajemen profil koneksi URI MongoDB secara dinamis di runtime.
+
+16. **Profil Pengguna (`Profile.jsx`)**
+    - Antarmuka manajemen akun operator logistik (Sari Rahayu - Operational Supervisor).
+    - Ringkasan aktivitas operasional (log audit), statistik pengolahan manifest, serta kustomisasi notifikasi sistem.
 
 ---
 
@@ -211,12 +243,25 @@ npm run dev
 
 | Modul | Method | Endpoint | Deskripsi |
 | :--- | :--- | :--- | :--- |
+| **Auth** | `POST` | `/api/auth/login` | Otentikasi login pengguna & generasi token sesi |
+| **Auth** | `GET` | `/api/auth/me` | Mengambil data sesi pengguna aktif & role RBAC |
+| **Auth** | `POST` | `/api/auth/logout` | Mengakhiri sesi login pengguna |
 | **Dashboard** | `GET` | `/api/dashboard-stats` | Mendapatkan statistik global & breakdown status |
+| **Transaksi** | `GET` | `/api/transaksi` | Mengambil data transaksi connote dengan pagination & filter |
 | **Checker** | `GET` | `/api/checker/:connoteCode` | Mengambil detail rute & history lacak resi |
-| **Kantor** | `GET`/`POST` | `/api/kantor` | Operasi list & tambah master kantor pos |
-| **Manifest** | `POST` | `/api/manifests` | Membuat manifest baru (Checkpoint 1) |
+| **Kantor** | `GET`/`POST`/`PUT`/`DELETE` | `/api/kantor` | Operasi CRUD master kantor pos |
+| **Produk** | `GET`/`POST`/`PUT`/`DELETE` | `/api/produk` | Operasi CRUD master layanan produk pos |
+| **Kendaraan** | `GET`/`POST`/`PUT`/`DELETE` | `/api/kendaraan` | Operasi CRUD master armada logistik |
+| **Rute** | `GET`/`POST`/`PUT`/`DELETE` | `/api/route` | Operasi CRUD master rute logistik |
+| **Jadwal Pickup** | `GET` | `/api/pickup-schedules` | Mengambil daftar jadwal pickup SPP Bandung |
+| **Template Jadwal** | `GET`/`POST`/`PUT`/`DELETE` | `/api/template` | Operasi CRUD template jadwal transportasi |
+| **Jadwal Transport** | `POST` | `/api/jadwal/generate` | Bulk-generate jadwal transportasi bulanan |
+| **Manifest** | `POST` | `/api/manifests` | Membuat manifest baru (Checkpoint 1 - Bagging) |
 | **Manifest** | `POST` | `/api/manifests/transit` | Mengubah status manifest ke Transit (Checkpoint 2) |
 | **Manifest** | `POST` | `/api/manifests/arrive` | Selesaikan kedatangan di SPP Tujuan (Checkpoint 3) |
+| **Compass** | `GET`/`POST` | `/api/compass/*` | MongoDB Browser GUI internal (Restricted Super Admin) |
+| **Settings** | `GET`/`POST` | `/api/settings` | Konfigurasi URI MongoDB & Server (Restricted Super Admin) |
 
 ---
 *© PT Pos Indonesia - KCU Cimahi Origin Delivery System*
+

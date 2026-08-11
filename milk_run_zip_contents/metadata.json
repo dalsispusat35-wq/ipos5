@@ -1,6 +1,0 @@
-{
-  "name": "Logistics Milk Run Simulation",
-  "description": "Interactive logistics milk run simulation dashboard visualizing real-time capacity, dynamic routes, and live manifests across 10 branch offices.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}

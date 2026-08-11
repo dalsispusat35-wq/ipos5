@@ -1,7 +1,10 @@
-import { useState } from 'react';
-import { Truck, MapPin, ArrowRight, RotateCcw, ShieldCheck, PackageCheck, AlertCircle, CheckCircle2, ChevronRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Truck, MapPin, ArrowRight, RotateCcw, ShieldCheck, PackageCheck, AlertCircle, CheckCircle2, ChevronRight, Info } from 'lucide-react';
+import { api } from '../utils/api.js';
 
 export default function RouteJourney() {
+  const [capacityData, setCapacityData] = useState(null);
+
   const stops = [
     { id: 1, name: 'AGP ONG', code: '40395C0', status: 'SKIPPED', isSkipped: true, load: 0 },
     { id: 2, name: 'AGEN ARVINET', code: '40395C1', status: 'WAITING', isSkipped: false, load: 240 },
@@ -17,6 +20,14 @@ export default function RouteJourney() {
 
   const [currentStopIndex, setCurrentStopIndex] = useState(0);
 
+  useEffect(() => {
+    api.getVehicleCapacity('B 9910 PCX')
+      .then(res => {
+        if (res.success) setCapacityData(res.data);
+      })
+      .catch(err => console.error('Failed to load capacity:', err));
+  }, []);
+
   const nextStop = () => {
     let nextIdx = currentStopIndex + 1;
     while (nextIdx < stops.length && stops[nextIdx].isSkipped) {
@@ -31,11 +42,11 @@ export default function RouteJourney() {
     setCurrentStopIndex(0);
   };
 
-  // Calculate active load based on visited non-skipped stops
-  const currentLoad = stops.slice(0, currentStopIndex + 1).reduce((acc, s) => acc + (s.isSkipped ? 0 : s.load), 0);
-  const maxCapacity = 1500;
-  const loadPercentage = Math.min(100, Math.round((currentLoad / maxCapacity) * 100));
-  const remainingCapacity = maxCapacity - currentLoad;
+  // Calculate active load based on visited non-skipped stops and real capacity backend
+  const maxCapacity = capacityData?.kapasitas_maksimum_kg || 1500;
+  const currentLoad = capacityData?.total_berat_terpakai_kg || stops.slice(0, currentStopIndex + 1).reduce((acc, s) => acc + (s.isSkipped ? 0 : s.load), 0);
+  const loadPercentage = capacityData?.persentase_terpakai || Math.min(100, Math.round((currentLoad / maxCapacity) * 100));
+  const remainingCapacity = Math.max(0, maxCapacity - currentLoad);
 
   const currentStopObj = stops[currentStopIndex];
   const nextStopObj = stops.slice(currentStopIndex + 1).find(s => !s.isSkipped);
@@ -200,14 +211,16 @@ export default function RouteJourney() {
         <div className="glass-card-solid" style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <h3 style={{ fontSize: 14, fontWeight: 700, color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <ShieldCheck size={16} color="#10b981" /> Utilisasi Kapasitas Armada B 9910 PCX
+              <ShieldCheck size={16} color={capacityData?.status_kapasitas?.includes('OVERLOAD') ? '#f43f5e' : '#10b981'} /> Utilisasi Kapasitas Armada B 9910 PCX (Trip 1)
             </h3>
-            <span className="badge badge-emerald">AMAN (SAFE)</span>
+            <span className={`badge ${capacityData?.status_kapasitas?.includes('OVERLOAD') ? 'badge-danger' : 'badge-emerald'}`}>
+              {capacityData?.status_kapasitas || 'TERISI PENUH (SAFE)'}
+            </span>
           </div>
 
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>Muatan Aktif Saat Ini</span>
+              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>Muatan Aktif Trip 1</span>
               <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>
                 {currentLoad.toLocaleString()} kg / {maxCapacity.toLocaleString()} kg ({loadPercentage}%)
               </span>
@@ -219,9 +232,9 @@ export default function RouteJourney() {
                 style={{ 
                   height: '100%', 
                   width: `${loadPercentage}%`, 
-                  background: loadPercentage > 85 ? '#e8431f' : 'linear-gradient(90deg, #10b981, #f59e0b)',
+                  background: 'linear-gradient(90deg, #10b981, #38bdf8)',
                   borderRadius: 5,
-                  transition: 'width 0.3s ease'
+                  transition: 'width 0.5s ease'
                 }} 
               />
             </div>
@@ -229,8 +242,24 @@ export default function RouteJourney() {
 
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'rgba(255,255,255,0.45)', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 10 }}>
             <span>Aktivitas Stop: <strong style={{ color: '#fff' }}>{currentStopObj?.name || 'Start'}</strong></span>
-            <span>Sisa Daya Angkut: <strong style={{ color: '#10b981' }}>{remainingCapacity.toLocaleString()} kg</strong></span>
+            <span>Sisa Daya Angkut Trip 1: <strong style={{ color: '#10b981' }}>{remainingCapacity.toLocaleString()} kg</strong></span>
           </div>
+
+          {capacityData?.has_overflow && (
+            <div style={{ background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.25)', borderRadius: 8, padding: '9px 12px', fontSize: 11.5, color: '#38bdf8', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Info size={14} color="#38bdf8" /> Antrean Melimpah (Trip 2 / Armada Tambahan):
+              </span>
+              <strong style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{capacityData.overflow_queue_kg?.toLocaleString()} kg</strong>
+            </div>
+          )}
+
+          {capacityData?.unweighted_count > 0 && (
+            <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', gap: 6, paddingTop: 2 }}>
+              <Info size={13} color="#f59e0b" />
+              <span>Ada {capacityData.unweighted_count} paket belum ditimbang (0 kg).</span>
+            </div>
+          )}
         </div>
 
         {/* Manifest Cargo Card */}

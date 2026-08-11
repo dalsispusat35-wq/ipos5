@@ -177,8 +177,8 @@ export default function SettingsPage({ activeConnection, onConnectionSwitch, onD
       {/* Application Meta Info Footer */}
       <div style={{ padding: '14px 18px', borderRadius: 10, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: 32, flexWrap: 'wrap' }}>
         {[
-          { label: 'Application', value: 'Cimahi Origin Delivery System' },
-          { label: 'Version', value: 'v2.4.1' },
+          { label: 'Application', value: 'IPOS5' },
+          { label: 'Version', value: 'v3.0.0' },
           { label: 'Build', value: '20260724-001' },
           { label: 'License', value: 'PT Pos Indonesia Internal' },
         ].map((f) => (

@@ -1,16 +1,40 @@
-# React + Vite
+# 🎨 IPOS5 Redesign - Frontend Client (React + Vite)
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Single Page Application (SPA) berbasis React 18 dan Vite untuk **Cimahi Origin Delivery System (IPOS5 Redesign)**.
 
-Currently, two official plugins are available:
+## 🚀 Cara Menjalankan
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+# Inisialisasi dependensi
+npm install
 
-## React Compiler
+# Menjalankan Server Pengembang (Dev Server)
+npm run dev
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Aplikasi web dapat diakses melalui browser pada `http://localhost:5173`.
 
-## Expanding the Oxlint configuration
+## 📦 Stack & Fitur Utama
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+- **Framework:** React 18 & Vite
+- **Router:** React Router DOM v6
+- **Icon Library:** Lucide React
+- **Theme:** Navy Premium Glassmorphism Design Token
+- **Halaman Utama (16 Modul):**
+  1. `Dashboard` (`/`) - Real-time statistics & status breakdown
+  2. `Transaksi` (`/transaksi`) - Data transaksi resi & multi-filter
+  3. `Checker` (`/checker`) - Tracking connote & timeline audit trail
+  4. `MasterKantor` (`/kantor`) - Master data kantor pos (nopend)
+  5. `MasterProduk` (`/produk`) - Master layanan produk pos
+  6. `MasterKendaraan` (`/kendaraan`) - Master armada transportasi
+  7. `MasterRoute` (`/route`) - Master rute logistik & autocomplete
+  8. `JadwalPickup` (`/jadwal-pickup`) - Jadwal pickup SPP Bandung & KCU Cimahi
+  9. `TemplateJadwal` (`/template`) - Template jadwal transportasi mingguan
+  10. `JadwalTransportasi` (`/jadwal`) - Generasi jadwal transportasi bulanan
+  11. `RouteJourney` (`/route-journey`) - Telemetri Milk Run & capacity load
+  12. `EstimasiMilkRun` (`/estimasi`) - Simulator optimasi Milk Run
+  13. `GateMonitoring` (`/transit-monitoring`) - Checkpoint 1, 2, & 3 gate monitoring
+  14. `Compass` (`/compass`) - Internal MongoDB Compass Viewer
+  15. `Settings` (`/settings`) - Profiler koneksi database
+  16. `Profile` (`/profile`) - Profil operator & log aktivitas pengguna
+

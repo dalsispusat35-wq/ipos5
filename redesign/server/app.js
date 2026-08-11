@@ -1,9 +1,11 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import apiRouter from './routes/api.js';
 import DbConnection from './config/DbConnection.js';
+import UserModel from './models/UserModel.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -46,6 +48,9 @@ const startServer = async () => {
     console.log(`==================================================`);
     console.log(`🚀 IPOS5 Redesign Server is running on port ${PORT}`);
     console.log(`🔗 API Base URL: http://localhost:${PORT}/api`);
+    if (process.env.DISABLE_AUTH === 'true') {
+      console.log(`⚠️  AUTH DISABLED — mode development, JANGAN dipakai di production!`);
+    }
     
     // Auto-connect to first connection profile on startup
     try {
@@ -56,6 +61,7 @@ const startServer = async () => {
           console.log(`🔌 Auto-connecting to default database profile: ${connections[0].name}...`);
           const result = await DbConnection.connect(connections[0]);
           console.log(`✅ ${result.message}`);
+          await UserModel.seedDefaultUsers();
         }
       }
     } catch (e) {

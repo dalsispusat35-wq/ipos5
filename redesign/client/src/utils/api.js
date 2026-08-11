@@ -2,10 +2,26 @@
 // by Express, so no host, port, or database server is baked into the bundle.
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
 
+export const getAuthToken = () => {
+  return sessionStorage.getItem('ipos5_jwt_token') || localStorage.getItem('ipos5_jwt_token') || '';
+};
+
+export const setAuthToken = (token) => {
+  if (token) {
+    sessionStorage.setItem('ipos5_jwt_token', token);
+  } else {
+    sessionStorage.removeItem('ipos5_jwt_token');
+    localStorage.removeItem('ipos5_jwt_token');
+  }
+};
+
 export const fetchApi = async (endpoint, options = {}) => {
   const url = `${API_BASE}${endpoint}`;
+  const token = getAuthToken();
+
   const headers = {
     'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
     ...options.headers
   };
 
@@ -23,10 +39,20 @@ export const fetchApi = async (endpoint, options = {}) => {
 
   if (!contentType.includes('application/json')) {
     const text = await response.text();
-    throw new Error(`Response HTTP ${response.status}: Server backend belum di-restart atau mengembalikan non-JSON. (${text.slice(0, 100)})`);
+    if (response.status === 404) {
+      throw new Error(`Endpoint API "${endpoint}" tidak ditemukan (HTTP 404). Backend tidak merespons dengan benar, pastikan server Express di folder server/ sudah berjalan dan di-restart.`);
+    }
+    throw new Error(`Response HTTP ${response.status}: Server backend mengembalikan non-JSON. Pastikan server Express di folder server/ aktif. (${text.slice(0, 80)})`);
   }
 
   const data = await response.json();
+
+  if (response.status === 401 && endpoint !== '/auth/login' && import.meta.env.VITE_DISABLE_AUTH !== 'true') {
+    setAuthToken('');
+    sessionStorage.removeItem('ipos5_user');
+    window.location.href = '/login';
+    throw new Error(data.message || 'Sesi telah kadaluarsa. Silakan login kembali.');
+  }
 
   if (!response.ok) {
     throw new Error(data.message || 'Something went wrong');
@@ -36,6 +62,11 @@ export const fetchApi = async (endpoint, options = {}) => {
 };
 
 export const api = {
+  // Auth
+  login: (data) => fetchApi('/auth/login', { method: 'POST', body: data }),
+  getMe: () => fetchApi('/auth/me'),
+  logout: () => fetchApi('/auth/logout', { method: 'POST' }),
+
   // Stats
   getDashboardStats: () => fetchApi('/dashboard-stats'),
 
@@ -63,6 +94,7 @@ export const api = {
   getKendaraan: (params = '') => fetchApi(`/kendaraan?${params}`),
   getKendaraanFilters: () => fetchApi('/kendaraan/filters'),
   getKendaraanById: (id) => fetchApi(`/kendaraan/${id}`),
+  getVehicleCapacity: (noKendaraan, params = '') => fetchApi(`/kendaraan/${encodeURIComponent(noKendaraan)}/kapasitas?${params}`),
   createKendaraan: (data) => fetchApi('/kendaraan', { method: 'POST', body: data }),
   updateKendaraan: (id, data) => fetchApi(`/kendaraan/${id}`, { method: 'PUT', body: data }),
   deleteKendaraan: (id) => fetchApi(`/kendaraan/${id}`, { method: 'DELETE' }),

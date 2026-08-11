@@ -1218,7 +1218,37 @@
   .sidebar-toggle-btn {
     display: none !important;
   }
+
+  .content-body {
+    padding: 14px 16px !important;
+  }
+  
+  .page-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+  
+  .page-title {
+    font-size: 18px !important;
+  }
+  
+  .grid-6, .grid-5, .grid-4, .grid-3, .grid-2 {
+    grid-template-columns: repeat(auto-fit, minmax(100%, 1fr)) !important;
+  }
+
+  .journey-nodes-wrap, .timeline-container {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .timeline-row {
+    grid-template-columns: 80px 1fr !important;
+    gap: 8px !important;
+    padding: 8px 10px !important;
+  }
 }
+
 
 /* ============================================================
    LIGHT THEME OVERRIDES (90% White & 10% Navy)
