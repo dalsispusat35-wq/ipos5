@@ -86,33 +86,39 @@ const getDetailedRoadWaypoints = (stopsCoords) => {
         roadPoints.push([-6.9045, 107.5140]);
       }
       // Segment: AGEN ARVINET (40395C1) -> KCP Padalarang (40553)
-      else if (curNopen === '40395C1' && nextNopen === '40553') {
-        roadPoints.push([-6.8950, 107.5020]);
-        roadPoints.push([-6.8650, 107.4910]);
-        roadPoints.push([-6.8480, 107.4820]);
+      else if ((curNopen === '40395C1' || curNopen === '40395') && nextNopen === '40553') {
+        roadPoints.push([-6.9045, 107.5055]); // Jl. Raya Batujajar North
+        roadPoints.push([-6.8970, 107.5020]); // Simpang Cangkorah
+        roadPoints.push([-6.8850, 107.4980]); // Jl. Raya Industri Batujajar
+        roadPoints.push([-6.8720, 107.4950]); // Simpang Laksana
+        roadPoints.push([-6.8620, 107.4910]); // Simpang Cihaliwung
+        roadPoints.push([-6.8480, 107.4850]); // Jl. Raya Padalarang Arterial
       }
       // Segment: KCP Padalarang (40553) -> KCU Bandung (40000)
       else if (curNopen === '40553' && nextNopen === '40000') {
-        roadPoints.push([-6.8620, 107.5150]);
-        roadPoints.push([-6.8920, 107.5610]);
-        roadPoints.push([-6.9050, 107.5950]);
-        roadPoints.push([-6.9140, 107.6050]);
+        roadPoints.push([-6.8480, 107.4850]); // Padalarang East
+        roadPoints.push([-6.8620, 107.5150]); // Cimahi By-Pass Highway
+        roadPoints.push([-6.8750, 107.5350]); // Baros Cimahi Gateway
+        roadPoints.push([-6.8880, 107.5520]); // Toll Pasteur Corridor
+        roadPoints.push([-6.8950, 107.5720]); // Gunung Batu Pasteur
+        roadPoints.push([-6.9020, 107.5920]); // Pasirkaliki Junction
+        roadPoints.push([-6.9090, 107.6030]); // Perintis Kemerdekaan
       }
       // Segment: KCU Bandung (40000) -> SPP Bandung (40400)
       else if (curNopen === '40000' && nextNopen === '40400') {
-        roadPoints.push([-6.9215, 107.6125]);
-        roadPoints.push([-6.9270, 107.6210]);
-        roadPoints.push([-6.9355, 107.6275]);
-        roadPoints.push([-6.9400, 107.6300]);
+        roadPoints.push([-6.9215, 107.6125]); // Asia-Afrika / Sunda
+        roadPoints.push([-6.9270, 107.6210]); // Gatot Subroto
+        roadPoints.push([-6.9335, 107.6265]); // Pelajar Pejuang 45
+        roadPoints.push([-6.9380, 107.6290]); // Soekarno-Hatta Gateway
       }
-      // Generic interpolator with subtle street curves for any other route
+      // Generic interpolator with smooth street curvature for any other route
       else {
-        const steps = 5;
+        const steps = 8;
         for (let s = 1; s < steps; s++) {
           const ratio = s / steps;
           const lat = current.lat + (next.lat - current.lat) * ratio;
           const lng = current.lng + (next.lng - current.lng) * ratio;
-          const curveOffset = Math.sin(ratio * Math.PI) * 0.0035;
+          const curveOffset = Math.sin(ratio * Math.PI) * 0.0025;
           roadPoints.push([lat + (s % 2 === 0 ? curveOffset : -curveOffset), lng + curveOffset]);
         }
       }
