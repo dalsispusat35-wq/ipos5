@@ -95,6 +95,7 @@ class UserController {
       if (email) updateData.email = email.trim();
       if (nip) updateData.nip = nip.trim();
       if (branch) updateData.branch = branch.trim();
+      if (req.body.avatar !== undefined) updateData.avatar = req.body.avatar;
 
       await db.collection('users').updateOne({ username: cleanUser }, { $set: updateData });
 

@@ -200,6 +200,13 @@ function AppContent() {
           setCurrentUser(null);
         });
     }
+
+    const handleUserUpdate = () => {
+      const saved = sessionStorage.getItem('ipos5_user');
+      if (saved) setCurrentUser(JSON.parse(saved));
+    };
+    window.addEventListener('ipos5_user_updated', handleUserUpdate);
+    return () => window.removeEventListener('ipos5_user_updated', handleUserUpdate);
   }, []);
 
   const handleLoginSuccess = (userData) => {
@@ -408,9 +415,14 @@ function AppContent() {
               fontWeight: 700,
               color: '#fff',
               flexShrink: 0,
+              overflow: 'hidden'
             }}
           >
-            {currentUser?.name ? currentUser.name.slice(0, 2).toUpperCase() : 'US'}
+            {currentUser?.avatar ? (
+              <img src={currentUser.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              currentUser?.name ? currentUser.name.slice(0, 2).toUpperCase() : 'US'
+            )}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -518,9 +530,14 @@ function AppContent() {
               fontWeight: 700,
               color: '#fff',
               flexShrink: 0,
+              overflow: 'hidden'
             }}
           >
-            {currentUser?.name ? currentUser.name.slice(0, 2).toUpperCase() : 'US'}
+            {currentUser?.avatar ? (
+              <img src={currentUser.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              currentUser?.name ? currentUser.name.slice(0, 2).toUpperCase() : 'US'
+            )}
           </div>
           {!sidebarCollapsed && (
             <div style={{ flex: 1, minWidth: 0 }}>

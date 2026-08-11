@@ -39,14 +39,6 @@ export default function Profile() {
   const [userToEdit, setUserToEdit] = useState(null);
   const [userToDelete, setUserToDelete] = useState(null);
 
-  // Form States
-  const [profileForm, setProfileForm] = useState({
-    name: '',
-    email: '',
-    nip: '',
-    branch: ''
-  });
-
   const [newUserForm, setNewUserForm] = useState({
     username: '',
     name: '',
@@ -107,15 +99,41 @@ export default function Profile() {
     navigate('/login');
   };
 
+  // Form States
+  const [profileForm, setProfileForm] = useState({
+    name: '',
+    email: '',
+    nip: '',
+    branch: '',
+    avatar: ''
+  });
+
   // Open Edit Profile Modal
   const handleOpenEditProfile = () => {
     setProfileForm({
       name: currentUser.name || 'Super Administrator IT',
       email: currentUser.email || 'admin@posindonesia.co.id',
       nip: currentUser.nip || '994051101',
-      branch: currentUser.branch || 'KCU Cimahi (40511)'
+      branch: currentUser.branch || 'KCU Cimahi (40511)',
+      avatar: currentUser.avatar || ''
     });
     setIsEditProfileModalOpen(true);
+  };
+
+  // Handle Photo File Upload
+  const handleAvatarFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        showAlert('error', 'Ukuran foto maksimal 5MB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileForm(prev => ({ ...prev, avatar: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   // Save Edit Profile
@@ -127,7 +145,8 @@ export default function Profile() {
         const updatedUser = { ...currentUser, ...profileForm };
         setCurrentUser(updatedUser);
         sessionStorage.setItem('ipos5_user', JSON.stringify(updatedUser));
-        showAlert('success', 'Profil Anda berhasil diperbarui!');
+        window.dispatchEvent(new Event('ipos5_user_updated'));
+        showAlert('success', 'Foto profil & data diri Anda berhasil diperbarui!');
         setIsEditProfileModalOpen(false);
         fetchUsers();
       }
@@ -322,9 +341,14 @@ export default function Profile() {
               fontWeight: 900,
               color: '#fff',
               flexShrink: 0,
+              overflow: 'hidden'
             }}
           >
-            {currentUser.name ? currentUser.name.slice(0, 2).toUpperCase() : 'AD'}
+            {currentUser.avatar ? (
+              <img src={currentUser.avatar} alt="Foto Profil" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              currentUser.name ? currentUser.name.slice(0, 2).toUpperCase() : 'AD'
+            )}
           </div>
 
           <div style={{ flex: 1, minWidth: 240 }}>
@@ -672,6 +696,87 @@ export default function Profile() {
               <button className="btn-ghost" onClick={() => setIsEditProfileModalOpen(false)} style={{ padding: 4 }}><X size={16} /></button>
             </div>
             <form onSubmit={handleSaveProfile} style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
+              
+              {/* Photo Profile Upload & Presets Section */}
+              <div style={{
+                padding: 16,
+                background: 'rgba(255,255,255,0.03)',
+                borderRadius: 12,
+                border: '1px solid rgba(255,255,255,0.08)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 16,
+                flexWrap: 'wrap'
+              }}>
+                <div style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #e8431f, #2460b0)',
+                  border: '2px solid rgba(255,255,255,0.2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 20,
+                  fontWeight: 900,
+                  color: '#fff',
+                  flexShrink: 0,
+                  overflow: 'hidden',
+                  position: 'relative'
+                }}>
+                  {profileForm.avatar ? (
+                    <img src={profileForm.avatar} alt="Preview Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    profileForm.name ? profileForm.name.slice(0, 2).toUpperCase() : 'AD'
+                  )}
+                </div>
+
+                <div style={{ flex: 1, minWidth: 200, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>
+                    Foto Profil / Avatar Pengguna
+                  </label>
+                  
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <label 
+                      className="btn-ghost" 
+                      style={{ 
+                        padding: '6px 12px', 
+                        fontSize: 11, 
+                        cursor: 'pointer', 
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        gap: 6,
+                        background: 'rgba(232, 67, 31, 0.15)',
+                        borderColor: 'rgba(232, 67, 31, 0.4)',
+                        color: '#fff'
+                      }}
+                    >
+                      📷 Upload Foto
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={handleAvatarFileUpload} 
+                        style={{ display: 'none' }} 
+                      />
+                    </label>
+
+                    {profileForm.avatar && (
+                      <button 
+                        type="button" 
+                        className="btn-ghost" 
+                        onClick={() => setProfileForm(prev => ({ ...prev, avatar: '' }))}
+                        style={{ padding: '6px 10px', fontSize: 11, color: '#fca5a5', borderColor: 'rgba(239,68,68,0.3)' }}
+                      >
+                        Hapus Foto
+                      </button>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.4)' }}>
+                    Pilih file gambar dari komputer (JPG/PNG, max 5MB).
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', display: 'block', marginBottom: 4 }}>Nama Lengkap</label>
                 <input type="text" className="input-navy" value={profileForm.name} onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })} required style={{ width: '100%' }} />
