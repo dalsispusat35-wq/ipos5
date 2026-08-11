@@ -1365,8 +1365,12 @@ export default function Checker() {
       <LiveGpsMapModal
         isOpen={isMapModalOpen}
         onClose={() => setIsMapModalOpen(false)}
+        connoteCode={result?.connote || 'P2607150025574'}
         vehicleNopol={result?.vehicleNopol || 'B 9910 PCX'}
         routeId={result?.routeId || 'RT-MALAM-B9910-PCX'}
+        stops={result?.routeStops || []}
+        loadKg={result?.currentLoadKg || 750}
+        maxCapKg={result?.maxCapacityKg || 1500}
       />
     </div>
   );

@@ -129,10 +129,10 @@ export default function LiveGpsMapModal({
   vehicleNopol = 'B 9910 PCX',
   routeId = 'RT-MALAM-B9910-PCX',
   stops = [],
-  activeSeq = 1,
+  activeSeq: externalActiveSeq,
   onAdvanceStop,
   onResetStop,
-  isPlaying,
+  isPlaying: externalIsPlaying,
   onTogglePlay,
   loadKg = 750,
   maxCapKg = 1500
@@ -140,6 +140,21 @@ export default function LiveGpsMapModal({
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const hasFittedRef = useRef(false);
+
+  // Internal simulation fallback state (Self-contained Auto Play)
+  const [internalPlaying, setInternalPlaying] = useState(false);
+  const [internalSeq, setInternalSeq] = useState(1);
+
+  const isPlaying = externalIsPlaying !== undefined ? externalIsPlaying : internalPlaying;
+  const activeSeq = externalActiveSeq !== undefined ? externalActiveSeq : internalSeq;
+
+  // Reset internal simulation when modal is re-opened
+  useEffect(() => {
+    if (isOpen) {
+      setInternalSeq(1);
+      setInternalPlaying(false);
+    }
+  }, [isOpen]);
 
   // Normalize stops to exact GPS coordinates (Memoized synchronously)
   const stopsCoords = useMemo(() => {
@@ -161,6 +176,57 @@ export default function LiveGpsMapModal({
       };
     });
   }, [stops]);
+
+  // Auto-play simulation interval timer
+  useEffect(() => {
+    let timer = null;
+    if (isOpen && isPlaying) {
+      timer = setInterval(() => {
+        if (onAdvanceStop) {
+          onAdvanceStop();
+        } else {
+          setInternalSeq((prev) => {
+            if (prev >= stopsCoords.length) {
+              setInternalPlaying(false);
+              return prev;
+            }
+            return prev + 1;
+          });
+        }
+      }, 2000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [isOpen, isPlaying, stopsCoords.length, onAdvanceStop]);
+
+  const handleTogglePlay = () => {
+    if (onTogglePlay) {
+      onTogglePlay();
+    } else {
+      if (internalSeq >= stopsCoords.length) {
+        setInternalSeq(1);
+      }
+      setInternalPlaying((prev) => !prev);
+    }
+  };
+
+  const handleAdvanceStop = () => {
+    if (onAdvanceStop) {
+      onAdvanceStop();
+    } else {
+      setInternalSeq((prev) => (prev < stopsCoords.length ? prev + 1 : prev));
+    }
+  };
+
+  const handleResetStop = () => {
+    if (onResetStop) {
+      onResetStop();
+    } else {
+      setInternalSeq(1);
+      setInternalPlaying(false);
+    }
+  };
 
   // Synchronous static fallback waypoints (GAMBAR 1 REFERENSI BENAR)
   const staticFallbackWaypoints = useMemo(() => {
@@ -593,7 +659,7 @@ export default function LiveGpsMapModal({
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <button
                   className="btn-primary"
-                  onClick={onTogglePlay}
+                  onClick={handleTogglePlay}
                   style={{ padding: '8px 14px', fontSize: 12, borderRadius: 8, gap: 6, width: '100%', justifyContent: 'center', minHeight: 40, background: isPlaying ? '#e8431f' : '#2460b0' }}
                 >
                   {isPlaying ? <Pause size={14} /> : <Play size={14} />}
@@ -603,14 +669,14 @@ export default function LiveGpsMapModal({
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                   <button
                     className="btn-ghost"
-                    onClick={onAdvanceStop}
+                    onClick={handleAdvanceStop}
                     style={{ padding: '8px 10px', fontSize: 11, borderRadius: 8, gap: 4, justifyContent: 'center', minHeight: 40 }}
                   >
                     <SkipForward size={13} /> Lanjut Stop
                   </button>
                   <button
                     className="btn-ghost"
-                    onClick={onResetStop}
+                    onClick={handleResetStop}
                     style={{ padding: '8px 10px', fontSize: 11, borderRadius: 8, gap: 4, justifyContent: 'center', minHeight: 40 }}
                   >
                     <RotateCcw size={13} /> Reset
