@@ -5,68 +5,76 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const CONNECTIONS_FILE = path.join(__dirname, '..', 'config', 'connections.json');
 
-async function main() {
-  const connections = JSON.parse(fs.readFileSync(CONNECTIONS_FILE, 'utf8'));
+async function createIndexes() {
+  const connFile = path.join(__dirname, '..', 'config', 'connections.json');
+  const connections = JSON.parse(fs.readFileSync(connFile, 'utf8'));
+
   let connected = false;
-
   for (const conn of connections) {
-    console.log(`Menghubungkan ke ${conn.name}...`);
     try {
       await DbConnection.connect(conn);
       connected = true;
       break;
     } catch (e) {
-      // ignore
+      console.error(`Gagal menghubungkan ke ${conn.name || conn.uri}:`, e.message);
     }
   }
 
   if (!connected) {
-    console.error('Koneksi ke database gagal.');
+    console.error('Koneksi ke database MongoDB gagal.');
     process.exit(1);
   }
 
   const db = await DbConnection.getDb();
-  console.log('Database terhubung. Mulai membuat indeks...');
 
-  // 1. Indeks Koleksi transaksi
-  console.log('Membuat indeks untuk koleksi transaksi...');
-  await db.collection('transaksi').createIndex({ "connote.connote_code": 1 });
-  await db.collection('transaksi').createIndex({ "connote.connote_booking_code": 1 });
-  await db.collection('transaksi').createIndex({ "connote.connote_state": 1 });
-  await db.collection('transaksi').createIndex({ "connote.connote_service": 1 });
-  await db.collection('transaksi').createIndex({ "connote.created_at": -1 });
-  await db.collection('transaksi').createIndex({ "location_data_created.custom_field.destination_nopen": 1 });
-  await db.collection('transaksi').createIndex({ "location_data_created.custom_field.destination_kprk": 1 });
-  await db.collection('transaksi').createIndex({ "location_data_created.custom_field.destination_reg": 1 });
-  await db.collection('transaksi').createIndex({ "custom_field.destination_nopen": 1 });
-  await db.collection('transaksi').createIndex({ "custom_field.destination_kprk": 1 });
-  await db.collection('transaksi').createIndex({ "custom_field.destination_reg": 1 });
-  await db.collection('transaksi').createIndex({ "currentLocation.name": 1 });
+  console.log('Membuat indeks database untuk Package Tracking & Daily Operation...');
 
-  // 2. Indeks Koleksi master_kantor
-  console.log('Membuat indeks untuk koleksi master_kantor...');
-  await db.collection('master_kantor').createIndex({ "nopend": 1 });
-  await db.collection('master_kantor').createIndex({ "nama_nopend": 1 });
+  // Helper to create index safely
+  const safeCreateIndex = async (col, spec, options) => {
+    try {
+      await col.createIndex(spec, options);
+    } catch (e) {
+      if (e.code === 85 || e.codeName === 'IndexOptionsConflict') {
+        console.log(`ℹ️ Indeks pada ${col.collectionName} sudah ada (${JSON.stringify(spec)}).`);
+      } else {
+        console.warn(`⚠️ Warning saat buat indeks pada ${col.collectionName}:`, e.message);
+      }
+    }
+  };
 
-  // 3. Indeks Koleksi master_kendaraan
-  console.log('Membuat indeks untuk koleksi master_kendaraan...');
-  await db.collection('master_kendaraan').createIndex({ "nopol": 1 });
-  await db.collection('master_kendaraan').createIndex({ "kendaraan_id": 1 });
+  // 1. tracking_events
+  const colTracking = db.collection('tracking_events');
+  await safeCreateIndex(colTracking, { event_id: 1 }, { unique: true, name: 'event_id_unique', sparse: true });
+  await safeCreateIndex(colTracking, { import_batch_id: 1 }, { name: 'import_batch_id_idx' });
+  await safeCreateIndex(colTracking, { connote_code: 1, event_datetime: -1 }, { name: 'connote_datetime_idx' });
+  await safeCreateIndex(colTracking, { route_code: 1, event_datetime: -1 }, { name: 'route_datetime_idx' });
+  console.log('✅ Indeks tracking_events selesai diproses.');
 
-  // 4. Indeks Koleksi detail_route
-  console.log('Membuat indeks untuk koleksi detail_route...');
-  await db.collection('detail_route').createIndex({ "route_id": 1, "seq": 1 });
+  // 2. transaksi
+  const colTx = db.collection('transaksi');
+  await safeCreateIndex(colTx, { connote_code: 1 }, { name: 'connote_code_idx' });
+  await safeCreateIndex(colTx, { 'connote.connote_code': 1 }, { name: 'nested_connote_code_idx' });
+  await safeCreateIndex(colTx, { import_batch_id: 1 }, { name: 'tx_import_batch_id_idx' });
+  console.log('✅ Indeks transaksi selesai diproses.');
 
-  // 5. Indeks Koleksi jadwal_transportasi
-  console.log('Membuat indeks untuk koleksi jadwal_transportasi...');
-  await db.collection('jadwal_transportasi').createIndex({ "nopol": 1 });
-  await db.collection('jadwal_transportasi').createIndex({ "route_id": 1 });
-  await db.collection('jadwal_transportasi').createIndex({ "tanggal": 1 });
+  // 3. route_journeys
+  const colJourneys = db.collection('route_journeys');
+  await safeCreateIndex(colJourneys, { journey_id: 1 }, { unique: true, name: 'journey_id_unique' });
+  await safeCreateIndex(colJourneys, { journey_date: 1, vehicle_nopol: 1 }, { name: 'journey_date_vehicle_idx' });
+  await safeCreateIndex(colJourneys, { vehicle_nopol: 1, status: 1 }, { name: 'vehicle_status_idx' });
+  console.log('✅ Indeks route_journeys selesai diproses.');
 
-  console.log('Semua indeks berhasil dibuat/diperbarui.');
+  // 4. detail_route
+  const colDetailRoute = db.collection('detail_route');
+  await safeCreateIndex(colDetailRoute, { route_id: 1, seq: 1 }, { name: 'route_id_seq_idx' });
+  console.log('✅ Indeks detail_route selesai diproses.');
+
+  console.log('🚀 Seluruh indeks database berhasil dibuat!');
   await DbConnection.disconnect();
 }
 
-main().catch(console.error);
+createIndexes().catch(err => {
+  console.error('Error saat membuat indeks:', err);
+  process.exit(1);
+});

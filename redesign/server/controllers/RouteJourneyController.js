@@ -207,6 +207,209 @@ class RouteJourneyController extends BaseController {
       this.handleError(res, error);
     }
   }
+
+  // ─── DAILY ROUTING (Date-based Journey Aggregation) ───────────────────────
+
+  // GET /route-journeys/daily?date=2026-07-24
+  async getDailyRouting(req, res) {
+    try {
+      const dateStr = req.query.date || new Date().toISOString().slice(0, 10);
+
+      // Validate date format
+      const parsedDate = new Date(dateStr);
+      if (isNaN(parsedDate.getTime())) {
+        return res.status(400).json({
+          success: false,
+          message: `Format tanggal tidak valid: "${dateStr}". Gunakan format YYYY-MM-DD.`
+        });
+      }
+
+      const journeys = await RouteJourneyModel.findJourneysByDate(dateStr);
+
+      // Build summary and flatten connotes from all journeys
+      const routeSet = new Set();
+      const vehicleSet = new Set();
+      let totalConnotes = 0;
+      const connoteList = [];
+
+      for (const j of journeys) {
+        routeSet.add(j.route_id);
+        vehicleSet.add(j.resolved_vehicle_nopol || j.vehicle_nopol);
+
+        // Collect connotes from cargo (live/current)
+        const cargoItems = j.cargo || [];
+        for (const item of cargoItems) {
+          if (item.connote_code) {
+            connoteList.push({
+              connote_code: item.connote_code,
+              weight_kg: item.weight_kg || 0,
+              origin_nopen: item.origin_nopen || '-',
+              destination_nopen: item.destination_nopen || '-',
+              vehicle_nopol: j.resolved_vehicle_nopol || j.vehicle_nopol,
+              route_id: j.route_id,
+              journey_id: j.journey_id,
+              status: 'INVEHICLE'
+            });
+          }
+        }
+
+        // Collect connotes from processed stops (historical)
+        const processedStops = j.processed_stops || [];
+        for (const stop of processedStops) {
+          const accepted = stop.acceptedItems || [];
+          for (const item of accepted) {
+            // Avoid duplicates if connote is still in cargo
+            if (item.connote_code && !connoteList.some(c => c.connote_code === item.connote_code)) {
+              connoteList.push({
+                connote_code: item.connote_code,
+                weight_kg: item.weight_kg || 0,
+                origin_nopen: item.origin_nopen || item.loaded_at_nopen || '-',
+                destination_nopen: item.destination_nopen || '-',
+                vehicle_nopol: j.resolved_vehicle_nopol || j.vehicle_nopol,
+                route_id: j.route_id,
+                journey_id: j.journey_id,
+                status: 'LOADED'
+              });
+            }
+          }
+        }
+
+        totalConnotes = connoteList.length;
+      }
+
+      // Enrich journeys with full vehicle route stops
+      const enrichedJourneys = await Promise.all(journeys.map(async (j) => {
+        let routeStops = [];
+        try {
+          const segments = await RouteJourneyModel.getRouteStops(j.route_id);
+          if (segments && segments.length > 0) {
+            const stopCodes = [segments[0].asal_nopen, ...segments.map(s => s.tujuan_nopen)].filter(Boolean);
+            const offices = await RouteJourneyModel.getOfficesByCodes(stopCodes);
+            const officeMap = new Map(offices.map(o => [String(o.nopend), o.nama_nopend]));
+
+            routeStops = stopCodes.map((code, idx) => ({
+              seq: idx + 1,
+              nopen: code,
+              officeName: officeMap.get(code) || (idx === 0 ? segments[0].asal_nama : segments[idx - 1].tujuan_nama || `KANTOR ${code}`),
+              role: idx === 0 ? 'ORIGIN' : idx === stopCodes.length - 1 ? 'DESTINATION' : 'TRANSIT'
+            }));
+          }
+        } catch (e) {
+          console.error(`Error resolving route stops for ${j.route_id}:`, e.message);
+        }
+
+        return {
+          journey_id: j.journey_id,
+          route_id: j.route_id,
+          vehicle_nopol: j.resolved_vehicle_nopol || j.vehicle_nopol,
+          shift: j.shift || '-',
+          status: j.status,
+          journey_date: j.journey_date,
+          maximum_capacity_kg: j.maximum_capacity_kg || 0,
+          current_load_kg: j.current_load_kg || 0,
+          cargo_count: (j.cargo || []).length,
+          processed_stops_count: (j.processed_stops || []).length,
+          current_nopen: j.current_nopen || null,
+          route_stops: routeStops
+        };
+      }));
+
+      res.json({
+        success: true,
+        data: {
+          date: dateStr,
+          summary: {
+            totalRoutes: routeSet.size,
+            totalVehicles: vehicleSet.size,
+            totalConnotes,
+            totalJourneys: journeys.length
+          },
+          journeys: enrichedJourneys,
+          connotes: connoteList
+        }
+      });
+    } catch (error) {
+      this.handleError(res, error);
+    }
+  }
+
+  // GET /route-journeys/daily/search/:connoteCode?date=2026-07-24
+  async searchConnoteByDate(req, res) {
+    try {
+      const { connoteCode } = req.params;
+      const dateStr = req.query.date || new Date().toISOString().slice(0, 10);
+
+      if (!connoteCode) {
+        return res.status(400).json({
+          success: false,
+          message: 'Parameter connoteCode diperlukan.'
+        });
+      }
+
+      const cleanCode = String(connoteCode).trim();
+      const journey = await RouteJourneyModel.findConnoteInJourneys(cleanCode, dateStr);
+
+      if (!journey) {
+        return res.json({
+          success: true,
+          data: null,
+          message: `Resi "${cleanCode}" tidak ditemukan dalam routing tanggal ${dateStr}.`
+        });
+      }
+
+      // Find the specific connote info within the journey
+      let connoteInfo = null;
+
+      // Check cargo
+      const cargoMatch = (journey.cargo || []).find(c => c.connote_code === cleanCode);
+      if (cargoMatch) {
+        connoteInfo = {
+          connote_code: cleanCode,
+          vehicle_nopol: journey.resolved_vehicle_nopol || journey.vehicle_nopol,
+          route_id: journey.route_id,
+          journey_id: journey.journey_id,
+          destination_nopen: cargoMatch.destination_nopen || '-',
+          origin_nopen: cargoMatch.origin_nopen || '-',
+          weight_kg: cargoMatch.weight_kg || 0,
+          status: 'INVEHICLE',
+          journey_date: journey.journey_date,
+          shift: journey.shift || '-',
+          journey_status: journey.status
+        };
+      }
+
+      // Check processed stops if not found in cargo
+      if (!connoteInfo) {
+        for (const stop of (journey.processed_stops || [])) {
+          const match = (stop.acceptedItems || []).find(a => a.connote_code === cleanCode);
+          if (match) {
+            connoteInfo = {
+              connote_code: cleanCode,
+              vehicle_nopol: journey.resolved_vehicle_nopol || journey.vehicle_nopol,
+              route_id: journey.route_id,
+              journey_id: journey.journey_id,
+              destination_nopen: match.destination_nopen || '-',
+              origin_nopen: match.origin_nopen || match.loaded_at_nopen || '-',
+              weight_kg: match.weight_kg || 0,
+              status: 'LOADED',
+              loaded_at_stop: stop.officeName || stop.nopen,
+              journey_date: journey.journey_date,
+              shift: journey.shift || '-',
+              journey_status: journey.status
+            };
+            break;
+          }
+        }
+      }
+
+      res.json({
+        success: true,
+        data: connoteInfo
+      });
+    } catch (error) {
+      this.handleError(res, error);
+    }
+  }
 }
 
 export default new RouteJourneyController();

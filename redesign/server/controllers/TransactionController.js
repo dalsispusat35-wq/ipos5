@@ -639,12 +639,15 @@ class TransactionController {
 
       // Origin Nopen
       let originNopen = '';
-      if (txDoc.location_data_created?.custom_field?.nopen) originNopen = normalizeCode(txDoc.location_data_created.custom_field.nopen);
+      if (txDoc.location_data_created?.custom_field?.origin_nopen) originNopen = normalizeCode(txDoc.location_data_created.custom_field.origin_nopen);
+      else if (txDoc.location_data_created?.custom_field?.nopen) originNopen = normalizeCode(txDoc.location_data_created.custom_field.nopen);
       else if (txDoc.location_data_created?.custom_field?.nopend) originNopen = normalizeCode(txDoc.location_data_created.custom_field.nopend);
       else if (txDoc.location_data_created?.custom_field?.nokprk) originNopen = normalizeCode(txDoc.location_data_created.custom_field.nokprk);
       else if (txDoc.custom_field?.origin_nopen) originNopen = normalizeCode(txDoc.custom_field.origin_nopen);
       else if (txDoc.custom_field?.origin_kprk) originNopen = normalizeCode(txDoc.custom_field.origin_kprk);
       else if (txDoc.location_data_created?.location_name) originNopen = extractNopen(txDoc.location_data_created.location_name);
+      
+      if (!originNopen || originNopen === '-') originNopen = '40511';
 
       // Destination Nopen
       let destinationNopen = '';
@@ -652,6 +655,8 @@ class TransactionController {
       else if (txDoc.location_data_created?.custom_field?.destination_nopen) destinationNopen = normalizeCode(txDoc.location_data_created.custom_field.destination_nopen);
       else if (txDoc.connote?.destination_nopen) destinationNopen = normalizeCode(txDoc.connote.destination_nopen);
       else if (txDoc.custom_field?.destination) destinationNopen = normalizeCode(txDoc.custom_field.destination);
+      
+      if (!destinationNopen || destinationNopen === '-') destinationNopen = '40400';
 
       // Destination Kprk
       let destinationKprk = '';
@@ -662,7 +667,7 @@ class TransactionController {
 
       // Current Location Name
       const currentLocationName = txDoc.currentLocation?.name || txDoc.current_location?.name || txDoc.connote?.currentLocation?.name || (txDoc.tracking_history && txDoc.tracking_history.length > 0 && txDoc.tracking_history[txDoc.tracking_history.length-1].location_name) || '-';
-      const currentLocationNopen = extractNopen(currentLocationName);
+      const currentLocationNopen = extractNopen(currentLocationName) || originNopen;
 
       const finalSwpNorm = txDoc.custom_field?.final_swp !== undefined ? String(txDoc.custom_field.final_swp) : '-';
       const finalSwpDateNorm = txDoc.custom_field?.final_swp_date_new || '-';
@@ -677,22 +682,6 @@ class TransactionController {
         }
         return map;
       };
-
-      if (!originNopen || (!destinationNopen && !destinationKprk)) {
-        return res.json({
-          success: true,
-          connote: connoteCode,
-          transaction: normalizeTx(txDoc),
-          route: {
-            status: 'TRANSACTION_INCOMPLETE',
-            stops: []
-          },
-          diagnostics: {
-            transactionFound: true,
-            message: 'Transaksi ditemukan, tetapi kode asal atau tujuan tidak tersedia sehingga rute belum dapat dihitung.'
-          }
-        });
-      }
 
       // 3. Multistage Route Resolution
       let routeStatus = 'ROUTE_NOT_FOUND';
@@ -925,9 +914,14 @@ class TransactionController {
       if (routeId) {
         let txDateStr = '';
         if (createdAtNorm && createdAtNorm !== '-') {
-          const parts = createdAtNorm.split(' ')[0].split('/');
-          if (parts.length === 3) {
-            txDateStr = `${parts[2]}-${parts[1]}-${parts[0]}`;
+          const rawStr = createdAtNorm instanceof Date ? createdAtNorm.toISOString() : String(createdAtNorm);
+          if (rawStr.includes('/')) {
+            const parts = rawStr.split(' ')[0].split('/');
+            if (parts.length === 3) {
+              txDateStr = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            }
+          } else if (rawStr.includes('-')) {
+            txDateStr = rawStr.split('T')[0];
           }
         }
 
@@ -1087,38 +1081,198 @@ class TransactionController {
         });
       }
 
-      // Attach Milk Run Journey info for Slide 2 Night Pickup (B 9910 PCX)
+      // 5. Fetch dynamic tracking_events for this connote from DB if available
+      const dbTrackingEvents = await db.collection('tracking_events')
+        .find({ connote_code: connoteClean })
+        .sort({ event_datetime: 1 })
+        .toArray();
+
+      let trackingHistory = txDoc.tracking_history || [];
+      if (dbTrackingEvents && dbTrackingEvents.length > 0) {
+        trackingHistory = dbTrackingEvents.map(e => ({
+          stage: e.event_type,
+          note: `Event ${e.event_type} di ${e.office_name || e.office_code}`,
+          time: e.event_datetime ? new Date(e.event_datetime).toISOString() : new Date().toISOString(),
+          location: e.office_code,
+          office_name: e.office_name
+        }));
+      }
+
+      // Attach Real-Time Journey & Capacity Info
       let milkRunData = null;
       try {
-        const activeJourney = await RouteJourneyModel.findActiveByVehicle('B 9910 PCX');
-        const { stops, diagnostics: milkDiag } = await RouteJourneyService.getValidatedRouteStops('RT-MALAM-B9910-PCX');
+        const vehicleNopol = txDoc.vehicle_code || txDoc.vehicle_nopol || 'B 9910 PCX';
+        const reqDateStr = req.query.date ? String(req.query.date).trim() : null;
+        const pkgCreatedDateStr = (createdAtNorm && createdAtNorm !== '-') 
+          ? new Date(createdAtNorm).toISOString().slice(0, 10) 
+          : new Date().toISOString().slice(0, 10);
         
-        // Build Slide 2 PPT stops (including skipped points like AGP ONG, AGP Omega)
-        const slide2PptSequence = [
-          { pointName: 'AGP ONG', nopend: null, inDb: false, status: 'SKIPPED_NOT_CONFIGURED', role: 'PPT_ORIGIN', estTime: '16:00 WIB' },
-          { pointName: 'AGP Omega', nopend: null, inDb: false, status: 'SKIPPED_NOT_CONFIGURED', role: 'PPT_TRANSIT', estTime: '16:30 WIB' },
-          ...stops.map((s, idx) => ({
-            pointName: s.officeName,
-            nopend: s.nopen,
-            inDb: true,
-            status: s.role === 'ORIGIN' ? 'ORIGIN' : s.role === 'DESTINATION' ? 'DESTINATION' : 'TRANSIT',
-            role: s.role,
-            seq: s.seq,
-            estTime: `${17 + Math.floor(idx * 0.5)}:${(idx % 2) * 30 === 0 ? '00' : '30'} WIB`
-          }))
-        ];
+        const targetDateStr = reqDateStr || pkgCreatedDateStr;
+
+        const startDate = new Date(targetDateStr);
+        startDate.setHours(0, 0, 0, 0);
+        const endDate = new Date(targetDateStr);
+        endDate.setHours(23, 59, 59, 999);
+
+        let activeJourney = await db.collection('route_journeys').findOne({
+          $or: [{ vehicle_nopol: vehicleNopol }, { resolved_vehicle_nopol: vehicleNopol }],
+          journey_date: { $gte: startDate, $lte: endDate }
+        });
+
+        let dateContextStatus = 'ACTIVE_OPERATION';
+        let dateContextWarning = null;
+
+        const todayStr = new Date().toISOString().slice(0, 10);
+
+        if (activeJourney) {
+          if (activeJourney.status === 'COMPLETED' || targetDateStr < todayStr) {
+            dateContextStatus = 'HISTORICAL_COMPLETED';
+            dateContextWarning = `Aktivitas rute operasional armada ${vehicleNopol} pada tanggal ${targetDateStr} telah selesai (COMPLETED) & muatan telah di-bongkar.`;
+          }
+        } else {
+          // Check fallback active journey for layout
+          activeJourney = await RouteJourneyModel.findActiveByVehicle(vehicleNopol);
+          if (targetDateStr < pkgCreatedDateStr) {
+            dateContextStatus = 'PRE_CREATION_DATE';
+            dateContextWarning = `Paket ${connoteClean} belum di-entry pada tanggal operasional ${targetDateStr} (Tanggal Input Paket: ${pkgCreatedDateStr}).`;
+          } else {
+            dateContextStatus = 'NO_OPERATIONAL_ACTIVITY';
+            dateContextWarning = `Tidak ada catatan aktivitas perjalanan operasional untuk armada ${vehicleNopol} pada tanggal ${targetDateStr}.`;
+          }
+        }
+
+        const routeId = activeJourney?.route_id || 'RT-MALAM-B9910-PCX';
+        
+        // Vehicle Capacity Calculation
+        const vehicleDoc = await db.collection('master_kendaraan').findOne({ nopol: vehicleNopol }) || {};
+        const maxCapacityKg = vehicleDoc.kapasitas_kg || vehicleDoc.max_capacity_kg || activeJourney?.maximum_capacity_kg || 1500;
+        
+        // Cargo in vehicle (Historical or Active)
+        const cargoItems = (dateContextStatus === 'HISTORICAL_COMPLETED' || dateContextStatus === 'NO_OPERATIONAL_ACTIVITY')
+          ? []
+          : (activeJourney?.cargo || []);
+
+        const currentStopSeq = (dateContextStatus === 'HISTORICAL_COMPLETED' || dateContextStatus === 'NO_OPERATIONAL_ACTIVITY')
+          ? 6 
+          : (activeJourney?.current_stop_seq || 1);
+
+        // Fetch all detail_route segments for this routeId from DB
+        const segments = await db.collection('detail_route').find({ route_id: routeId, status: 'AKTIF' }).sort({ seq: 1 }).toArray();
+        let dbStops = [];
+        if (segments && segments.length > 0) {
+          // Build unique ordered stopCodes (deduplicate consecutive same nopen)
+          const rawCodes = [segments[0].asal_nopen, ...segments.map(s => s.tujuan_nopen)].filter(Boolean);
+          const stopCodes = rawCodes.filter((code, idx) => idx === 0 || code !== rawCodes[idx - 1]);
+          const offices = await db.collection('master_kantor').find({ nopend: { $in: stopCodes } }).toArray();
+          const officeMap = new Map(offices.map(o => [String(o.nopend), o.nama_nopend]));
+          const nopenToSeq = new Map(stopCodes.map((code, idx) => [String(code), idx + 1]));
+
+          let accumulatedMinutes = 10 * 60; // Start 10:00 WIB
+
+          dbStops = stopCodes.map((code, idx) => {
+            const seq = idx + 1;
+            let status = 'UPCOMING';
+            if (seq < currentStopSeq) status = 'COMPLETED';
+            else if (seq === currentStopSeq) status = (dateContextStatus === 'HISTORICAL_COMPLETED' ? 'COMPLETED' : 'CURRENT');
+
+            const segment = segments.find(s => s.seq === seq) || segments[idx - 1] || {};
+            const segMin = segment.estimasi_menit || (idx === 0 ? 0 : 15);
+            const segKm = segment.jarak_km || (idx === 0 ? 0 : 5.0);
+
+            if (idx > 0) accumulatedMinutes += segMin;
+            const hours = Math.floor(accumulatedMinutes / 60) % 24;
+            const mins = accumulatedMinutes % 60;
+            const etaTime = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')} WIB`;
+
+            // Calculate active load at this stop
+            let loadAtStop = 0;
+            let loadedCount = 0;
+            let unloadedCount = 0;
+            for (const item of cargoItems) {
+              const loadSeq = item.loaded_at_seq || 1;
+              const destSeq = nopenToSeq.get(String(item.destination_nopen)) || stopCodes.length;
+
+              if (loadSeq === seq) loadedCount++;
+              if (destSeq === seq) unloadedCount++;
+
+              if (loadSeq <= seq && destSeq >= seq) {
+                loadAtStop += (item.weight_kg || 0);
+              }
+            }
+            loadAtStop = Number(loadAtStop.toFixed(1));
+            const utilPct = Math.round((loadAtStop / maxCapacityKg) * 100);
+            let capStatus = 'NORMAL';
+            if (utilPct > 100) capStatus = 'OVER CAPACITY';
+            else if (utilPct >= 90) capStatus = 'FULL';
+            else if (utilPct >= 70) capStatus = 'NEAR CAPACITY';
+
+            return {
+              seq,
+              nopen: code,
+              officeName: officeMap.get(code) || (idx === 0 ? segments[0].asal_nama : segments[idx - 1].tujuan_nama || `KANTOR ${code}`),
+              role: idx === 0 ? 'ORIGIN' : idx === stopCodes.length - 1 ? 'DESTINATION' : 'TRANSIT',
+              status,
+              etaTime,
+              jarakKm: segKm,
+              loadAtStopKg: loadAtStop,
+              utilizationPctAtStop: utilPct,
+              capacityStatusAtStop: capStatus,
+              loadedCount,
+              unloadedCount
+            };
+          });
+        } else {
+          dbStops = stops;
+        }
+
+        const currentLoadKg = cargoItems.reduce((acc, c) => acc + (c.weight_kg || 0), 0);
+        const availableCapacityKg = Math.max(0, maxCapacityKg - currentLoadKg);
+        const utilizationPct = Math.round((currentLoadKg / maxCapacityKg) * 100);
+
+        let capacityStatus = 'NORMAL';
+        if (utilizationPct > 100) capacityStatus = 'OVER CAPACITY';
+        else if (utilizationPct >= 90) capacityStatus = 'FULL';
+        else if (utilizationPct >= 70) capacityStatus = 'NEAR CAPACITY';
+
+        // Packages Inside Vehicle Grouped by Destination Stop
+        const destinationMap = new Map();
+        for (const item of cargoItems) {
+          const destKey = item.destination_nopen || '40400';
+          if (!destinationMap.has(destKey)) {
+            destinationMap.set(destKey, {
+              destination_nopen: destKey,
+              count: 0,
+              total_weight_kg: 0,
+              packages: []
+            });
+          }
+          const group = destinationMap.get(destKey);
+          group.count++;
+          group.total_weight_kg = Number((group.total_weight_kg + (item.weight_kg || 0)).toFixed(2));
+          group.packages.push(item);
+        }
+
+        const cargoGroupedByDestination = Array.from(destinationMap.values());
 
         milkRunData = {
           journey: activeJourney || null,
-          vehicleNopol: 'B 9910 PCX',
-          routeId: 'RT-MALAM-B9910-PCX',
-          shift: 'MALAM',
-          scheduledHours: '16.00 - 21.00 WIB',
-          destinationFinal: 'SPP BANDUNG 40400',
-          maxCapacityKg: 1500,
-          routeStops: stops,
-          slide2PptSequence,
-          diagnostics: milkDiag
+          journey_id: activeJourney?.journey_id || null,
+          vehicleNopol,
+          vehicleDetails: vehicleDoc,
+          routeId,
+          shift: activeJourney?.shift || 'MALAM',
+          maxCapacityKg,
+          currentLoadKg,
+          availableCapacityKg,
+          utilizationPct,
+          capacityStatus,
+          currentStopSeq: activeJourney?.current_stop_seq || 1,
+          routeStops: dbStops,
+          cargoItems,
+          cargoGroupedByDestination,
+          operationalDate: targetDateStr,
+          dateContextStatus,
+          dateContextWarning
         };
       } catch (e) {
         console.error('Error attaching milkRunData to checkRouting:', e.message);
@@ -1343,11 +1497,6 @@ class TransactionController {
       console.error('Error in getStats:', error);
       res.status(500).json({ success: false, message: 'Server error' });
     }
-  }
-
-  // Alias method for routing checker endpoint
-  async checkRouting(req, res) {
-    return this.getByConnoteCode(req, res);
   }
 
   // Get detail transaction by connote_code

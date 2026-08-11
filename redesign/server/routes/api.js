@@ -11,6 +11,7 @@ import CompassController from '../controllers/CompassController.js';
 import ManifestController from '../controllers/ManifestController.js';
 import PickupScheduleController from '../controllers/PickupScheduleController.js';
 import RouteJourneyController from '../controllers/RouteJourneyController.js';
+import DailyOperationController from '../controllers/DailyOperationController.js';
 
 import KantorModel from '../models/KantorModel.js';
 import ProdukModel from '../models/ProdukModel.js';
@@ -146,6 +147,15 @@ router.post('/manifests/arrive', requireDb, (req, res) => ManifestController.arr
 // ─── Dynamic Capacity Routing (Milk Run) Routes ─────────────────────────────
 router.post('/route-journeys/simulate', requireDb, (req, res) => RouteJourneyController.simulateMilkRun(req, res));
 router.get('/route-journeys/active', requireDb, (req, res) => RouteJourneyController.getActiveJourney(req, res));
+
+// ─── Daily Routing (Date-based Journey Aggregation) ──────────────────────────
+router.get('/route-journeys/daily', requireDb, (req, res) => RouteJourneyController.getDailyRouting(req, res));
+router.get('/route-journeys/daily/search/:connoteCode', requireDb, (req, res) => RouteJourneyController.searchConnoteByDate(req, res));
+
+// ─── Daily Operation CSV Importer (Tool Testing & Batch Rollback) ────────────
+router.post('/daily-operation/import-csv', requireDb, DailyOperationController.requireDevOrAdmin, (req, res) => DailyOperationController.importCsv(req, res));
+router.delete('/daily-operation/import-batch/:batchId', requireDb, DailyOperationController.requireDevOrAdmin, (req, res) => DailyOperationController.deleteBatch(req, res));
+
 router.get('/route-journeys/:journeyId', requireDb, (req, res) => RouteJourneyController.getJourney(req, res));
 router.post('/route-journeys', requireDb, (req, res) => RouteJourneyController.createJourney(req, res));
 router.post('/route-journeys/:journeyId/start', requireDb, (req, res) => RouteJourneyController.startJourney(req, res));

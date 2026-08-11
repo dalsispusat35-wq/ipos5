@@ -40,8 +40,8 @@ export const api = {
   getDashboardStats: () => fetchApi('/dashboard-stats'),
 
   // Checker
-  checkRouting: (connoteCode) => fetchApi(`/checker/${encodeURIComponent(connoteCode)}`),
-  getCheckerData: (connoteCode) => fetchApi(`/checker/${encodeURIComponent(connoteCode)}`),
+  checkRouting: (connoteCode, date) => fetchApi(`/checker/${encodeURIComponent(connoteCode)}${date ? `?date=${encodeURIComponent(date)}` : ''}`),
+  getCheckerData: (connoteCode, date) => fetchApi(`/checker/${encodeURIComponent(connoteCode)}${date ? `?date=${encodeURIComponent(date)}` : ''}`),
 
   // Kantor
   getKantor: (params = '') => fetchApi(`/kantor?${params}`),
@@ -112,6 +112,10 @@ export const api = {
   completeRouteJourney: (id) => fetchApi(`/route-journeys/${id}/complete`, { method: 'POST' }),
   cancelRouteJourney: (id, reason) => fetchApi(`/route-journeys/${id}/cancel`, { method: 'POST', body: { reason } }),
 
+  // Daily Routing (Date-based Journey Aggregation)
+  getDailyRouting: (date) => fetchApi(`/route-journeys/daily?date=${encodeURIComponent(date)}`),
+  searchConnoteByDate: (connoteCode, date) => fetchApi(`/route-journeys/daily/search/${encodeURIComponent(connoteCode)}?date=${encodeURIComponent(date)}`),
+
   // Compass Manager
   getConnections: () => fetchApi('/compass/connections'),
   saveConnection: (data) => fetchApi('/compass/connections', { method: 'POST', body: data }),
@@ -137,7 +141,14 @@ export const api = {
   updateTransactionStatus: (connoteCode, status) => fetchApi(`/transaksi/${connoteCode}/status`, { method: 'PUT', body: { status } }),
   getManifests: (params = '') => fetchApi(`/manifests?${params}`),
   getManifestByCode: (code) => fetchApi(`/manifests/${encodeURIComponent(code)}`),
-  createManifest: (data) => fetchApi('/manifests', { method: 'POST', body: data }),
-  transitManifest: (data) => fetchApi('/manifests/transit', { method: 'POST', body: data }),
-  arriveManifest: (data) => fetchApi('/manifests/arrive', { method: 'POST', body: data })
+  // Daily Operation CSV Importer (Tooling Testing)
+  importDailyOperationCsv: (csvText) => fetchApi('/daily-operation/import-csv', {
+    method: 'POST',
+    headers: { 'x-dev-access': 'true' },
+    body: { csvText }
+  }),
+  deleteImportBatch: (batchId) => fetchApi(`/daily-operation/import-batch/${encodeURIComponent(batchId)}`, {
+    method: 'DELETE',
+    headers: { 'x-dev-access': 'true' }
+  })
 };

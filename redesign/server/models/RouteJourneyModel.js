@@ -109,6 +109,53 @@ class RouteJourneyModel extends BaseModel {
       ]
     }).toArray();
   }
+
+  // ─── Daily Routing Methods ─────────────────────────────────────────────────
+
+  /**
+   * Find all journeys for a specific date (journey_date field).
+   * Uses the same date-range boundary pattern as findActiveByVehicle.
+   */
+  async findJourneysByDate(dateStr) {
+    const col = await this.getCollection();
+
+    const startDate = new Date(dateStr);
+    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(dateStr);
+    endDate.setHours(23, 59, 59, 999);
+
+    return await col.find({
+      journey_date: { $gte: startDate, $lte: endDate }
+    }).sort({ route_id: 1, journey_id: 1 }).toArray();
+  }
+
+  /**
+   * Search for a specific connote code within journeys on a given date.
+   * Checks both the live `cargo` array and the `processed_stops[].acceptedItems` array.
+   * Returns the matching journey document or null.
+   */
+  async findConnoteInJourneys(connoteCode, dateStr) {
+    const col = await this.getCollection();
+    const cleanCode = String(connoteCode || '').trim();
+    if (!cleanCode) return null;
+
+    const filter = {
+      $or: [
+        { 'cargo.connote_code': cleanCode },
+        { 'processed_stops.acceptedItems.connote_code': cleanCode }
+      ]
+    };
+
+    if (dateStr) {
+      const startDate = new Date(dateStr);
+      startDate.setHours(0, 0, 0, 0);
+      const endDate = new Date(dateStr);
+      endDate.setHours(23, 59, 59, 999);
+      filter.journey_date = { $gte: startDate, $lte: endDate };
+    }
+
+    return await col.findOne(filter);
+  }
 }
 
 export default new RouteJourneyModel();
