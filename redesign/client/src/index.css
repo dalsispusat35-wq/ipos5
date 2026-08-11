@@ -537,12 +537,107 @@ body {
   .modal-overlay {
     padding: 8px;
   }
+}
 
-  .modal-content {
-    max-width: 100% !important;
-    width: 100% !important;
-    max-height: 94vh !important;
-    border-radius: 12px;
+/* Responsive GPS Radar Live Tracking Modal System */
+.gps-modal-wrapper {
+  width: 100%;
+  max-width: 1080px;
+  height: 88vh;
+  background: #060d1f;
+  border-radius: 20px;
+  border: 1.5px solid rgba(56, 189, 248, 0.4);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.gps-modal-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  overflow: hidden;
+}
+
+.gps-modal-left-panel {
+  background: rgba(10, 20, 42, 0.95);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.gps-modal-map-panel {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 300px;
+}
+
+.gps-hud-overlay {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  z-index: 1000;
+  background: rgba(4, 8, 16, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 12px 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* Mobile & Tablet Responsive Rules (< 868px) */
+@media (max-width: 868px) {
+  .gps-modal-wrapper {
+    height: 94vh;
+    max-height: 94vh;
+    border-radius: 14px;
+  }
+
+  .gps-modal-body {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column-reverse;
+  }
+
+  .gps-modal-map-panel {
+    height: 52vh;
+    min-height: 300px;
+    flex-shrink: 0;
+  }
+
+  .gps-modal-left-panel {
+    border-right: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 14px;
+    gap: 12px;
+    max-height: 44vh;
+    overflow-y: auto;
+  }
+
+  .gps-hud-overlay {
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+    padding: 8px 12px;
+    font-size: 11px;
+  }
+
+  .custom-leaflet-pin {
+    transform: scale(0.85);
   }
 }
 

@@ -463,24 +463,12 @@ export default function LiveGpsMapModal({
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: 16
+      padding: 12
     }}>
-      <div style={{
-        width: '100%',
-        maxWidth: 1080,
-        height: '88vh',
-        background: '#060d1f',
-        borderRadius: 20,
-        border: '1.5px solid rgba(56,189,248,0.4)',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.8)',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-        position: 'relative'
-      }}>
+      <div className="gps-modal-wrapper">
         {/* Modal Header */}
         <div style={{
-          padding: '16px 24px',
+          padding: '14px 20px',
           background: 'linear-gradient(135deg, rgba(13,27,56,0.95), rgba(4,8,16,0.98))',
           borderBottom: '1px solid rgba(255,255,255,0.08)',
           display: 'flex',
@@ -491,26 +479,26 @@ export default function LiveGpsMapModal({
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{
-              width: 42,
-              height: 42,
-              borderRadius: 12,
+              width: 38,
+              height: 38,
+              borderRadius: 10,
               background: 'rgba(56,189,248,0.15)',
               border: '1px solid rgba(56,189,248,0.3)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
             }}>
-              <Navigation size={22} color="#38bdf8" />
+              <Navigation size={20} color="#38bdf8" />
             </div>
             <div>
-              <div style={{ fontSize: 16, fontWeight: 900, color: '#fff', display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span>GPS Radar Live Tracking — Startup Edition</span>
+              <div style={{ fontSize: 15, fontWeight: 900, color: '#fff', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <span>GPS Radar Live Tracking</span>
                 <span className="badge badge-emerald" style={{ padding: '3px 8px', fontSize: 10 }}>
                   LIVE TELEMETRY 🟢
                 </span>
               </div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>
-                Melacak Paket Resi <strong style={{ color: '#38bdf8' }}>{connoteCode}</strong> pada Kendaraan <strong style={{ color: '#fff' }}>{vehicleNopol}</strong>
+              <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>
+                Resi <strong style={{ color: '#38bdf8' }}>{connoteCode}</strong> · Nopol <strong style={{ color: '#fff' }}>{vehicleNopol}</strong>
               </div>
             </div>
           </div>
@@ -518,43 +506,35 @@ export default function LiveGpsMapModal({
           <button
             onClick={onClose}
             className="btn-ghost"
-            style={{ padding: '6px 12px', borderRadius: 10, color: '#fff', borderColor: 'rgba(255,255,255,0.15)' }}
+            style={{ padding: '6px 12px', borderRadius: 10, color: '#fff', borderColor: 'rgba(255,255,255,0.15)', minHeight: 38 }}
           >
             <X size={18} /> Tutup Radar
           </button>
         </div>
 
-        {/* Modal Main Body (2 Columns: Left Controls/Driver, Right Leaflet Map) */}
-        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '340px 1fr', overflow: 'hidden' }}>
+        {/* Modal Main Body (Responsive Grid: Desktop 2-Cols, Mobile Stacked) */}
+        <div className="gps-modal-body">
           
           {/* Left Panel: Driver & Operational Info */}
-          <div style={{
-            background: 'rgba(10,20,42,0.95)',
-            borderRight: '1px solid rgba(255,255,255,0.08)',
-            padding: 20,
-            overflowY: 'auto',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 16
-          }}>
+          <div className="gps-modal-left-panel">
             {/* Live Driver Card */}
             <div style={{
               background: 'linear-gradient(135deg, rgba(232,67,31,0.15), rgba(56,189,248,0.08))',
               border: '1px solid rgba(232,67,31,0.3)',
               borderRadius: 14,
-              padding: 16
+              padding: 14
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
                 <div style={{
-                  width: 48,
-                  height: 48,
+                  width: 44,
+                  height: 44,
                   borderRadius: '50%',
                   background: 'linear-gradient(135deg, #e8431f, #2460b0)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontWeight: 900,
-                  fontSize: 18,
+                  fontSize: 16,
                   color: '#fff',
                   boxShadow: '0 0 14px rgba(232,67,31,0.5)',
                   border: '2px solid #fff'
@@ -562,10 +542,10 @@ export default function LiveGpsMapModal({
                   SP
                 </div>
                 <div>
-                  <div style={{ fontSize: 15, fontWeight: 900, color: '#fff' }}>Sdr. Supriatna</div>
-                  <div style={{ fontSize: 11, color: '#6ba3f0', fontWeight: 600 }}>NIP: POS-DRV-98412 · Driver Utama</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#f59e0b', marginTop: 2, fontWeight: 700 }}>
-                    <Star size={12} fill="#f59e0b" color="#f59e0b" /> 4.9/5.0 (1.248 Pengiriman)
+                  <div style={{ fontSize: 14, fontWeight: 900, color: '#fff' }}>Sdr. Supriatna</div>
+                  <div style={{ fontSize: 10.5, color: '#6ba3f0', fontWeight: 600 }}>NIP: POS-DRV-98412 · Driver Utama</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10.5, color: '#f59e0b', marginTop: 2, fontWeight: 700 }}>
+                    <Star size={11} fill="#f59e0b" color="#f59e0b" /> 4.9/5.0 (1.248 Pengiriman)
                   </div>
                 </div>
               </div>
@@ -577,14 +557,14 @@ export default function LiveGpsMapModal({
                   target="_blank"
                   rel="noreferrer"
                   className="btn-primary"
-                  style={{ padding: '6px 10px', fontSize: 11, borderRadius: 8, gap: 4, textDecoration: 'none', justifyContent: 'center' }}
+                  style={{ padding: '8px 10px', fontSize: 11, borderRadius: 8, gap: 4, textDecoration: 'none', justifyContent: 'center', minHeight: 40 }}
                 >
                   <MessageSquare size={13} /> WA Driver
                 </a>
                 <button
                   className="btn-ghost"
                   onClick={() => alert(`Menghubungi Supir Supriatna (0812-3456-7890)...`)}
-                  style={{ padding: '6px 10px', fontSize: 11, borderRadius: 8, gap: 4, justifyContent: 'center' }}
+                  style={{ padding: '8px 10px', fontSize: 11, borderRadius: 8, gap: 4, justifyContent: 'center', minHeight: 40 }}
                 >
                   <Phone size={13} /> Telepon
                 </button>
@@ -592,29 +572,29 @@ export default function LiveGpsMapModal({
             </div>
 
             {/* ETA & Live Status Banner */}
-            <div style={{ background: 'rgba(6,13,31,0.8)', padding: 14, borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)' }}>
+            <div style={{ background: 'rgba(6,13,31,0.8)', padding: 12, borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)' }}>
               <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>
                 Estimasi Waktu Tiba (ETA)
               </div>
-              <div style={{ fontSize: 18, fontWeight: 900, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Clock size={18} color="#38bdf8" />
+              <div style={{ fontSize: 16, fontWeight: 900, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Clock size={16} color="#38bdf8" />
                 {isFinished ? 'Tiba di SPP Bandung (40400)' : '48 Menit Lagi (19:30 WIB)'}
               </div>
-              <div style={{ fontSize: 11.5, color: '#fff', marginTop: 6, fontWeight: 600 }}>
+              <div style={{ fontSize: 11, color: '#fff', marginTop: 6, fontWeight: 600 }}>
                 Lokasi Saat Ini: <span style={{ color: '#ff7b59' }}>{currentStopObj.officeName}</span>
               </div>
             </div>
 
             {/* Live Simulation Controls */}
-            <div style={{ background: 'rgba(6,13,31,0.8)', padding: 14, borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)' }}>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', fontWeight: 700, marginBottom: 10 }}>
+            <div style={{ background: 'rgba(6,13,31,0.8)', padding: 12, borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)' }}>
+              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', fontWeight: 700, marginBottom: 8 }}>
                 Kontrol Simulasi GPS Live
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <button
                   className="btn-primary"
                   onClick={onTogglePlay}
-                  style={{ padding: '8px 14px', fontSize: 12, borderRadius: 8, gap: 6, width: '100%', justifyContent: 'center', background: isPlaying ? '#e8431f' : '#2460b0' }}
+                  style={{ padding: '8px 14px', fontSize: 12, borderRadius: 8, gap: 6, width: '100%', justifyContent: 'center', minHeight: 40, background: isPlaying ? '#e8431f' : '#2460b0' }}
                 >
                   {isPlaying ? <Pause size={14} /> : <Play size={14} />}
                   {isPlaying ? 'Pause Auto Play' : 'Auto Play GPS Pergerakan'}
@@ -624,14 +604,14 @@ export default function LiveGpsMapModal({
                   <button
                     className="btn-ghost"
                     onClick={onAdvanceStop}
-                    style={{ padding: '6px 10px', fontSize: 11, borderRadius: 8, gap: 4, justifyContent: 'center' }}
+                    style={{ padding: '8px 10px', fontSize: 11, borderRadius: 8, gap: 4, justifyContent: 'center', minHeight: 40 }}
                   >
                     <SkipForward size={13} /> Lanjut Stop
                   </button>
                   <button
                     className="btn-ghost"
                     onClick={onResetStop}
-                    style={{ padding: '6px 10px', fontSize: 11, borderRadius: 8, gap: 4, justifyContent: 'center' }}
+                    style={{ padding: '8px 10px', fontSize: 11, borderRadius: 8, gap: 4, justifyContent: 'center', minHeight: 40 }}
                   >
                     <RotateCcw size={13} /> Reset
                   </button>
@@ -642,15 +622,15 @@ export default function LiveGpsMapModal({
             {/* Digital Proof of Delivery QR Scanner Ticket */}
             <div style={{
               background: 'rgba(255,255,255,0.03)',
-              padding: 14,
+              padding: 12,
               borderRadius: 12,
               border: '1px solid rgba(255,255,255,0.06)',
               display: 'flex',
               alignItems: 'center',
               gap: 12
             }}>
-              <div style={{ background: '#fff', padding: 6, borderRadius: 8 }}>
-                <QrCode size={40} color="#000" />
+              <div style={{ background: '#fff', padding: 6, borderRadius: 8, flexShrink: 0 }}>
+                <QrCode size={36} color="#000" />
               </div>
               <div>
                 <div style={{ fontSize: 11, fontWeight: 800, color: '#fff' }}>Digital POD & Gate Scan</div>
@@ -662,27 +642,11 @@ export default function LiveGpsMapModal({
           </div>
 
           {/* Right Panel: Leaflet Dark Mode GPS Map Container */}
-          <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+          <div className="gps-modal-map-panel">
             <div ref={mapContainerRef} style={{ width: '100%', height: '100%', background: '#040810' }} />
 
             {/* Map Floating HUD Overlay */}
-            <div style={{
-              position: 'absolute',
-              bottom: 20,
-              left: 20,
-              right: 20,
-              zIndex: 1000,
-              background: 'rgba(4,8,16,0.9)',
-              backdropFilter: 'blur(8px)',
-              padding: '12px 18px',
-              borderRadius: 12,
-              border: '1px solid rgba(255,255,255,0.1)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: 12
-            }}>
+            <div className="gps-hud-overlay">
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <Truck size={18} color="#ff7b59" />
                 <div>
