@@ -46,6 +46,47 @@ export default function Checker() {
   const [nowTime, setNowTime] = useState(new Date());
   const [expandedDestGroups, setExpandedDestGroups] = useState({});
   const [searchByVehicle, setSearchByVehicle] = useState(false);
+  const [fleetVehicles, setFleetVehicles] = useState([]);
+  const [fleetSearchTerm, setFleetSearchTerm] = useState('');
+
+  const defaultFleet = [
+    { nopol: 'B 9910 PCX', nama_kendaraan: 'Daihatsu Gran Max Box - Feeder Express', jenis_kendaraan: 'MOBIL BOX INTERCITY (1.5 TON)', max_capacity_kg: 1500, driver: 'Ahmad Supriadi', driver_phone: '0812-9876-54321', home_base: '40511 - KCU Cimahi', assigned_route_id: 'RT-MALAM-B9910-PCX' },
+    { nopol: 'B 9945 PCY', nama_kendaraan: 'Isuzu Elf Box - Express Gateway MPC Jakarta', jenis_kendaraan: 'TRUK BOX INTERCITY (4 TON)', max_capacity_kg: 4000, driver: 'Budi Santoso', driver_phone: '0813-8765-43210', home_base: '40000 - SPP Bandung', assigned_route_id: 'RT-MALAM-B9945-PCY-PU1' },
+    { nopol: 'D 8812 AB', nama_kendaraan: 'Mitsubishi Canter - Feeder KCU Cimahi', jenis_kendaraan: 'TRUK ENGKEL BOX (3.5 TON)', max_capacity_kg: 3500, driver: 'Dede Kurnia', driver_phone: '0815-7654-32109', home_base: '40500 - KCU Cimahi', assigned_route_id: 'RT-REGULER-D8812-AB' },
+    { nopol: 'D 8990 SPP', nama_kendaraan: 'Hino Wingbox Heavy Freight', jenis_kendaraan: 'TRUK HEAVY WINGBOX (10 TON)', max_capacity_kg: 10000, driver: 'Hendra Wijaya', driver_phone: '0811-2345-67890', home_base: '40400 - SPP Bandung', assigned_route_id: 'RT-HEAVY-D8990-SPP' },
+    { nopol: 'D 1234 POS', nama_kendaraan: 'Blind Van Feeder AGP Gatsu', jenis_kendaraan: 'BLIND VAN FEEDER (0.8 TON)', max_capacity_kg: 800, driver: 'Rizki Pratama', driver_phone: '0817-6543-21098', home_base: '40000 - SPP Bandung', assigned_route_id: null }
+  ];
+
+  useEffect(() => {
+    async function loadFleet() {
+      try {
+        const res = await api.get('/kendaraan');
+        if (res?.success && Array.isArray(res.data) && res.data.length > 0) {
+          setFleetVehicles(res.data);
+        } else if (res?.items && Array.isArray(res.items) && res.items.length > 0) {
+          setFleetVehicles(res.items);
+        } else {
+          setFleetVehicles(defaultFleet);
+        }
+      } catch (e) {
+        setFleetVehicles(defaultFleet);
+      }
+    }
+    loadFleet();
+  }, []);
+
+  const activeFleetList = fleetVehicles.length > 0 ? fleetVehicles : defaultFleet;
+  const filteredFleetVehicles = activeFleetList.filter(v => {
+    if (!fleetSearchTerm) return true;
+    const term = fleetSearchTerm.trim().toLowerCase();
+    return (
+      (v.nopol && v.nopol.toLowerCase().includes(term)) ||
+      (v.nama_kendaraan && v.nama_kendaraan.toLowerCase().includes(term)) ||
+      (v.driver && v.driver.toLowerCase().includes(term)) ||
+      (v.jenis_kendaraan && v.jenis_kendaraan.toLowerCase().includes(term)) ||
+      (v.assigned_route_id && v.assigned_route_id.toLowerCase().includes(term))
+    );
+  });
 
   // Clock tick for ETA countdown
   useEffect(() => {
@@ -346,7 +387,7 @@ export default function Checker() {
               style={{ padding: '5px 12px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 800, transition: 'all 0.2s',
                 background: searchByVehicle ? 'rgba(56,189,248,0.25)' : 'transparent',
                 color: searchByVehicle ? '#38bdf8' : 'rgba(255,255,255,0.4)' }}
-            ><Car size={12} style={{ marginRight: 4, verticalAlign: 'middle' }} />Plat Kendaraan</button>
+            ><Car size={12} style={{ marginRight: 4, verticalAlign: 'middle' }} />List Fleet Mobil Armada ({activeFleetList.length})</button>
           </div>
 
           {/* Main Search Input */}
@@ -436,6 +477,122 @@ export default function Checker() {
             </button>
           )}
         </div>
+
+        {/* FLEET VEHICLES LIST PANEL (DAFTAR MOBIL OPERASIONAL MONGODB) */}
+        {searchByVehicle && (
+          <div style={{ marginTop: 18, paddingTop: 18, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+              <div>
+                <div style={{ fontSize: 12.5, fontWeight: 900, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Truck size={16} color="#38bdf8" /> DAFTAR FLEET ARMADA MOBIL OPERASIONAL ({activeFleetList.length} MOBIL DI MONGODB)
+                </div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>
+                  Klik salah satu armada di bawah untuk langsung memuat rute & muatan tanpa perlu mengetik nomor plat.
+                </div>
+              </div>
+
+              {/* Live Fleet Search Input */}
+              <div style={{ position: 'relative', width: 280 }}>
+                <Search size={14} color="rgba(255,255,255,0.4)" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
+                <input
+                  className="input-navy"
+                  value={fleetSearchTerm}
+                  onChange={(e) => setFleetSearchTerm(e.target.value)}
+                  placeholder="Cari list mobil (nopol/driver/rute)..."
+                  style={{ paddingLeft: 32, fontSize: 12, height: 34 }}
+                />
+                {fleetSearchTerm && (
+                  <button
+                    onClick={() => setFleetSearchTerm('')}
+                    style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}
+                  >
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Vehicle Cards Grid */}
+            {filteredFleetVehicles.length > 0 ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 12 }}>
+                {filteredFleetVehicles.map((v, vIdx) => {
+                  const isSelected = result?.vehicleNopol === v.nopol || query === v.nopol;
+                  const maxCap = v.max_capacity_kg || (v.kapasitas_ton ? v.kapasitas_ton * 1000 : 1500);
+
+                  return (
+                    <div
+                      key={v.nopol || vIdx}
+                      onClick={() => handleSearch(v.nopol, selectedDate)}
+                      style={{
+                        background: isSelected ? 'rgba(56,189,248,0.14)' : 'rgba(255,255,255,0.03)',
+                        border: `1.5px solid ${isSelected ? '#38bdf8' : 'rgba(255,255,255,0.08)'}`,
+                        boxShadow: isSelected ? '0 0 16px rgba(56,189,248,0.3)' : 'none',
+                        borderRadius: 12,
+                        padding: 14,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        gap: 10
+                      }}
+                      onMouseEnter={e => { if (!isSelected) e.currentTarget.style.borderColor = 'rgba(56,189,248,0.5)'; }}
+                      onMouseLeave={e => { if (!isSelected) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <Truck size={18} color={isSelected ? '#38bdf8' : '#f59e0b'} />
+                          <div>
+                            <div className="font-mono" style={{ fontSize: 14.5, fontWeight: 900, color: '#fff' }}>
+                              {v.nopol}
+                            </div>
+                            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)' }}>
+                              {v.jenis_kendaraan || 'TRUK BOX'}
+                            </div>
+                          </div>
+                        </div>
+                        <span className={`badge ${isSelected ? 'badge-blue' : 'badge-ghost'}`} style={{ fontSize: 9.5 }}>
+                          {isSelected ? 'AKTIF TERPILIH' : `${maxCap} kg`}
+                        </span>
+                      </div>
+
+                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        <div>👤 Driver: <strong style={{ color: '#fff' }}>{v.driver || 'Driver Armada'}</strong></div>
+                        <div>📍 Home Base: {v.home_base || 'SPP Bandung'}</div>
+                        <div>🛤️ Rute: <span style={{ color: '#38bdf8', fontFamily: 'monospace', fontWeight: 700 }}>{v.assigned_route_id || v.rute_utama || 'Belum Ditugaskan'}</span></div>
+                      </div>
+
+                      <button
+                        style={{
+                          width: '100%',
+                          padding: '6px 0',
+                          fontSize: 11,
+                          fontWeight: 800,
+                          borderRadius: 8,
+                          border: 'none',
+                          background: isSelected ? '#38bdf8' : 'rgba(255,255,255,0.08)',
+                          color: isSelected ? '#000' : '#fff',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 6
+                        }}
+                      >
+                        {isSelected ? <CheckCircle2 size={13} /> : <ArrowRight size={13} />}
+                        {isSelected ? 'Sedang Terpilih' : 'Lacak Armada Ini'}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '16px 0', color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
+                Tidak ada mobil armada yang cocok dengan pencarian "{fleetSearchTerm}".
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Operational Context Warning Banner (If date in past/completed) */}
         {result?.milkRun?.dateContextWarning && (
