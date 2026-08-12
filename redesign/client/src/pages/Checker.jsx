@@ -60,7 +60,7 @@ export default function Checker() {
   useEffect(() => {
     async function loadFleet() {
       try {
-        const res = await api.get('/kendaraan');
+        const res = await api.getKendaraan('limit=100');
         if (res?.success && Array.isArray(res.data) && res.data.length > 0) {
           setFleetVehicles(res.data);
         } else if (res?.items && Array.isArray(res.items) && res.items.length > 0) {
@@ -247,12 +247,13 @@ export default function Checker() {
 
           // Real-Time Vehicle Journey & Capacity
           milkRun: milk,
+          hasRoute: res.data?.hasRoute !== undefined ? res.data.hasRoute : (milk.routeStops && milk.routeStops.length > 0),
           vehicleNopol: milk.vehicleNopol || vInfo?.nopol || cleanTerm,
-          routeId: milk.routeId || vInfo?.assignedRouteId || 'RT-MALAM-B9910-PCX',
+          routeId: milk.routeId || vInfo?.assignedRouteId || null,
           currentStopSeq: milk.currentStopSeq || 1,
-          maxCapacityKg: milk.maxCapacityKg || vInfo?.maxCapacityKg || 1500,
+          maxCapacityKg: milk.maxCapacityKg || vInfo?.maxCapacityKg || (vInfo?.kapasitas_ton ? vInfo.kapasitas_ton * 1000 : 1500),
           currentLoadKg: milk.currentLoadKg || 0,
-          availableCapacityKg: milk.availableCapacityKg || 1500,
+          availableCapacityKg: (milk.maxCapacityKg || 1500) - (milk.currentLoadKg || 0),
           utilizationPct: milk.utilizationPct || 0,
           capacityStatus: milk.capacityStatus || 'NORMAL',
           routeStops: milk.routeStops || [],
@@ -749,77 +750,154 @@ export default function Checker() {
             );
           })()}
           
-          {/* 2. SECTION: PACKAGE OVERVIEW & DAILY OPERATION CONTEXT */}
-          <div 
-            className="glass-card-solid gradient-border-card" 
-            style={{ 
-              padding: 24, 
-              borderRadius: 18, 
-              background: 'linear-gradient(135deg, rgba(13,27,56,0.92), rgba(6,13,31,0.96))',
-              border: '1px solid rgba(56,189,248,0.3)',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.4)'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, marginBottom: 20 }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>
-                    PACKAGE TRACKING OVERVIEW
-                  </span>
-                  <span className="badge badge-navy" style={{ fontSize: 10 }}>
-                    Konteks Tanggal: {formatDateDisplay(selectedDate)}
-                  </span>
+          {/* 2. SECTION: VEHICLE PROFILE OVERVIEW (IF VEHICLE) VS PACKAGE OVERVIEW (IF CONNOTE) */}
+          {result.isVehicleQuery ? (
+            <div 
+              className="glass-card-solid gradient-border-card" 
+              style={{ 
+                padding: 24, 
+                borderRadius: 18, 
+                background: 'linear-gradient(135deg, rgba(13,27,56,0.92), rgba(6,13,31,0.96))',
+                border: '1px solid rgba(56,189,248,0.3)',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.4)'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, marginBottom: 20 }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                    <span style={{ fontSize: 11, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Truck size={14} color="#38bdf8" /> SPESIFIKASI & PROFIL ARMADA MOBIL (MONGODB)
+                    </span>
+                    <span className="badge badge-navy" style={{ fontSize: 10 }}>
+                      Konteks Tanggal: {formatDateDisplay(selectedDate)}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                    <div className="font-mono" style={{ fontSize: 26, fontWeight: 900, color: '#fff', letterSpacing: '0.04em' }}>
+                      {result.vehicleInfo?.nopol || result.vehicleNopol || query}
+                    </div>
+                    <span className="badge badge-orange font-mono" style={{ fontSize: 11.5, fontWeight: 800 }}>
+                      {result.vehicleInfo?.jenis_kendaraan || 'ARMADA LOGISTIK'}
+                    </span>
+                    <span className={`badge ${result.hasRoute ? 'badge-emerald' : 'badge-amber'}`} style={{ fontSize: 11, padding: '4px 10px' }}>
+                      {result.hasRoute ? 'RUTE TERDAFTAR (ACTIVE)' : 'BELUM DITUGASKAN'}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.7)', marginTop: 4, fontWeight: 600 }}>
+                    {result.vehicleInfo?.nama_kendaraan || `Kendaraan Operasional IPOS5`}
+                  </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                  <div className="font-mono" style={{ fontSize: 26, fontWeight: 900, color: '#fff', letterSpacing: '0.04em' }}>
-                    {result.connote}
-                  </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <button
                     onClick={handleCopyCode}
                     className="btn-ghost"
-                    style={{ padding: '4px 10px', fontSize: 11.5, borderRadius: 8, borderColor: 'rgba(56,189,248,0.3)', color: '#38bdf8' }}
+                    style={{ padding: '6px 14px', fontSize: 11.5, borderRadius: 8, borderColor: 'rgba(56,189,248,0.3)', color: '#38bdf8', gap: 6 }}
                   >
                     {copied ? <Check size={13} color="#10b981" /> : <Copy size={13} />}
-                    {copied ? 'Tercopy' : 'Copy Resi'}
+                    {copied ? 'Tercopy' : 'Copy Plat Nopol'}
                   </button>
-                  <span className="font-mono" style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.06)', padding: '4px 10px', borderRadius: 6 }}>
-                    Booking: {result.bookingCode}
+                </div>
+              </div>
+
+              {/* Spec Details Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, paddingTop: 18, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                {[
+                  { label: 'Driver / Pengemudi', value: result.vehicleInfo?.driver || 'Driver Armada Pos', sub: result.vehicleInfo?.driverPhone || '-', color: '#fff', icon: User },
+                  { label: 'Kapasitas Maksimal', value: `${result.maxCapacityKg} kg`, sub: `(${(result.maxCapacityKg / 1000).toFixed(1)} Ton Max Load)`, color: '#38bdf8', icon: Weight },
+                  { label: 'Home Base Operasional', value: result.vehicleInfo?.homeBase || '40000 - SPP Bandung', sub: 'Kantor Pangkalan Resmi', color: '#10b981', icon: Building2 },
+                  { label: 'Penugasan Rute (MongoDB)', value: result.vehicleInfo?.assignedRouteId || result.routeId || 'TIDAK ADA', sub: 'Rute Operasional Harian', color: '#f59e0b', icon: Navigation },
+                ].map((item) => {
+                  const IconComp = item.icon;
+                  return (
+                    <div key={item.label} style={{ background: 'rgba(255,255,255,0.03)', padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <IconComp size={13} color={item.color} /> {item.label}
+                      </div>
+                      <div style={{ fontSize: 13.5, fontWeight: 800, color: item.color, fontFamily: item.label.includes('Rute') ? 'monospace' : 'inherit' }}>
+                        {item.value}
+                      </div>
+                      <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>
+                        {item.sub}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div 
+              className="glass-card-solid gradient-border-card" 
+              style={{ 
+                padding: 24, 
+                borderRadius: 18, 
+                background: 'linear-gradient(135deg, rgba(13,27,56,0.92), rgba(6,13,31,0.96))',
+                border: '1px solid rgba(56,189,248,0.3)',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.4)'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, marginBottom: 20 }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>
+                      PACKAGE TRACKING OVERVIEW
+                    </span>
+                    <span className="badge badge-navy" style={{ fontSize: 10 }}>
+                      Konteks Tanggal: {formatDateDisplay(selectedDate)}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                    <div className="font-mono" style={{ fontSize: 26, fontWeight: 900, color: '#fff', letterSpacing: '0.04em' }}>
+                      {result.connote}
+                    </div>
+                    <button
+                      onClick={handleCopyCode}
+                      className="btn-ghost"
+                      style={{ padding: '4px 10px', fontSize: 11.5, borderRadius: 8, borderColor: 'rgba(56,189,248,0.3)', color: '#38bdf8' }}
+                    >
+                      {copied ? <Check size={13} color="#10b981" /> : <Copy size={13} />}
+                      {copied ? 'Tercopy' : 'Copy Resi'}
+                    </button>
+                    <span className="font-mono" style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.06)', padding: '4px 10px', borderRadius: 6 }}>
+                      Booking: {result.bookingCode}
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span className={`badge ${result.badgeClass}`} style={{ fontSize: 13, padding: '8px 20px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {result.stateStr}
                   </span>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span className={`badge ${result.badgeClass}`} style={{ fontSize: 13, padding: '8px 20px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  {result.stateStr}
-                </span>
+              {/* Spec Details Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, paddingTop: 18, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                {[
+                  { label: 'Layanan Pengiriman', value: result.service, color: '#38bdf8', icon: Package },
+                  { label: 'Berat Paket', value: result.weight, color: '#fff', icon: Weight },
+                  { label: 'Kantor Asal (Origin)', value: result.origin, color: '#10b981', icon: MapPin },
+                  { label: 'Kantor Tujuan (Dest)', value: result.destination, color: '#ff7b59', icon: MapPin },
+                  { label: 'Pengirim / Penerima', value: `${result.senderName} → ${result.receiverName}`, color: 'rgba(255,255,255,0.9)', icon: User },
+                  { label: 'Tanggal Input Paket', value: result.createdAt, color: 'rgba(255,255,255,0.7)', icon: Calendar },
+                ].map((item) => {
+                  const IconComp = item.icon;
+                  return (
+                    <div key={item.label} style={{ background: 'rgba(255,255,255,0.03)', padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
+                      <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <IconComp size={12} color={item.color} /> {item.label}
+                      </div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: item.color }}>
+                        {item.value}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-
-            {/* Spec Details Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, paddingTop: 18, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-              {[
-                { label: 'Layanan Pengiriman', value: result.service, color: '#38bdf8', icon: Package },
-                { label: 'Berat Paket', value: result.weight, color: '#fff', icon: Weight },
-                { label: 'Kantor Asal (Origin)', value: result.origin, color: '#10b981', icon: MapPin },
-                { label: 'Kantor Tujuan (Dest)', value: result.destination, color: '#ff7b59', icon: MapPin },
-                { label: 'Pengirim / Penerima', value: `${result.senderName} → ${result.receiverName}`, color: 'rgba(255,255,255,0.9)', icon: User },
-                { label: 'Tanggal Input Paket', value: result.createdAt, color: 'rgba(255,255,255,0.7)', icon: Calendar },
-              ].map((item) => {
-                const IconComp = item.icon;
-                return (
-                  <div key={item.label} style={{ background: 'rgba(255,255,255,0.03)', padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
-                    <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <IconComp size={12} color={item.color} /> {item.label}
-                    </div>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: item.color }}>
-                      {item.value}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          )}
 
           {/* 3. SECTION: TRACKING EVENT TIMELINE STEPPER (DATABASE EVENT HISTORY) */}
           <div className="glass-card-solid" style={{ padding: 22, borderRadius: 18, border: '1px solid rgba(255,255,255,0.08)' }}>

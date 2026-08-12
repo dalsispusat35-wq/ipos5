@@ -44,6 +44,7 @@ async function standardizeDatabase() {
 
     // 2. CONSOLIDATE MASTER KENDARAAN (5 active enterprise fleet vehicles)
     console.log('📌 2/8. Consolidating master_kendaraan fleet...');
+    await db.collection('master_kendaraan').deleteMany({});
     const fleetVehicles = [
       {
         kendaraan_id: 'VH-B9910PCX',
