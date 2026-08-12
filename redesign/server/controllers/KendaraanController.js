@@ -440,21 +440,35 @@ class KendaraanController extends BaseController {
         }
       ];
 
-      const allTxDocs = await db.collection('transaksi').find({ $and: matchConditions }).toArray();
+      // Fetch real-time active journey cargo from MongoDB route_journeys
+      const vehicleNopolClean = (vehicle?.nopol || noKendaraan).replace(/\s+/g, '').toUpperCase();
+      const activeJourney = await db.collection('route_journeys').findOne({
+        $or: [
+          { vehicle_nopol: vehicle?.nopol },
+          { vehicle_nopol: noKendaraan },
+          { resolved_vehicle_nopol: vehicle?.nopol }
+        ]
+      });
 
       let totalWeightKg = 0;
       let totalPaket = 0;
       let unweightedCount = 0;
 
-      allTxDocs.forEach(doc => {
-        const weight = parseFloat(doc.connote?.actual_weight || doc.actual_weight || 0);
-        if (weight <= 0) {
-          unweightedCount++;
-        } else {
-          totalWeightKg += weight;
-        }
-        totalPaket++;
-      });
+      if (activeJourney?.cargo && Array.isArray(activeJourney.cargo) && activeJourney.cargo.length > 0) {
+        totalPaket = activeJourney.cargo.length;
+        activeJourney.cargo.forEach(item => {
+          const w = parseFloat(item.weight_kg || 0);
+          if (w <= 0) unweightedCount++;
+          else totalWeightKg += w;
+        });
+      } else {
+        allTxDocs.forEach(doc => {
+          const weight = parseFloat(doc.connote?.actual_weight || doc.actual_weight || 0);
+          if (weight <= 0) unweightedCount++;
+          else totalWeightKg += weight;
+          totalPaket++;
+        });
+      }
 
       // Load Partitioning: Cap Trip 1 at maxCapacityKg, route excess to overflow queue
       const activeTripLoadKg = Math.min(totalWeightKg, maxCapacityKg);

@@ -594,18 +594,182 @@ class TransactionController {
     return getNestedValue(obj, path, defaultValue);
   }
 
+  async resolveVehicleQuery(nopolInput, reqDateStr, db) {
+    if (!nopolInput) return null;
+    const cleanNopol = String(nopolInput).replace(/\s+/g, '').toUpperCase();
+    
+    // Find vehicle in master_kendaraan
+    const vehicles = await db.collection('master_kendaraan').find({}).toArray();
+    let matchedVehicle = null;
+    for (const v of vehicles) {
+      const vNopolClean = String(v.nopol || v.nomor_polisi || '').replace(/\s+/g, '').toUpperCase();
+      if (vNopolClean === cleanNopol || (cleanNopol.length >= 6 && vNopolClean.includes(cleanNopol))) {
+        matchedVehicle = v;
+        break;
+      }
+    }
+
+    if (!matchedVehicle) return null;
+
+    const vehicleNopol = matchedVehicle.nopol;
+    const targetDateStr = reqDateStr || new Date().toISOString().slice(0, 10);
+    const maxCapacityKg = matchedVehicle.max_capacity_kg || (matchedVehicle.kapasitas_ton ? matchedVehicle.kapasitas_ton * 1000 : 1500);
+
+    const startDate = new Date(targetDateStr);
+    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(targetDateStr);
+    endDate.setHours(23, 59, 59, 999);
+
+    let activeJourney = await db.collection('route_journeys').findOne({
+      $and: [
+        {
+          $or: [{ vehicle_nopol: vehicleNopol }, { resolved_vehicle_nopol: vehicleNopol }]
+        },
+        {
+          $or: [
+            { journey_date: { $gte: startDate, $lte: endDate } },
+            { tanggal_operasional: targetDateStr }
+          ]
+        }
+      ]
+    });
+
+    const cargoItems = activeJourney?.cargo || [];
+    const routeId = activeJourney?.route_id || matchedVehicle.assigned_route_id || matchedVehicle.rute_utama || 'RT-MALAM-B9910-PCX';
+
+    // Route Waypoint Stops
+    const detailRouteSegments = await db.collection('detail_route').find({
+      route_id: routeId,
+      status: 'AKTIF'
+    }).sort({ seq: 1 }).toArray();
+
+    const stopCodes = [];
+    if (detailRouteSegments.length > 0) {
+      stopCodes.push(detailRouteSegments[0].asal_nopen);
+      detailRouteSegments.forEach(s => stopCodes.push(s.tujuan_nopen));
+    } else {
+      stopCodes.push('40511', '40521', '40395C1', '40553', '40000', '40400');
+    }
+
+    const offices = await db.collection('master_kantor').find({ nopend: { $in: stopCodes } }).toArray();
+    const officeMap = new Map(offices.map(o => [o.nopend, o.nama_nopend]));
+
+    const nopenToSeq = new Map();
+    stopCodes.forEach((code, idx) => {
+      if (!nopenToSeq.has(String(code))) {
+        nopenToSeq.set(String(code), idx + 1);
+      }
+    });
+
+    const routeStops = stopCodes.map((code, idx) => {
+      const seq = idx + 1;
+      let loadAtStop = 0;
+      let loadedCount = 0;
+      let unloadedCount = 0;
+
+      for (const item of cargoItems) {
+        const loadSeq = item.loaded_at_seq ? Number(item.loaded_at_seq) : (nopenToSeq.get(String(item.origin_nopen)) || 1);
+        const destSeq = item.unloaded_at_seq ? Number(item.unloaded_at_seq) : (nopenToSeq.get(String(item.destination_nopen)) || stopCodes.length);
+
+        if (loadSeq === seq) loadedCount++;
+        if (destSeq === seq) unloadedCount++;
+
+        if (loadSeq <= seq && destSeq >= seq) {
+          loadAtStop += (item.weight_kg || 0);
+        }
+      }
+
+      loadAtStop = Number(loadAtStop.toFixed(1));
+      const utilPct = Math.round((loadAtStop / maxCapacityKg) * 100);
+      let capStatus = 'NORMAL';
+      if (utilPct > 100) capStatus = 'OVER CAPACITY';
+      else if (utilPct >= 90) capStatus = 'FULL';
+      else if (utilPct >= 70) capStatus = 'NEAR CAPACITY';
+
+      return {
+        seq,
+        nopen: code,
+        officeName: officeMap.get(code) || `KANTOR ${code}`,
+        role: idx === 0 ? 'ORIGIN' : idx === stopCodes.length - 1 ? 'DESTINATION' : 'TRANSIT',
+        loadAtStopKg: loadAtStop,
+        utilizationPctAtStop: utilPct,
+        capacityStatusAtStop: capStatus,
+        loadedCount,
+        unloadedCount
+      };
+    });
+
+    const totalCargoKg = Number(cargoItems.reduce((sum, item) => sum + (item.weight_kg || 0), 0).toFixed(1));
+    const hasCargo = cargoItems.length > 0 && totalCargoKg > 0;
+
+    const currentSeq = activeJourney?.current_stop_seq || 1;
+    const currentStopObj = routeStops[Math.min(currentSeq, routeStops.length) - 1] || routeStops[0] || {};
+    const currentLoadKg = currentStopObj.loadAtStopKg || 0;
+    const currentUtilPct = currentStopObj.utilizationPctAtStop || 0;
+
+    const warningMessage = hasCargo
+      ? null
+      : `⚠️ [ARMADA TERDETEKSI]: Kendaraan ${vehicleNopol} (${matchedVehicle.nama_kendaraan || 'Armada Logistik'}) terdaftar di database master kendaraan, namun belum/tidak memiliki muatan barang paket pada tanggal operasional ${targetDateStr} (Kapasitas Kosong 0 kg / ${maxCapacityKg} kg).`;
+
+    return {
+      isVehicleQuery: true,
+      hasCargo,
+      vehicle: {
+        nopol: vehicleNopol,
+        nama_kendaraan: matchedVehicle.nama_kendaraan || `Armada ${vehicleNopol}`,
+        jenis_kendaraan: matchedVehicle.jenis_kendaraan || 'Truk Box',
+        maxCapacityKg,
+        driver: matchedVehicle.driver || '-',
+        driverPhone: matchedVehicle.driver_phone || '-',
+        homeBase: matchedVehicle.home_base || '-',
+        assignedRouteId: routeId,
+        status: matchedVehicle.status || 'AKTIF'
+      },
+      warningMessage,
+      targetDateStr,
+      milk_run: {
+        journeyId: activeJourney?.journey_id || `JRN-${targetDateStr.replace(/-/g, '')}-${cleanNopol}`,
+        vehicleNopol,
+        routeId,
+        maxCapacityKg,
+        currentStopSeq: currentSeq,
+        currentLoadKg,
+        utilizationPct: currentUtilPct,
+        capacityStatus: currentUtilPct >= 90 ? 'FULL' : currentUtilPct >= 70 ? 'NEAR CAPACITY' : 'NORMAL',
+        routeStops,
+        cargoCount: cargoItems.length,
+        totalCargoKg,
+        cargoList: cargoItems
+      }
+    };
+  }
+
   async checkRouting(req, res) {
     try {
       const { connoteCode } = req.params;
       
       if (!connoteCode) {
-        return res.status(400).json({ success: false, message: 'Connote Code / Nomor Resi harus diisi' });
+        return res.status(400).json({ success: false, message: 'Connote Code / Nomor Resi / Plat Kendaraan harus diisi' });
+      }
+
+      const db = await DbConnection.getDb();
+      const connoteClean = String(connoteCode).trim();
+      const reqDateStr = req.query.date ? String(req.query.date).trim() : null;
+
+      // 0. Auto-detect if user searched for a Vehicle Nopol
+      const vehicleRes = await this.resolveVehicleQuery(connoteClean, reqDateStr, db);
+      if (vehicleRes) {
+        return res.json({
+          success: true,
+          connote: connoteClean,
+          isVehicleQuery: true,
+          hasCargo: vehicleRes.hasCargo,
+          warningMessage: vehicleRes.warningMessage,
+          data: vehicleRes
+        });
       }
 
       // 1. Find transaction by connote
-      const db = await DbConnection.getDb();
-      const connoteClean = String(connoteCode).trim();
-      
       const txDoc = await db.collection('transaksi').findOne({
         $or: [
           { 'connote.connote_code': connoteClean },
@@ -619,7 +783,7 @@ class TransactionController {
         return res.status(404).json({
           success: false,
           code: 'TRANSACTION_NOT_FOUND',
-          message: 'Nomor resi tidak ditemukan pada koleksi transaksi.'
+          message: `Nomor resi atau Plat Kendaraan "${connoteClean}" tidak ditemukan pada database.`
         });
       }
 
@@ -1388,6 +1552,34 @@ class TransactionController {
 
     } catch (error) {
       console.error('Error in checkRouting:', error);
+      res.status(500).json({ success: false, message: 'Server error' });
+    }
+  }
+
+  async checkRoutingByVehicle(req, res) {
+    try {
+      const { nopol } = req.params;
+      const db = await DbConnection.getDb();
+      const vehicleRes = await this.resolveVehicleQuery(nopol, req.query.date, db);
+
+      if (!vehicleRes) {
+        return res.status(404).json({
+          success: false,
+          code: 'VEHICLE_NOT_FOUND',
+          message: `Armada kendaraan dengan plat nomor "${nopol}" tidak ditemukan di database master kendaraan.`
+        });
+      }
+
+      return res.json({
+        success: true,
+        connote: nopol,
+        isVehicleQuery: true,
+        hasCargo: vehicleRes.hasCargo,
+        warningMessage: vehicleRes.warningMessage,
+        data: vehicleRes
+      });
+    } catch (err) {
+      console.error('Error in checkRoutingByVehicle:', err);
       res.status(500).json({ success: false, message: 'Server error' });
     }
   }

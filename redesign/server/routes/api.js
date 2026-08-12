@@ -131,6 +131,7 @@ router.post('/jadwal/generate', requireDb, (req, res) => JadwalController.genera
 router.get('/pickup-schedules/slide-2/night', requireDb, (req, res) => PickupScheduleController.getSlide2Night(req, res));
 
 // ─── Routing Checker Route ────────────────────────────────────────────────────
+router.get('/checker/vehicle/:nopol', requireDb, (req, res) => TransactionController.checkRoutingByVehicle(req, res));
 router.get('/checker/:connoteCode', requireDb, (req, res) => TransactionController.checkRouting(req, res));
 
 // ─── Transaction / Connotes Routing ──────────────────────────────────────────

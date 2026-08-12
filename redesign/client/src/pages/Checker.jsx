@@ -157,12 +157,21 @@ export default function Checker() {
         const tx = res.data.transaction || {};
         const milk = res.data.milk_run || {};
 
+        const isVehicle = res.isVehicleQuery || res.data?.isVehicleQuery || false;
+        const hasCargo = res.hasCargo !== undefined ? res.hasCargo : (res.data?.hasCargo !== undefined ? res.data.hasCargo : true);
+        const warningMsg = res.warningMessage || res.data?.warningMessage || null;
+        const vInfo = res.data?.vehicle || null;
+
         setResult({
+          isVehicleQuery: isVehicle,
+          hasCargo,
+          warningMessage: warningMsg,
+          vehicleInfo: vInfo,
           connote: tx.connoteCode || cleanTerm,
           bookingCode: tx.bookingCode || '-',
           service: tx.service || 'Pos Reguler',
           weight: formatWeight(tx.actualWeight),
-          stateStr: tx.state || 'ENTRY',
+          stateStr: tx.state || (isVehicle ? 'IN_TRANSIT' : 'ENTRY'),
           badgeClass: mapStateToBadgeClass(tx.state),
           origin: tx.originName ? `${tx.originName} (${tx.originNopen})` : 'KCU Cimahi (40511)',
           destination: tx.receiverAddress ? `${tx.receiverAddress} (${tx.destinationNopen})` : 'SPP Bandung (40400)',
@@ -191,22 +200,22 @@ export default function Checker() {
             }
 
             return [
-              { stage: tx.state || 'ENTRY', note: `Paket ${cleanTerm} tercatat di sistem IPOS5.`, time: formatDateDisplay(tx.createdAt), location: tx.originName || 'KCU Cimahi' }
+              { stage: tx.state || 'ENTRY', note: `Pencarian armada/paket ${cleanTerm} tercatat di sistem IPOS5.`, time: formatDateDisplay(tx.createdAt), location: tx.originName || 'KCU Cimahi' }
             ];
           })(),
 
           // Real-Time Vehicle Journey & Capacity
           milkRun: milk,
-          vehicleNopol: milk.vehicleNopol || 'B 9910 PCX',
-          routeId: milk.routeId || 'RT-MALAM-B9910-PCX',
+          vehicleNopol: milk.vehicleNopol || vInfo?.nopol || cleanTerm,
+          routeId: milk.routeId || vInfo?.assignedRouteId || 'RT-MALAM-B9910-PCX',
           currentStopSeq: milk.currentStopSeq || 1,
-          maxCapacityKg: milk.maxCapacityKg || 1500,
+          maxCapacityKg: milk.maxCapacityKg || vInfo?.maxCapacityKg || 1500,
           currentLoadKg: milk.currentLoadKg || 0,
           availableCapacityKg: milk.availableCapacityKg || 1500,
           utilizationPct: milk.utilizationPct || 0,
           capacityStatus: milk.capacityStatus || 'NORMAL',
           routeStops: milk.routeStops || [],
-          cargoItems: milk.cargoItems || [],
+          cargoItems: milk.cargoList || milk.cargoItems || [],
           cargoGroupedByDestination: milk.cargoGroupedByDestination || []
         });
       } else {
@@ -477,6 +486,31 @@ export default function Checker() {
       {/* MAIN VIEW CONTENT AREA */}
       {result ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+          {/* VEHICLE NO-CARGO WARNING BANNER */}
+          {result.warningMessage && (
+            <div style={{
+              padding: '16px 20px',
+              borderRadius: 16,
+              background: 'rgba(245, 158, 11, 0.14)',
+              border: '1.5px solid rgba(245, 158, 11, 0.5)',
+              color: '#fbbf24',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 14,
+              boxShadow: '0 8px 24px rgba(245, 158, 11, 0.12)'
+            }}>
+              <AlertTriangle size={24} color="#f59e0b" style={{ flexShrink: 0 }} />
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#f59e0b' }}>
+                  STATUS ARMADA TERKINI: KENDARAAN KOSONG / BELUM MEMILIKI MUATAN
+                </div>
+                <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.9)', marginTop: 4, lineHeight: 1.5 }}>
+                  {result.warningMessage}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* SUMMARY STATS CARDS — Fleet snapshot for this date */}
           {(() => {
