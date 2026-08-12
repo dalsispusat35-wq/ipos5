@@ -82,9 +82,9 @@ async function seedSimulasi100() {
       const weightKg = Number((1.5 + (i * 0.85) % 45.0).toFixed(1));
       const amount = 15000 + (Math.floor(weightKg) * 8000);
 
-      // Distribute stop sequences across 8-stop waypoints for B 9910 PCX
-      const loadedSeq = ((i - 1) % 7) + 1;
-      const unloadedSeq = Math.min(8, loadedSeq + ((i % 3) + 1));
+      // Distribute stop sequences across 6-stop waypoints for B 9910 PCX (Terminal Akhir: Stop #6 SPP Bandung)
+      const loadedSeq = ((i - 1) % 5) + 1;
+      const unloadedSeq = 6;
 
       const cargoItem = {
         connote_code: connoteCode,

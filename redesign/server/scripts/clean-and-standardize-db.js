@@ -204,15 +204,14 @@ async function standardizeDatabase() {
     await safeCreateIndex(db.collection('master_route_nopen'), { route_id: 1 });
     await safeCreateIndex(db.collection('master_route_nopen'), { nopen_asal: 1, nopen_tujuan: 1 });
 
-    // 8-stop waypoints detail route for RT-MALAM-B9910-PCX
+    // Clean 6-stop waypoints detail route for RT-MALAM-B9910-PCX (SPP Bandung = Terminal Akhir)
+    await db.collection('detail_route').deleteMany({ route_id: 'RT-MALAM-B9910-PCX' });
     const detailRouteB9910 = [
       { detail_route_id: 'DR-B9910-01', route_id: 'RT-MALAM-B9910-PCX', seq: 1, asal_nopen: '40511', asal_nama: 'KCU Cimahi', tujuan_nopen: '40521', tujuan_nama: 'KCP Cimahi Selatan', estimasi_menit: 12, jarak_km: 5.2, status: 'AKTIF' },
       { detail_route_id: 'DR-B9910-02', route_id: 'RT-MALAM-B9910-PCX', seq: 2, asal_nopen: '40521', asal_nama: 'KCP Cimahi Selatan', tujuan_nopen: '40395C1', tujuan_nama: 'AGEN ARVINET', estimasi_menit: 20, jarak_km: 4.8, status: 'AKTIF' },
       { detail_route_id: 'DR-B9910-03', route_id: 'RT-MALAM-B9910-PCX', seq: 3, asal_nopen: '40395C1', asal_nama: 'AGEN ARVINET', tujuan_nopen: '40553', tujuan_nama: 'KCP Padalarang', estimasi_menit: 25, jarak_km: 8.5, status: 'AKTIF' },
       { detail_route_id: 'DR-B9910-04', route_id: 'RT-MALAM-B9910-PCX', seq: 4, asal_nopen: '40553', asal_nama: 'KCP Padalarang', tujuan_nopen: '40000', tujuan_nama: 'KCU Bandung', estimasi_menit: 18, jarak_km: 12.0, status: 'AKTIF' },
-      { detail_route_id: 'DR-B9910-05', route_id: 'RT-MALAM-B9910-PCX', seq: 5, asal_nopen: '40000', asal_nama: 'KCU Bandung', tujuan_nopen: '40400', tujuan_nama: 'SPP Bandung (Kedatangan)', estimasi_menit: 15, jarak_km: 7.0, status: 'AKTIF' },
-      { detail_route_id: 'DR-B9910-06', route_id: 'RT-MALAM-B9910-PCX', seq: 6, asal_nopen: '40400', asal_nama: 'SPP Bandung (Kedatangan)', tujuan_nopen: '40553', tujuan_nama: 'KCP Padalarang (Return)', estimasi_menit: 15, jarak_km: 5.0, status: 'AKTIF' },
-      { detail_route_id: 'DR-B9910-07', route_id: 'RT-MALAM-B9910-PCX', seq: 7, asal_nopen: '40553', asal_nama: 'KCP Padalarang (Return)', tujuan_nopen: '40400', tujuan_nama: 'SPP Bandung (Terminal Akhir)', estimasi_menit: 15, jarak_km: 5.0, status: 'AKTIF' }
+      { detail_route_id: 'DR-B9910-05', route_id: 'RT-MALAM-B9910-PCX', seq: 5, asal_nopen: '40000', asal_nama: 'KCU Bandung', tujuan_nopen: '40400', tujuan_nama: 'SPP Bandung (Terminal Akhir)', estimasi_menit: 15, jarak_km: 7.0, status: 'AKTIF' }
     ];
 
     for (const dr of detailRouteB9910) {
@@ -223,24 +222,21 @@ async function standardizeDatabase() {
       );
     }
     await safeCreateIndex(db.collection('detail_route'), { route_id: 1, seq: 1 });
-    console.log('   -> Master route nopen & 8-stop waypoints detail route verified.');
+    console.log('   -> Master route nopen & 6-stop waypoints detail route verified (Terminal Akhir: SPP Bandung).');
 
-    // 4. STANDARDIZE ROUTE JOURNEYS (WITH 8-STOP WAYPOINTS CARGO LOAD AT EACH STOP)
+    // 4. STANDARDIZE ROUTE JOURNEYS (WITH 6-STOP WAYPOINTS CARGO LOAD AT EACH STOP)
     console.log('📌 4/8. Standardizing route_journeys & multi-stop cargo loads...');
     const cargoB9910 = [
-      { connote_code: 'P20260724000001', weight_kg: 25.5, origin_nopen: '40511', destination_nopen: '40400', loaded_at_seq: 1, unloaded_at_seq: 8, sender_name: 'PT Pos Logistics Store', receiver_name: 'SPP Bandung Hub' },
-      { connote_code: 'P20260724000002', weight_kg: 35.0, origin_nopen: '40511', destination_nopen: '40400', loaded_at_seq: 1, unloaded_at_seq: 8, sender_name: 'Sentra Garment Cimahi', receiver_name: 'SPP Bandung Hub' },
+      { connote_code: 'P20260724000001', weight_kg: 25.5, origin_nopen: '40511', destination_nopen: '40400', loaded_at_seq: 1, unloaded_at_seq: 6, sender_name: 'PT Pos Logistics Store', receiver_name: 'SPP Bandung Hub' },
+      { connote_code: 'P20260724000002', weight_kg: 35.0, origin_nopen: '40511', destination_nopen: '40400', loaded_at_seq: 1, unloaded_at_seq: 6, sender_name: 'Sentra Garment Cimahi', receiver_name: 'SPP Bandung Hub' },
       { connote_code: 'P20260724000003', weight_kg: 20.0, origin_nopen: '40511', destination_nopen: '40000', loaded_at_seq: 1, unloaded_at_seq: 5, sender_name: 'Toko Elektronik Cimahi', receiver_name: 'KCU Bandung' },
       { connote_code: 'P20260724000004', weight_kg: 20.0, origin_nopen: '40521', destination_nopen: '40395C1', loaded_at_seq: 2, unloaded_at_seq: 3, sender_name: 'Distro Cimahi Selatan', receiver_name: 'AGEN ARVINET' },
-      { connote_code: 'P20260724000005', weight_kg: 78.5, origin_nopen: '40521', destination_nopen: '40400', loaded_at_seq: 2, unloaded_at_seq: 8, sender_name: 'Batik Cimahi Indah', receiver_name: 'SPP Bandung Hub' },
+      { connote_code: 'P20260724000005', weight_kg: 78.5, origin_nopen: '40521', destination_nopen: '40400', loaded_at_seq: 2, unloaded_at_seq: 6, sender_name: 'Batik Cimahi Indah', receiver_name: 'SPP Bandung Hub' },
       { connote_code: 'P20260724000006', weight_kg: 45.0, origin_nopen: '40395C1', destination_nopen: '40553', loaded_at_seq: 3, unloaded_at_seq: 4, sender_name: 'Agen Arvinet Olshop', receiver_name: 'KCP Padalarang' },
-      { connote_code: 'P20260724000007', weight_kg: 100.0, origin_nopen: '40395C1', destination_nopen: '40400', loaded_at_seq: 3, unloaded_at_seq: 8, sender_name: 'Arvinet Express Cargo', receiver_name: 'SPP Bandung Hub' },
+      { connote_code: 'P20260724000007', weight_kg: 100.0, origin_nopen: '40395C1', destination_nopen: '40400', loaded_at_seq: 3, unloaded_at_seq: 6, sender_name: 'Arvinet Express Cargo', receiver_name: 'SPP Bandung Hub' },
       { connote_code: 'P20260724000008', weight_kg: 60.0, origin_nopen: '40553', destination_nopen: '40000', loaded_at_seq: 4, unloaded_at_seq: 5, sender_name: 'Sentra Sepatu Padalarang', receiver_name: 'KCU Bandung' },
       { connote_code: 'P20260724000009', weight_kg: 180.0, origin_nopen: '40553', destination_nopen: '40400', loaded_at_seq: 4, unloaded_at_seq: 6, sender_name: 'Industri Kertas Padalarang', receiver_name: 'SPP Bandung Hub' },
-      { connote_code: 'P20260724000010', weight_kg: 250.0, origin_nopen: '40000', destination_nopen: '40400', loaded_at_seq: 5, unloaded_at_seq: 6, sender_name: 'KCU Bandung Sorting Hub', receiver_name: 'SPP Bandung Hub' },
-      { connote_code: 'P20260724000011', weight_kg: 200.0, origin_nopen: '40000', destination_nopen: '40553', loaded_at_seq: 5, unloaded_at_seq: 7, sender_name: 'KCU Bandung Feeder', receiver_name: 'KCP Padalarang' },
-      { connote_code: 'P20260724000012', weight_kg: 320.0, origin_nopen: '40400', destination_nopen: '40553', loaded_at_seq: 6, unloaded_at_seq: 7, sender_name: 'SPP Bandung Gate Intake', receiver_name: 'KCP Padalarang Return' },
-      { connote_code: 'P20260724000013', weight_kg: 180.0, origin_nopen: '40553', destination_nopen: '40400', loaded_at_seq: 7, unloaded_at_seq: 8, sender_name: 'KCP Padalarang Aggregator', receiver_name: 'SPP Bandung Terminal Akhir' }
+      { connote_code: 'P20260724000010', weight_kg: 250.0, origin_nopen: '40000', destination_nopen: '40400', loaded_at_seq: 5, unloaded_at_seq: 6, sender_name: 'KCU Bandung Sorting Hub', receiver_name: 'SPP Bandung Hub' }
     ];
 
     const journeyB9910 = {
@@ -248,7 +244,7 @@ async function standardizeDatabase() {
       vehicle_nopol: 'B 9910 PCX',
       route_id: 'RT-MALAM-B9910-PCX',
       status: 'IN_PROGRESS',
-      current_stop_seq: 6,
+      current_stop_seq: 1,
       maximum_capacity_kg: 1500,
       shift: 'MALAM',
       tanggal_operasional: '2026-07-24',

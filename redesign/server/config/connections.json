@@ -1,16 +1,16 @@
 [
   {
-    "id": "local",
-    "name": "Local MongoDB (127.0.0.1)",
-    "uri": "mongodb://127.0.0.1:27017/ipos5_reporting",
-    "database": "ipos5_reporting",
-    "color": "#059669"
-  },
-  {
     "id": "remote",
     "name": "Primary MongoDB Server (192.168.5.219)",
     "uri": "mongodb://Valdric:U_Telkom2027$sfddd@192.168.5.219:27017/ipos5_reporting?authSource=admin",
     "database": "ipos5_reporting",
     "color": "#4f46e5"
+  },
+  {
+    "id": "local",
+    "name": "Local MongoDB (127.0.0.1)",
+    "uri": "mongodb://127.0.0.1:27017/ipos5_reporting",
+    "database": "ipos5_reporting",
+    "color": "#059669"
   }
 ]

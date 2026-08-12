@@ -674,7 +674,7 @@ class TransactionController {
         if (loadSeq === seq) loadedCount++;
         if (destSeq === seq) unloadedCount++;
 
-        if (loadSeq <= seq && destSeq >= seq) {
+        if (loadSeq <= seq && destSeq > seq) {
           loadAtStop += (item.weight_kg || 0);
         }
       }
@@ -1375,7 +1375,7 @@ class TransactionController {
               if (loadSeq === seq) loadedCount++;
               if (destSeq === seq) unloadedCount++;
 
-              if (loadSeq <= seq && destSeq >= seq) {
+              if (loadSeq <= seq && destSeq > seq) {
                 loadAtStop += (item.weight_kg || 0);
               }
             }
