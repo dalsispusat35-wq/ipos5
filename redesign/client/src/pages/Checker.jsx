@@ -1105,7 +1105,10 @@ export default function Checker() {
                       return (
                         <div
                           key={stop.seq}
-                          onClick={() => setSelectedStopFilter(isSelected ? null : stop.nopen)}
+                          onClick={() => {
+                            setSelectedStopFilter(isSelected ? null : stop.nopen);
+                            setSimStopSeq(stop.seq);
+                          }}
                           style={{
                             display: 'flex',
                             flexDirection: 'column',

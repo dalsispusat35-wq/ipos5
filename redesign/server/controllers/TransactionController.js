@@ -1207,8 +1207,8 @@ class TransactionController {
             let loadedCount = 0;
             let unloadedCount = 0;
             for (const item of cargoItems) {
-              const loadSeq = item.loaded_at_seq || 1;
-              const destSeq = nopenToSeq.get(String(item.destination_nopen)) || stopCodes.length;
+              const loadSeq = item.loaded_at_seq ? Number(item.loaded_at_seq) : (nopenToSeq.get(String(item.origin_nopen)) || 1);
+              const destSeq = item.unloaded_at_seq ? Number(item.unloaded_at_seq) : (nopenToSeq.get(String(item.destination_nopen)) || stopCodes.length);
 
               if (loadSeq === seq) loadedCount++;
               if (destSeq === seq) unloadedCount++;
@@ -1312,10 +1312,11 @@ class TransactionController {
           }
         ];
 
+        const currentNopol = milkRunData?.vehicleNopol || 'B 9910 PCX';
         if (stateNorm === 'LOADED' || stateNorm === 'IN_TRANSIT' || stateNorm === 'DELIVERED') {
           fullTrackingHistory.push({
             stage: 'LOADED',
-            note: `Paket dimuat ke armada truk ${vehicleNopol} (Rute RT-MALAM-B9910-PCX).`,
+            note: `Paket dimuat ke armada truk ${currentNopol} (Rute RT-MALAM-B9910-PCX).`,
             time: '24 Jul 2026 16:15 WIB',
             location: originLabel,
             office_name: originName || 'KCU Cimahi'

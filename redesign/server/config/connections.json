@@ -1,8 +1,8 @@
 [
   {
     "id": "default",
-    "name": "Primary MongoDB Server",
-    "uri": "mongodb://127.0.0.1:27017/ipos5_reporting",
+    "name": "Primary MongoDB Server (192.168.5.219)",
+    "uri": "mongodb://Valdric:U_Telkom2027$sfddd@192.168.5.219:27017/ipos5_reporting?authSource=admin",
     "database": "ipos5_reporting",
     "color": "#059669"
   },

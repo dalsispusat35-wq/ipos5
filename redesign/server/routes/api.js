@@ -13,6 +13,7 @@ import PickupScheduleController from '../controllers/PickupScheduleController.js
 import RouteJourneyController from '../controllers/RouteJourneyController.js';
 import DailyOperationController from '../controllers/DailyOperationController.js';
 import UserController from '../controllers/UserController.js';
+import estimasiRouter from './estimasi.js';
 
 import KantorModel from '../models/KantorModel.js';
 import ProdukModel from '../models/ProdukModel.js';
@@ -187,5 +188,8 @@ router.post('/users', requireDb, (req, res) => UserController.create(req, res));
 router.put('/users/:username', requireDb, (req, res) => UserController.update(req, res));
 router.put('/users/:username/password', requireDb, (req, res) => UserController.updatePassword(req, res));
 router.delete('/users/:username', requireDb, (req, res) => UserController.delete(req, res));
+
+// ─── Estimasi Milk Run Logistik Routes ───────────────────────────────────────
+router.use('/estimasi', requireDb, estimasiRouter);
 
 export default router;
