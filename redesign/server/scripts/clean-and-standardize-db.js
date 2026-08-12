@@ -14,16 +14,25 @@ async function standardizeDatabase() {
   console.log('================================================================');
 
   const config = {
-    id: "default",
-    name: "Primary MongoDB Server (192.168.5.219)",
-    uri: "mongodb://Valdric:U_Telkom2027$sfddd@192.168.5.219:27017/ipos5_reporting?authSource=admin",
+    id: "local",
+    name: "Local MongoDB (127.0.0.1)",
+    uri: "mongodb://127.0.0.1:27017/ipos5_reporting",
     database: "ipos5_reporting"
   };
 
   try {
-    await DbConnection.connect(config);
+    try {
+      await DbConnection.connect(config);
+    } catch (e) {
+      await DbConnection.connect({
+        id: "remote",
+        name: "Primary MongoDB Server (192.168.5.219)",
+        uri: "mongodb://Valdric:U_Telkom2027$sfddd@192.168.5.219:27017/ipos5_reporting?authSource=admin",
+        database: "ipos5_reporting"
+      });
+    }
     const db = await DbConnection.getDb();
-    console.log('✅ Connected to MongoDB server: 192.168.5.219:27017/ipos5_reporting\n');
+    console.log('✅ Connected to MongoDB server successfully!\n');
 
     // 1. STANDARDIZE INDEXES ON MASTER KANTOR (13,767 records)
     console.log('📌 1/8. Standardizing indexes on master_kantor...');
