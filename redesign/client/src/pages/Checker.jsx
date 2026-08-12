@@ -30,7 +30,7 @@ export default function Checker() {
 
   // ─── Daily Operation Date Context State ────────────────────────────────────
   const [selectedDate, setSelectedDate] = useState(() => {
-    return searchParams.get('date') || '2026-07-24';
+    return searchParams.get('date') || '2026-08-12';
   });
 
   // ─── Filter & Selection States ─────────────────────────────────────────────
