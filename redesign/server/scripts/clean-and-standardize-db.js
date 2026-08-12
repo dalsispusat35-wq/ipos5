@@ -116,8 +116,8 @@ async function standardizeDatabase() {
         driver_phone: '0817-6543-21098',
         status: 'AKTIF',
         home_base: '40000 - SPP Bandung',
-        rute_utama: 'RT-FEEDER-AGP-GATSU',
-        assigned_route_id: 'RT-FEEDER-AGP-GATSU',
+        rute_utama: null,
+        assigned_route_id: null,
         updatedAt: new Date()
       }
     ];
@@ -169,8 +169,8 @@ async function standardizeDatabase() {
         nama_route: 'Rute Feeder KCU Cimahi -> Hub Regional Bandung',
         nopen_asal: '40500',
         nama_asal: 'KCU Cimahi (40500)',
-        nopen_tujuan: '40000',
-        nama_tujuan: 'KCU Bandung (40000)',
+        nopen_tujuan: '40400',
+        nama_tujuan: 'SPP Bandung (40400)',
         kodeMile: 'FEEDER',
         deskripsi_produk: 'Pos Reguler Feeder Consolidation',
         prioritas: 2,
@@ -204,17 +204,30 @@ async function standardizeDatabase() {
     await safeCreateIndex(db.collection('master_route_nopen'), { route_id: 1 });
     await safeCreateIndex(db.collection('master_route_nopen'), { nopen_asal: 1, nopen_tujuan: 1 });
 
-    // Clean 6-stop waypoints detail route for RT-MALAM-B9910-PCX (SPP Bandung = Terminal Akhir)
-    await db.collection('detail_route').deleteMany({ route_id: 'RT-MALAM-B9910-PCX' });
-    const detailRouteB9910 = [
+    // Seed detail_route waypoints for all active routes in MongoDB
+    await db.collection('detail_route').deleteMany({});
+    const allDetailRoutes = [
+      // 1. RT-MALAM-B9910-PCX (6 Waypoints)
       { detail_route_id: 'DR-B9910-01', route_id: 'RT-MALAM-B9910-PCX', seq: 1, asal_nopen: '40511', asal_nama: 'KCU Cimahi', tujuan_nopen: '40521', tujuan_nama: 'KCP Cimahi Selatan', estimasi_menit: 12, jarak_km: 5.2, status: 'AKTIF' },
       { detail_route_id: 'DR-B9910-02', route_id: 'RT-MALAM-B9910-PCX', seq: 2, asal_nopen: '40521', asal_nama: 'KCP Cimahi Selatan', tujuan_nopen: '40395C1', tujuan_nama: 'AGEN ARVINET', estimasi_menit: 20, jarak_km: 4.8, status: 'AKTIF' },
       { detail_route_id: 'DR-B9910-03', route_id: 'RT-MALAM-B9910-PCX', seq: 3, asal_nopen: '40395C1', asal_nama: 'AGEN ARVINET', tujuan_nopen: '40553', tujuan_nama: 'KCP Padalarang', estimasi_menit: 25, jarak_km: 8.5, status: 'AKTIF' },
       { detail_route_id: 'DR-B9910-04', route_id: 'RT-MALAM-B9910-PCX', seq: 4, asal_nopen: '40553', asal_nama: 'KCP Padalarang', tujuan_nopen: '40000', tujuan_nama: 'KCU Bandung', estimasi_menit: 18, jarak_km: 12.0, status: 'AKTIF' },
-      { detail_route_id: 'DR-B9910-05', route_id: 'RT-MALAM-B9910-PCX', seq: 5, asal_nopen: '40000', asal_nama: 'KCU Bandung', tujuan_nopen: '40400', tujuan_nama: 'SPP Bandung (Terminal Akhir)', estimasi_menit: 15, jarak_km: 7.0, status: 'AKTIF' }
+      { detail_route_id: 'DR-B9910-05', route_id: 'RT-MALAM-B9910-PCX', seq: 5, asal_nopen: '40000', asal_nama: 'KCU Bandung', tujuan_nopen: '40400', tujuan_nama: 'SPP Bandung (Terminal Akhir)', estimasi_menit: 15, jarak_km: 7.0, status: 'AKTIF' },
+
+      // 2. RT-MALAM-B9945-PCY-PU1 (3 Waypoints)
+      { detail_route_id: 'DR-B9945-01', route_id: 'RT-MALAM-B9945-PCY-PU1', seq: 1, asal_nopen: '40000', asal_nama: 'KCU Bandung', tujuan_nopen: '40400', tujuan_nama: 'SPP Bandung', estimasi_menit: 15, jarak_km: 7.0, status: 'AKTIF' },
+      { detail_route_id: 'DR-B9945-02', route_id: 'RT-MALAM-B9945-PCY-PU1', seq: 2, asal_nopen: '40400', asal_nama: 'SPP Bandung', tujuan_nopen: '10000', tujuan_nama: 'MPC Jakarta Gateway (Terminal Akhir)', estimasi_menit: 180, jarak_km: 150.0, status: 'AKTIF' },
+
+      // 3. RT-REGULER-D8812-AB (3 Waypoints)
+      { detail_route_id: 'DR-D8812-01', route_id: 'RT-REGULER-D8812-AB', seq: 1, asal_nopen: '40500', asal_nama: 'KCU Cimahi', tujuan_nopen: '40000', tujuan_nama: 'KCU Bandung', estimasi_menit: 25, jarak_km: 11.0, status: 'AKTIF' },
+      { detail_route_id: 'DR-D8812-02', route_id: 'RT-REGULER-D8812-AB', seq: 2, asal_nopen: '40000', asal_nama: 'KCU Bandung', tujuan_nopen: '40400', tujuan_nama: 'SPP Bandung (Terminal Akhir)', estimasi_menit: 15, jarak_km: 7.0, status: 'AKTIF' },
+
+      // 4. RT-HEAVY-D8990-SPP (3 Waypoints)
+      { detail_route_id: 'DR-D8990-01', route_id: 'RT-HEAVY-D8990-SPP', seq: 1, asal_nopen: '40900', asal_nama: 'KCU Soreang', tujuan_nopen: '40000', tujuan_nama: 'KCU Bandung', estimasi_menit: 35, jarak_km: 18.5, status: 'AKTIF' },
+      { detail_route_id: 'DR-D8990-02', route_id: 'RT-HEAVY-D8990-SPP', seq: 2, asal_nopen: '40000', asal_nama: 'KCU Bandung', tujuan_nopen: '40400', tujuan_nama: 'SPP Bandung (Terminal Akhir)', estimasi_menit: 15, jarak_km: 7.0, status: 'AKTIF' }
     ];
 
-    for (const dr of detailRouteB9910) {
+    for (const dr of allDetailRoutes) {
       await db.collection('detail_route').replaceOne(
         { detail_route_id: dr.detail_route_id },
         dr,
@@ -222,7 +235,7 @@ async function standardizeDatabase() {
       );
     }
     await safeCreateIndex(db.collection('detail_route'), { route_id: 1, seq: 1 });
-    console.log('   -> Master route nopen & 6-stop waypoints detail route verified (Terminal Akhir: SPP Bandung).');
+    console.log('   -> Master route nopen & detail_route waypoints seeded for all active fleet routes in MongoDB.');
 
     // 4. STANDARDIZE ROUTE JOURNEYS (WITH 6-STOP WAYPOINTS CARGO LOAD AT EACH STOP)
     console.log('📌 4/8. Standardizing route_journeys & multi-stop cargo loads...');

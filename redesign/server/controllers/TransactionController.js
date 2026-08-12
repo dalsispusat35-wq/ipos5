@@ -635,23 +635,27 @@ class TransactionController {
     });
 
     const cargoItems = activeJourney?.cargo || [];
-    const routeId = activeJourney?.route_id || matchedVehicle.assigned_route_id || matchedVehicle.rute_utama || 'RT-MALAM-B9910-PCX';
+    const routeId = activeJourney?.route_id || matchedVehicle.assigned_route_id || matchedVehicle.rute_utama || null;
 
-    // Route Waypoint Stops
-    const detailRouteSegments = await db.collection('detail_route').find({
-      route_id: routeId,
-      status: 'AKTIF'
-    }).sort({ seq: 1 }).toArray();
-
-    const stopCodes = [];
-    if (detailRouteSegments.length > 0) {
-      stopCodes.push(detailRouteSegments[0].asal_nopen);
-      detailRouteSegments.forEach(s => stopCodes.push(s.tujuan_nopen));
-    } else {
-      stopCodes.push('40511', '40521', '40395C1', '40553', '40000', '40400');
+    // Route Waypoint Stops strictly queried from MongoDB detail_route
+    let detailRouteSegments = [];
+    if (routeId) {
+      detailRouteSegments = await db.collection('detail_route').find({
+        route_id: routeId,
+        status: 'AKTIF'
+      }).sort({ seq: 1 }).toArray();
     }
 
-    const offices = await db.collection('master_kantor').find({ nopend: { $in: stopCodes } }).toArray();
+    const hasRoute = detailRouteSegments.length > 0;
+    const stopCodes = [];
+    if (hasRoute) {
+      stopCodes.push(detailRouteSegments[0].asal_nopen);
+      detailRouteSegments.forEach(s => stopCodes.push(s.tujuan_nopen));
+    }
+
+    const offices = stopCodes.length > 0
+      ? await db.collection('master_kantor').find({ nopend: { $in: stopCodes } }).toArray()
+      : [];
     const officeMap = new Map(offices.map(o => [o.nopend, o.nama_nopend]));
 
     const nopenToSeq = new Map();
@@ -703,16 +707,19 @@ class TransactionController {
     const hasCargo = cargoItems.length > 0 && totalCargoKg > 0;
 
     const currentSeq = activeJourney?.current_stop_seq || 1;
-    const currentStopObj = routeStops[Math.min(currentSeq, routeStops.length) - 1] || routeStops[0] || {};
+    const currentStopObj = routeStops.length > 0 ? (routeStops[Math.min(currentSeq, routeStops.length) - 1] || routeStops[0]) : {};
     const currentLoadKg = currentStopObj.loadAtStopKg || 0;
     const currentUtilPct = currentStopObj.utilizationPctAtStop || 0;
 
-    const warningMessage = hasCargo
-      ? null
-      : `⚠️ [ARMADA TERDETEKSI]: Kendaraan ${vehicleNopol} (${matchedVehicle.nama_kendaraan || 'Armada Logistik'}) terdaftar di database master kendaraan, namun belum/tidak memiliki muatan barang paket pada tanggal operasional ${targetDateStr} (Kapasitas Kosong 0 kg / ${maxCapacityKg} kg).`;
+    const warningMessage = !hasRoute
+      ? `⚠️ [TIDAK ADA JADWAL RUTE DI MONGODB]: Kendaraan ${vehicleNopol} (${matchedVehicle.nama_kendaraan || 'Armada Logistik'}) terdaftar di master_kendaraan, namun belum memiliki penugasan rute (detail_route) atau rute aktif di database MongoDB pada tanggal operasional ${targetDateStr}.`
+      : !hasCargo
+      ? `⚠️ [ARMADA TERDETEKSI]: Kendaraan ${vehicleNopol} (${matchedVehicle.nama_kendaraan || 'Armada Logistik'}) terdaftar di master_kendaraan, namun belum/tidak memiliki muatan barang paket pada tanggal operasional ${targetDateStr} (Kapasitas Kosong 0 kg / ${maxCapacityKg} kg).`
+      : null;
 
     return {
       isVehicleQuery: true,
+      hasRoute,
       hasCargo,
       vehicle: {
         nopol: vehicleNopol,
@@ -722,15 +729,15 @@ class TransactionController {
         driver: matchedVehicle.driver || '-',
         driverPhone: matchedVehicle.driver_phone || '-',
         homeBase: matchedVehicle.home_base || '-',
-        assignedRouteId: routeId,
+        assignedRouteId: routeId || 'TIDAK ADA',
         status: matchedVehicle.status || 'AKTIF'
       },
       warningMessage,
       targetDateStr,
-      milk_run: {
+      milk_run: hasRoute ? {
         journeyId: activeJourney?.journey_id || `JRN-${targetDateStr.replace(/-/g, '')}-${cleanNopol}`,
         vehicleNopol,
-        routeId,
+        routeId: routeId || 'TIDAK ADA',
         maxCapacityKg,
         currentStopSeq: currentSeq,
         currentLoadKg,
@@ -740,7 +747,7 @@ class TransactionController {
         cargoCount: cargoItems.length,
         totalCargoKg,
         cargoList: cargoItems
-      }
+      } : null
     };
   }
 

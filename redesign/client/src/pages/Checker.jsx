@@ -912,6 +912,7 @@ export default function Checker() {
           </div>
 
           {/* 6. SECTION: ROUTE JOURNEY (MULTI-STOP WAYPOINTS & DEMO SIMULATION) */}
+          {result.hasRoute !== false && (result.routeStops || []).length > 0 && (
           <div 
             className="glass-card-solid" 
             style={{ 
@@ -1235,8 +1236,10 @@ export default function Checker() {
               );
             })()}
           </div>
+          )}
 
           {/* 7. SECTION: PACKAGES INSIDE VEHICLE (GROUPED BY DESTINATION STOP) */}
+          {result.hasRoute !== false && (result.routeStops || []).length > 0 && (
           <div className="glass-card-solid" style={{ padding: 22, borderRadius: 18, border: '1px solid rgba(255,255,255,0.08)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, flexWrap: 'wrap', gap: 12 }}>
               <div>
@@ -1390,6 +1393,7 @@ export default function Checker() {
               </div>
             )}
           </div>
+          )}
 
         </div>
       ) : !loading && (
