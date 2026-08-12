@@ -277,12 +277,18 @@ export default function Checker() {
   const activeSeq = isSimulating || simStopSeq !== null ? (simStopSeq || 1) : (result?.currentStopSeq || 1);
   const nopenToSeq = new Map((result?.routeStops || []).map(s => [String(s.nopen), s.seq]));
 
+  const [showOnlyNewlyLoaded, setShowOnlyNewlyLoaded] = useState(false);
+
   const activeCargoItems = (result?.cargoItems || []).filter(item => {
     const loadSeq = item.loaded_at_seq || 1;
     const destSeq = nopenToSeq.get(String(item.destination_nopen)) || (result?.routeStops?.length || 6);
 
-    // Item is inside vehicle at activeSeq IF loaded_at_seq <= activeSeq AND destSeq >= activeSeq
-    return loadSeq <= activeSeq && destSeq >= activeSeq;
+    if (showOnlyNewlyLoaded) {
+      return loadSeq === activeSeq;
+    }
+
+    // Item is inside vehicle at activeSeq IF loaded_at_seq <= activeSeq AND destSeq > activeSeq
+    return loadSeq <= activeSeq && destSeq > activeSeq;
   });
 
   // Group active cargo items by destination
@@ -1242,8 +1248,43 @@ export default function Checker() {
                 </div>
               </div>
 
-              {/* Filter Cargo Input */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              {/* Filter Cargo Input & Mode Switch */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.04)', padding: 3, borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <button
+                    onClick={() => setShowOnlyNewlyLoaded(false)}
+                    style={{
+                      padding: '4px 10px',
+                      fontSize: 11,
+                      fontWeight: 800,
+                      borderRadius: 6,
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      background: !showOnlyNewlyLoaded ? 'rgba(56,189,248,0.25)' : 'transparent',
+                      color: !showOnlyNewlyLoaded ? '#38bdf8' : 'rgba(255,255,255,0.4)'
+                    }}
+                  >
+                    🚚 Semua Muatan di Mobil (Akumulatif)
+                  </button>
+                  <button
+                    onClick={() => setShowOnlyNewlyLoaded(true)}
+                    style={{
+                      padding: '4px 10px',
+                      fontSize: 11,
+                      fontWeight: 800,
+                      borderRadius: 6,
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      background: showOnlyNewlyLoaded ? 'rgba(245,158,11,0.25)' : 'transparent',
+                      color: showOnlyNewlyLoaded ? '#f59e0b' : 'rgba(255,255,255,0.4)'
+                    }}
+                  >
+                    📦 Baru Dimuat di Stop #{activeSeq}
+                  </button>
+                </div>
+
                 {selectedStopFilter && (
                   <button
                     onClick={() => setSelectedStopFilter(null)}
