@@ -73,6 +73,8 @@ export const api = {
   // Checker
   checkRouting: (connoteCode, date) => fetchApi(`/checker/${encodeURIComponent(connoteCode)}${date ? `?date=${encodeURIComponent(date)}` : ''}`),
   getCheckerData: (connoteCode, date) => fetchApi(`/checker/${encodeURIComponent(connoteCode)}${date ? `?date=${encodeURIComponent(date)}` : ''}`),
+  getControlTowerData: (date) => fetchApi(`/checker/control-tower${date ? `?date=${encodeURIComponent(date)}` : ''}`),
+  getVehicleCheckerData: (nopol, date) => fetchApi(`/checker/vehicle/${encodeURIComponent(nopol)}${date ? `?date=${encodeURIComponent(date)}` : ''}`),
 
   // Kantor
   getKantor: (params = '') => fetchApi(`/kantor?${params}`),

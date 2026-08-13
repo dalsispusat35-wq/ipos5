@@ -795,10 +795,7 @@ class TransactionController {
         ]
       });
 
-      // Fallback: if searching for demo connote and not found, pick first available transaction
-      if (!txDoc) {
-        txDoc = await db.collection('transaksi').findOne({});
-      }
+      // No mock fallback! If not found, return 404.
 
       if (!txDoc) {
         return res.status(404).json({
