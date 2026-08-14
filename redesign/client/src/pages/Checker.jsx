@@ -724,7 +724,7 @@ export default function Checker() {
             </div>
           </div>
         </div>
-      ) : result ? (
+      ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
           {/* FUTURE OPERATIONAL DATE WARNING CARD */}
