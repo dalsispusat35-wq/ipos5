@@ -20,6 +20,73 @@ const SAMPLE_RESIS = [
   { code: 'B 9910 PCX', label: 'Armada Feeder GrandMax Box', badge: 'Fleet', badgeClass: 'badge-navy' }
 ];
 
+// ─── Module-Level Pure Helper Functions (Available everywhere without TDZ) ───
+const getTodayWibStr = () => {
+  try {
+    return new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Jakarta' });
+  } catch (e) {
+    return new Date().toISOString().slice(0, 10);
+  }
+};
+
+const formatDateDisplay = (dateStr) => {
+  if (!dateStr || dateStr === '-') return '-';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return String(dateStr);
+  return d.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB';
+};
+
+const formatWeight = (kg) => {
+  if (kg === null || kg === undefined) return '-';
+  const num = parseFloat(kg);
+  if (isNaN(num)) return '-';
+  return num % 1 === 0 ? `${num} kg` : `${num.toFixed(1)} kg`;
+};
+
+const mapStateToBadge = (stateStr) => {
+  if (!stateStr) return { label: 'ENTRY', class: 'badge-navy' };
+  const s = String(stateStr).toUpperCase();
+  if (s.includes('DELIVERED') || s.includes('SELESAI')) return { label: 'DELIVERED', class: 'badge-emerald' };
+  if (s.includes('ARRIVED') || s.includes('TIBA')) return { label: 'ARRIVED', class: 'badge-amber' };
+  if (s.includes('TRANSIT') || s.includes('IN_TRANSIT')) return { label: 'IN TRANSIT', class: 'badge-orange' };
+  if (s.includes('LOADED') || s.includes('MANIFEST')) return { label: 'LOADED', class: 'badge-blue' };
+  return { label: s, class: 'badge-navy' };
+};
+
+const mapStateToBadgeClass = (stateStr) => mapStateToBadge(stateStr).class;
+
+const getCapacityBadge = (status) => {
+  switch (status) {
+    case 'OVER CAPACITY':
+      return { label: 'OVER CAPACITY', color: '#ef4444', bg: 'rgba(239,68,68,0.2)', border: 'rgba(239,68,68,0.5)' };
+    case 'FULL':
+      return { label: 'FULL CAPACITY', color: '#f97316', bg: 'rgba(249,115,22,0.2)', border: 'rgba(249,115,22,0.4)' };
+    case 'NEAR CAPACITY':
+      return { label: 'NEAR CAPACITY', color: '#f59e0b', bg: 'rgba(245,158,11,0.2)', border: 'rgba(245,158,11,0.4)' };
+    default:
+      return { label: 'NORMAL CAPACITY', color: '#10b981', bg: 'rgba(16,185,129,0.2)', border: 'rgba(16,185,129,0.4)' };
+  }
+};
+
+const getCapacityStatusBadge = (status) => {
+  switch ((status || '').toUpperCase()) {
+    case 'OVER CAPACITY':
+      return { label: '🚨 OVER CAPACITY', color: '#ef4444', bg: 'rgba(239,68,68,0.15)', border: 'rgba(239,68,68,0.5)' };
+    case 'FULL':
+      return { label: '⚠️ FULL', color: '#f97316', bg: 'rgba(249,115,22,0.15)', border: 'rgba(249,115,22,0.45)' };
+    case 'NEAR CAPACITY':
+      return { label: '🔶 NEAR CAPACITY', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.4)' };
+    default:
+      return { label: '✅ NORMAL', color: '#10b981', bg: 'rgba(16,185,129,0.15)', border: 'rgba(16,185,129,0.4)' };
+  }
+};
+
+const getWaypointSubLabel = (stop, idx, total) => {
+  if (idx === 0) return '🏁 Titik Awal / Origin';
+  if (idx === total - 1) return '🏆 Titik Akhir / Tujuan';
+  return `📍 Transit Stop #${stop?.seq || idx + 1}`;
+};
+
 export default function Checker() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState(() => searchParams.get('code') || '');
@@ -29,15 +96,6 @@ export default function Checker() {
   const [controlTowerLoading, setControlTowerLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [copied, setCopied] = useState(false);
-
-  // Dynamic Operational Date in Asia/Jakarta Timezone (WIB)
-  const getTodayWibStr = () => {
-    try {
-      return new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Jakarta' });
-    } catch (e) {
-      return new Date().toISOString().slice(0, 10);
-    }
-  };
 
   const [selectedDate, setSelectedDate] = useState(() => {
     return searchParams.get('date') || getTodayWibStr();
@@ -54,11 +112,34 @@ export default function Checker() {
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [nowTime, setNowTime] = useState(new Date());
 
+  // Simulation and UI filter states
+  const [isSimulating, setIsSimulating] = useState(false);
+  const [simStopSeq, setSimStopSeq] = useState(null);
+  const [simSpeed, setSimSpeed] = useState(1800);
+  const [selectedStopFilter, setSelectedStopFilter] = useState(null);
+  const [showOnlyNewlyLoaded, setShowOnlyNewlyLoaded] = useState(false);
+
   // Clock tick for real-time ETA updates
   useEffect(() => {
     const clockTick = setInterval(() => setNowTime(new Date()), 1000);
     return () => clearInterval(clockTick);
   }, []);
+
+  // Simulation timer loop
+  useEffect(() => {
+    if (!isSimulating || !result?.routeStops?.length) return;
+    const interval = setInterval(() => {
+      setSimStopSeq(prev => {
+        const current = prev ?? result.currentStopSeq ?? 1;
+        if (current >= result.routeStops.length) {
+          setIsSimulating(false);
+          return current;
+        }
+        return current + 1;
+      });
+    }, simSpeed);
+    return () => clearInterval(interval);
+  }, [isSimulating, simSpeed, result?.routeStops?.length, result?.currentStopSeq]);
 
   // ─── Mode A: Load Daily Control Tower Overview ─────────────────────────────
   const loadControlTower = useCallback(async (dateToUse) => {
@@ -247,64 +328,69 @@ export default function Checker() {
     setExpandedDestGroups(prev => ({ ...prev, [destNopen]: !prev[destNopen] }));
   };
 
-  const formatDateDisplay = (dateStr) => {
-    if (!dateStr || dateStr === '-') return '-';
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    return d.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB';
-  };
+  const activeSeq = isSimulating || simStopSeq !== null ? (simStopSeq || 1) : (result?.currentStopSeq || 1);
 
-  const formatWeight = (kg) => {
-    if (kg === null || kg === undefined) return '-';
-    const num = parseFloat(kg);
-    if (isNaN(num)) return '-';
-    return num % 1 === 0 ? `${num} kg` : `${num.toFixed(1)} kg`;
-  };
+  // Compute filtered cargo groups based on active simulation stop, stop filter, search term, and showOnlyNewlyLoaded
+  const filteredCargoGroups = (() => {
+    if (!result) return [];
+    
+    // If we have flat cargoItems, let's group or filter
+    if (result.cargoItems && result.cargoItems.length > 0) {
+      let items = [...result.cargoItems];
 
-  const mapStateToBadge = (stateStr) => {
-    if (!stateStr) return { label: 'ENTRY', class: 'badge-navy' };
-    const s = String(stateStr).toUpperCase();
-    if (s.includes('DELIVERED') || s.includes('SELESAI')) return { label: 'DELIVERED', class: 'badge-emerald' };
-    if (s.includes('ARRIVED') || s.includes('TIBA')) return { label: 'ARRIVED', class: 'badge-amber' };
-    if (s.includes('TRANSIT') || s.includes('IN_TRANSIT')) return { label: 'IN TRANSIT', class: 'badge-orange' };
-    if (s.includes('LOADED') || s.includes('MANIFEST')) return { label: 'LOADED', class: 'badge-blue' };
-    return { label: s, class: 'badge-navy' };
-  };
+      // Filter by newly loaded at current stop if toggle active
+      if (showOnlyNewlyLoaded) {
+        items = items.filter(item => (item.loaded_at_seq || 1) === activeSeq);
+      }
 
-  const getCapacityBadge = (status) => {
-    switch (status) {
-      case 'OVER CAPACITY':
-        return { label: 'OVER CAPACITY', color: '#ef4444', bg: 'rgba(239,68,68,0.2)', border: 'rgba(239,68,68,0.5)' };
-      case 'FULL':
-        return { label: 'FULL CAPACITY', color: '#f97316', bg: 'rgba(249,115,22,0.2)', border: 'rgba(249,115,22,0.4)' };
-      case 'NEAR CAPACITY':
-        return { label: 'NEAR CAPACITY', color: '#f59e0b', bg: 'rgba(245,158,11,0.2)', border: 'rgba(245,158,11,0.4)' };
-      default:
-        return { label: 'NORMAL CAPACITY', color: '#10b981', bg: 'rgba(16,185,129,0.2)', border: 'rgba(16,185,129,0.4)' };
+      // Filter by selected stop if waypoint clicked
+      if (selectedStopFilter) {
+        items = items.filter(item => String(item.destination_nopen) === String(selectedStopFilter));
+      }
+
+      // Filter by search term
+      if (cargoSearchTerm && cargoSearchTerm.trim()) {
+        const term = cargoSearchTerm.toLowerCase();
+        items = items.filter(item => 
+          (item.connote_code && item.connote_code.toLowerCase().includes(term)) ||
+          (item.destination_nopen && String(item.destination_nopen).toLowerCase().includes(term)) ||
+          (item.sender_name && item.sender_name.toLowerCase().includes(term)) ||
+          (item.receiver_name && item.receiver_name.toLowerCase().includes(term))
+        );
+      }
+
+      // Regroup by destination_nopen
+      const destMap = {};
+      items.forEach(pkg => {
+        const dNopen = pkg.destination_nopen || '40400';
+        if (!destMap[dNopen]) {
+          destMap[dNopen] = {
+            destination_nopen: dNopen,
+            destination_office_name: pkg.destination_office_name || (result.routeStops || []).find(s => String(s.nopen) === String(dNopen))?.officeName || `Kantor ${dNopen}`,
+            count: 0,
+            package_count: 0,
+            total_weight_kg: 0,
+            packages: []
+          };
+        }
+        destMap[dNopen].count++;
+        destMap[dNopen].package_count++;
+        destMap[dNopen].total_weight_kg = Number((destMap[dNopen].total_weight_kg + (pkg.weight_kg || 0)).toFixed(2));
+        destMap[dNopen].packages.push(pkg);
+      });
+      return Object.values(destMap);
     }
-  };
 
-  const getCapacityStatusBadge = (status) => {
-    switch ((status || '').toUpperCase()) {
-      case 'OVER CAPACITY':
-        return { label: '🚨 OVER CAPACITY', color: '#ef4444', bg: 'rgba(239,68,68,0.15)', border: 'rgba(239,68,68,0.5)' };
-      case 'FULL':
-        return { label: '⚠️ FULL', color: '#f97316', bg: 'rgba(249,115,22,0.15)', border: 'rgba(249,115,22,0.45)' };
-      case 'NEAR CAPACITY':
-        return { label: '🔶 NEAR CAPACITY', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.4)' };
-      default:
-        return { label: '✅ NORMAL', color: '#10b981', bg: 'rgba(16,185,129,0.15)', border: 'rgba(16,185,129,0.4)' };
+    if (result.cargoGroupedByDestination && result.cargoGroupedByDestination.length > 0) {
+      let groups = [...result.cargoGroupedByDestination];
+      if (selectedStopFilter) {
+        groups = groups.filter(g => String(g.destination_nopen) === String(selectedStopFilter));
+      }
+      return groups;
     }
-  };
 
-  const getWaypointSubLabel = (stop, idx, total) => {
-    if (idx === 0) return '🏁 Titik Awal / Origin';
-    if (idx === total - 1) return '🏆 Titik Akhir / Tujuan';
-    return `📍 Transit Stop #${stop.seq || idx + 1}`;
-  };
-
-  // Alias used in handleSearch data mapping
-  const mapStateToBadgeClass = (state) => mapStateToBadge(state).class;
+    return [];
+  })();
 
   // Gating check for CSV import tool button
   const isDevOrAdminMode = process.env.NODE_ENV !== 'production' || searchParams.get('dev') === 'true' || searchParams.get('dev') === '1';
@@ -1046,43 +1132,19 @@ export default function Checker() {
                         <div style={{ width: 2, height: 28, background: `${dotColor}33`, margin: '4px 0' }} />
                       )}
                     </div>
-                    <div style={{ fontSize: 12.5, fontWeight: 800, color: '#fff', marginTop: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {stop.officeName}
-                    </div>
-                    <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>
-                      ⏱️ {stop.estimasi_menit}m | 📏 {stop.jarak_km}km
+                    <div style={{ flex: 1, background: 'rgba(255,255,255,0.03)', padding: 12, borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span className={mapStateToBadge(event.stage).class} style={{ fontSize: 10, padding: '2px 8px' }}>
+                          {mapStateToBadge(event.stage).label || event.stage}
+                        </span>
+                        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{event.time}</span>
+                      </div>
+                      <div style={{ fontSize: 12.5, fontWeight: 700, color: '#fff', marginTop: 6 }}>{event.note}</div>
+                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>📍 Lokasi: {event.location}</div>
                     </div>
                   </div>
                 );
               })}
-            </div>
-          </div>
-
-          {/* Tracking Event Timeline (From DB tracking_events sorted ASC) */}
-          <div className="glass-card-solid" style={{ padding: 20, borderRadius: 16 }}>
-            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <History size={16} color="#38bdf8" />
-              RIWAYAT TRACKING LOG EVENT (CHRONOLOGICAL EVENT LOG)
-            </h3>
-
-            <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {result.timeline?.map((evt, idx) => (
-                <div key={idx} style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(56,189,248,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#38bdf8', fontWeight: 800, fontSize: 12, flexShrink: 0 }}>
-                    {idx + 1}
-                  </div>
-                  <div style={{ flex: 1, background: 'rgba(255,255,255,0.03)', padding: 12, borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span className={mapStateToBadge(evt.stage).class} style={{ fontSize: 10, padding: '2px 8px' }}>
-                        {evt.stage}
-                      </span>
-                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{evt.time}</span>
-                    </div>
-                    <div style={{ fontSize: 12.5, fontWeight: 700, color: '#fff', marginTop: 6 }}>{evt.note}</div>
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>📍 Lokasi: {evt.location}</div>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
 
@@ -1153,7 +1215,7 @@ export default function Checker() {
               </h3>
 
             <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {result.data.cargoGroupedByDestination?.map((grp, i) => {
+              {(cargoGrouped || []).map((grp, i) => {
                 const isExpanded = !!expandedDestGroups[grp.destination_nopen];
 
                 return (
@@ -1808,6 +1870,14 @@ export default function Checker() {
       {/* ─── MODALS ───────────────────────────────────────────────────────────── */}
       {isCsvModalOpen && (
         <CsvImportModal isOpen={isCsvModalOpen} onClose={() => setIsCsvModalOpen(false)} />
+      )}
+      {isMapModalOpen && (
+        <LiveGpsMapModal
+          isOpen={isMapModalOpen}
+          onClose={() => setIsMapModalOpen(false)}
+          journey={result?.milkRun?.journey || result?.journey || null}
+          vehicleNopol={result?.vehicleNopol || query || 'B 9910 PCX'}
+        />
       )}
     </div>
   );
