@@ -131,8 +131,9 @@ export default function Checker() {
         const tx = res.data.transaction || {};
         const milk = res.data.milk_run || {};
 
-        setResult(res.data);
-        if (res.isVehicleQuery || (res.data.found && res.data.vehicle)) {
+        const formattedResult = (res.data && res.data.data) ? res.data : { ...res.data, data: res.data };
+        setResult(formattedResult);
+        if (res.isVehicleQuery || (res.data?.found && res.data?.vehicle) || res.data?.vehicle) {
           setActiveTab('VEHICLE');
         } else {
           setActiveTab('PACKAGE');
@@ -165,9 +166,10 @@ export default function Checker() {
       if (codeParam && codeParam.trim()) {
         handleSearch(codeParam, dateParam);
       } else {
-        // Initial load or empty code parameter -> auto-load operational data for target date
-        const defaultCode = dateParam === '2026-08-12' ? 'P260812000001' : (dateParam === '2026-07-24' ? 'P20260724000001' : 'B 9910 PCX');
-        handleSearch(defaultCode, dateParam);
+        // Initial load or empty code parameter -> display Control Tower Overview
+        setActiveTab('OVERVIEW');
+        setResult(null);
+        setErrorMsg('');
       }
     }
   }, [searchParams, selectedDate, handleSearch]);
