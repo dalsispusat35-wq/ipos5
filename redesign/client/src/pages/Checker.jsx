@@ -5,7 +5,8 @@ import {
   Copy, Check, RefreshCw, ShieldCheck, Zap, X, Filter, Eye,
   CalendarDays, ArrowRight, Layers, FileSpreadsheet,
   AlertCircle, AlertTriangle, ChevronDown, ChevronRight, User, Building2, Weight,
-  Car, TrendingUp, Activity, BoxIcon, Timer, AlertOctagon, Info, ArrowUpRight
+  Car, TrendingUp, Activity, BoxIcon, Timer, AlertOctagon, Info, ArrowUpRight,
+  Printer, History, Sparkles, Pause, Play, SkipForward, SkipBack, RotateCcw
 } from 'lucide-react';
 import { api } from '../utils/api.js';
 import LiveGpsMapModal from '../components/LiveGpsMapModal.jsx';
@@ -583,7 +584,8 @@ export default function Checker() {
             </button>
           ))}
         </div>
-      )}
+      </div>
+    )}
 
       {/* ─── MODE B: SEARCH PACKAGE RESULT ─────────────────────────────────────── */}
       {activeTab === 'PACKAGE' && result && !result.isVehicleQuery && (
@@ -824,7 +826,7 @@ export default function Checker() {
                 })}
               </div>
             </div>
-          )}
+          </div>
 
           {/* 3. SECTION: TRACKING EVENT TIMELINE STEPPER (DATABASE EVENT HISTORY) */}
           <div className="glass-card-solid" style={{ padding: 22, borderRadius: 18, border: '1px solid rgba(255,255,255,0.08)' }}>
@@ -1024,7 +1026,7 @@ export default function Checker() {
                     )}
                   </div>
                 );
-              })()}
+              })}
 
               <button
                 className="btn-primary"
@@ -1109,6 +1111,8 @@ export default function Checker() {
             })()}
 
           </div>
+        </div>
+      )}
 
           {/* 6. SECTION: ROUTE JOURNEY (MULTI-STOP WAYPOINTS & DEMO SIMULATION) */}
           {result.hasRoute !== false && (result.routeStops || []).length > 0 && (
@@ -1592,10 +1596,10 @@ export default function Checker() {
               </div>
             )}
           </div>
+      )}
 
-        </div>
-      ) : !loading && (
-        /* EMPTY STATE — shown before first search or when result is cleared */
+      {/* ─── EMPTY STATE ──────────────────────────────────────────────────────── */}
+      {!result && !loading && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 24px', gap: 28, textAlign: 'center' }}>
           {/* Animated truck illustration */}
           <div style={{ position: 'relative', width: 160, height: 100 }}>
