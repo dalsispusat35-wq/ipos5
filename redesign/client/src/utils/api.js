@@ -189,5 +189,14 @@ export const api = {
   createUser: (data) => fetchApi('/users', { method: 'POST', body: data }),
   updateUser: (username, data) => fetchApi(`/users/${encodeURIComponent(username)}`, { method: 'PUT', body: data }),
   updateUserPassword: (username, data) => fetchApi(`/users/${encodeURIComponent(username)}/password`, { method: 'PUT', body: data }),
-  deleteUser: (username) => fetchApi(`/users/${encodeURIComponent(username)}`, { method: 'DELETE' })
+  deleteUser: (username) => fetchApi(`/users/${encodeURIComponent(username)}`, { method: 'DELETE' }),
+
+  // Analytics & Reports
+  getSlaPerformance: () => fetchApi('/analytics/sla'),
+  getVolumeThroughput: () => fetchApi('/analytics/throughput'),
+  getExportCsvUrl: (params = '') => `${API_BASE}/analytics/export?${params}`,
+
+  // Notifications & Alerts
+  getSystemAlerts: () => fetchApi('/notifications/alerts'),
+  markAlertRead: (id) => fetchApi(`/notifications/alerts/${id}/read`, { method: 'POST' })
 };

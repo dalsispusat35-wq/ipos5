@@ -620,21 +620,93 @@ class TransactionController {
     const endDate = new Date(targetDateStr);
     endDate.setHours(23, 59, 59, 999);
 
+    const cleanDateOnlyStr = targetDateStr.replace(/-/g, '');
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const isFutureDate = targetDateStr > todayStr;
+
     let activeJourney = await db.collection('route_journeys').findOne({
       $and: [
         {
-          $or: [{ vehicle_nopol: vehicleNopol }, { resolved_vehicle_nopol: vehicleNopol }]
+          $or: [
+            { vehicle_nopol: vehicleNopol },
+            { resolved_vehicle_nopol: vehicleNopol },
+            { vehicle_code: vehicleNopol }
+          ]
         },
         {
           $or: [
             { journey_date: { $gte: startDate, $lte: endDate } },
-            { tanggal_operasional: targetDateStr }
+            { tanggal_operasional: targetDateStr },
+            { tanggal_operasional: { $regex: targetDateStr } },
+            { journey_id: { $regex: cleanDateOnlyStr } }
           ]
         }
       ]
     });
 
-    const cargoItems = activeJourney?.cargo || [];
+    // If specific date requested and no journey created for that exact date, do NOT fall back to past journeys from other dates
+    if (!activeJourney && reqDateStr) {
+      return {
+        isVehicleQuery: true,
+        hasRoute: false,
+        hasCargo: false,
+        isFutureDate: isFutureDate,
+        targetDateStr,
+        warningMessage: isFutureDate
+          ? `⚠️ [TANGGAL OPERASIONAL BELUM TIBA]: Tanggal ${targetDateStr} merupakan tanggal di masa depan yang belum tiba dan belum memiliki riwayat operasional.`
+          : `⚠️ [TIDAK ADA DATA OPERASIONAL]: Armada ${vehicleNopol} tidak memiliki penugasan perjalanan pada tanggal ${targetDateStr}.`,
+        vehicle: {
+          nopol: vehicleNopol,
+          nama_kendaraan: matchedVehicle.nama_kendaraan || `Armada ${vehicleNopol}`,
+          jenis_kendaraan: matchedVehicle.jenis_kendaraan || 'Truk Box',
+          maxCapacityKg,
+          driver: matchedVehicle.driver || '-',
+          driverPhone: matchedVehicle.driver_phone || '-',
+          homeBase: matchedVehicle.home_base || '-',
+          assignedRouteId: matchedVehicle.assigned_route_id || 'TIDAK ADA',
+          status: matchedVehicle.status || 'AKTIF'
+        },
+        milk_run: null
+      };
+    }
+
+    if (!activeJourney) {
+      activeJourney = await db.collection('route_journeys').findOne({
+        $or: [
+          { vehicle_nopol: vehicleNopol },
+          { resolved_vehicle_nopol: vehicleNopol },
+          { vehicle_code: vehicleNopol }
+        ]
+      }, { sort: { journey_date: -1, updated_at: -1 } });
+    }
+
+    let cargoItems = activeJourney?.cargo || [];
+    
+    // Dynamic Fallback: If no cargo found in journey for this target date (and not future date), load transactions created for target date
+    if ((!cargoItems || cargoItems.length === 0) && !isFutureDate) {
+      const dateTxs = await db.collection('transaksi').find({
+        $or: [
+          { 'connote.created_at': { $regex: targetDateStr } },
+          { connote_code: { $regex: cleanDateOnlyStr.slice(2) } },
+          { createdAt: { $gte: startDate, $lte: endDate } }
+        ]
+      }).limit(35).toArray();
+
+      if (dateTxs.length > 0) {
+        cargoItems = dateTxs.map((t, idx) => ({
+          connote_code: t.connote_code || t.connote?.connote_code || `P${cleanDateOnlyStr}${String(idx+1).padStart(6, '0')}`,
+          weight_kg: t.connote?.actual_weight || t.actualWeight || 2.5,
+          origin_nopen: t.custom_field?.origin_nopen || t.location_data_created?.custom_field?.origin_nopen || '40511',
+          destination_nopen: t.custom_field?.destination_nopen || '40400',
+          loaded_at_seq: (idx % 5) + 1,
+          unloaded_at_seq: 6,
+          sender_name: t.connote?.connote_sender_name || 'PT Pos Logistics',
+          receiver_name: t.connote?.connote_receiver_name || 'SPP Bandung'
+        }));
+      }
+    }
+
     const routeId = activeJourney?.route_id || matchedVehicle.assigned_route_id || matchedVehicle.rute_utama || null;
 
     // Route Waypoint Stops strictly queried from MongoDB detail_route
@@ -770,19 +842,89 @@ class TransactionController {
           success: true,
           connote: connoteClean,
           isVehicleQuery: true,
+          isFutureDate: vehicleRes.isFutureDate || false,
           hasCargo: vehicleRes.hasCargo,
           warningMessage: vehicleRes.warningMessage,
           data: vehicleRes
         });
       }
 
-      // 1. Find transaction by connote
       // Build variants for 14-digit vs 15-digit codes (e.g. P2607... vs P202607...)
       const codeVariants = [connoteClean];
       if (connoteClean.startsWith('P26') && !connoteClean.startsWith('P2026')) {
         codeVariants.push('P20' + connoteClean.slice(1));
       } else if (connoteClean.startsWith('P2026')) {
         codeVariants.push('P2' + connoteClean.slice(3));
+      }
+
+      // Intercept Future Operational Date for Package/Resi Tracking
+      const todayStr = new Date().toISOString().slice(0, 10);
+      if (reqDateStr && reqDateStr > todayStr) {
+        const startDate = new Date(reqDateStr);
+        startDate.setHours(0, 0, 0, 0);
+        const endDate = new Date(reqDateStr);
+        endDate.setHours(23, 59, 59, 999);
+
+        // Check if transaction was explicitly created on the requested future date
+        const futureTx = await db.collection('transaksi').findOne({
+          $and: [
+            {
+              $or: [
+                { 'connote.connote_code': { $in: codeVariants } },
+                { connote_code: { $in: codeVariants } }
+              ]
+            },
+            {
+              $or: [
+                { createdAt: { $gte: startDate, $lte: endDate } },
+                { 'connote.created_at': { $regex: reqDateStr } }
+              ]
+            }
+          ]
+        });
+
+        // Check if an operational journey exists for the requested future date
+        const futureJourney = await db.collection('route_journeys').findOne({
+          $and: [
+            {
+              $or: [
+                { vehicle_nopol: connoteClean },
+                { 'cargo.connote_code': { $in: codeVariants } }
+              ]
+            },
+            {
+              $or: [
+                { journey_date: { $gte: startDate, $lte: endDate } },
+                { tanggal_operasional: reqDateStr }
+              ]
+            }
+          ]
+        });
+
+        if (!futureTx && !futureJourney) {
+          // Lookup static transaction details if resi exists in DB from past creation
+          const txDoc = await db.collection('transaksi').findOne({
+            $or: [
+              { 'connote.connote_code': { $in: codeVariants } },
+              { connote_code: { $in: codeVariants } },
+              { connoteCode: { $in: codeVariants } },
+              { 'connote.connote_booking_code': { $in: codeVariants } }
+            ]
+          });
+
+          return res.json({
+            success: true,
+            connote: connoteClean,
+            isFutureDate: true,
+            warningMessage: `⚠️ [TANGGAL OPERASIONAL BELUM TIBA]: Tanggal ${reqDateStr} merupakan tanggal di masa depan yang belum tiba dan belum memiliki data operasional.`,
+            data: {
+              isFutureDate: true,
+              targetDateStr: reqDateStr,
+              transaction: txDoc ? normalizeTx(txDoc) : null,
+              milk_run: null
+            }
+          });
+        }
       }
 
       let txDoc = await db.collection('transaksi').findOne({
@@ -794,11 +936,6 @@ class TransactionController {
           { connote_code: { $regex: connoteClean, $options: 'i' } }
         ]
       });
-
-      // Fallback: if searching for demo connote and not found, pick first available transaction
-      if (!txDoc) {
-        txDoc = await db.collection('transaksi').findOne({});
-      }
 
       if (!txDoc) {
         return res.status(404).json({
@@ -1299,168 +1436,190 @@ class TransactionController {
         const endDate = new Date(targetDateStr);
         endDate.setHours(23, 59, 59, 999);
 
+        const cleanDateOnlyStr = targetDateStr.replace(/-/g, '');
+
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const isFutureDate = targetDateStr > todayStr;
+
         let activeJourney = await db.collection('route_journeys').findOne({
-          $or: [{ vehicle_nopol: vehicleNopol }, { resolved_vehicle_nopol: vehicleNopol }],
-          journey_date: { $gte: startDate, $lte: endDate }
+          $and: [
+            {
+              $or: [{ vehicle_nopol: vehicleNopol }, { resolved_vehicle_nopol: vehicleNopol }]
+            },
+            {
+              $or: [
+                { journey_date: { $gte: startDate, $lte: endDate } },
+                { tanggal_operasional: targetDateStr },
+                { tanggal_operasional: { $regex: targetDateStr } },
+                { journey_id: { $regex: cleanDateOnlyStr } }
+              ]
+            }
+          ]
         });
 
-        if (!activeJourney) {
+        if (!activeJourney && (reqDateStr || isFutureDate)) {
+          milkRunData = null;
+        } else if (!activeJourney) {
           activeJourney = await db.collection('route_journeys').findOne({
             $or: [{ vehicle_nopol: vehicleNopol }, { resolved_vehicle_nopol: vehicleNopol }]
           }, { sort: { journey_date: -1, updated_at: -1 } });
         }
 
-        let dateContextStatus = 'ACTIVE_OPERATION';
-        let dateContextWarning = null;
+        if (!activeJourney) {
+          milkRunData = null;
+        } else {
+          let dateContextStatus = 'ACTIVE_OPERATION';
+          let dateContextWarning = null;
 
-        const routeId = activeJourney?.route_id || 'RT-MALAM-B9910-PCX';
-        
-        // Vehicle Capacity Calculation
-        const vehicleDoc = await db.collection('master_kendaraan').findOne({ nopol: vehicleNopol }) || {};
-        const maxCapacityKg = vehicleDoc.kapasitas_kg || vehicleDoc.max_capacity_kg || activeJourney?.maximum_capacity_kg || 1500;
-        
-        // Cargo in vehicle (Historical or Active)
-        let cargoItems = activeJourney?.cargo || [];
-        if ((!cargoItems || cargoItems.length === 0) && activeJourney?.processed_stops) {
-          const processed = [];
-          for (const pStop of activeJourney.processed_stops) {
-            if (pStop.acceptedItems && pStop.acceptedItems.length > 0) {
-              processed.push(...pStop.acceptedItems);
-            }
-          }
-          if (processed.length > 0) cargoItems = processed;
-        }
-
-        // Fetch all detail_route segments for this routeId from DB
-        const segments = await db.collection('detail_route').find({ route_id: routeId, status: 'AKTIF' }).sort({ seq: 1 }).toArray();
-        let dbStops = [];
-        if (segments && segments.length > 0) {
-          // Build sequential waypoints (Stop 1 = origin of seq 1, Stop 2..N = destination of each seq)
-          const rawStops = [
-            { seq: 1, nopen: String(segments[0].asal_nopen), officeName: segments[0].asal_nama || 'KCU Cimahi' }
-          ];
-          segments.forEach((seg, idx) => {
-            rawStops.push({
-              seq: idx + 2,
-              nopen: String(seg.tujuan_nopen),
-              officeName: seg.tujuan_nama || `KANTOR ${seg.tujuan_nopen}`
-            });
-          });
-
-          const officeCodes = [...new Set(rawStops.map(s => s.nopen))];
-          const offices = await db.collection('master_kantor').find({ nopend: { $in: officeCodes } }).toArray();
-          const officeMap = new Map(offices.map(o => [String(o.nopend), o.nama_nopend]));
-
-          const totalStopsCount = rawStops.length;
-          const currentStopSeq = activeJourney?.current_stop_seq || totalStopsCount;
-
-          let accumulatedMinutes = 10 * 60; // Start 10:00 WIB
-
-          dbStops = rawStops.map((stopItem, idx) => {
-            const seq = stopItem.seq;
-            let status = 'UPCOMING';
-            if (seq < currentStopSeq) status = 'COMPLETED';
-            else if (seq === currentStopSeq) status = 'CURRENT';
-
-            const segment = segments[Math.min(idx, segments.length - 1)] || {};
-            const segMin = segment.estimasi_menit || (idx === 0 ? 0 : 15);
-            const segKm = segment.jarak_km || (idx === 0 ? 0 : 5.0);
-
-            if (idx > 0) accumulatedMinutes += segMin;
-            const hours = Math.floor(accumulatedMinutes / 60) % 24;
-            const mins = accumulatedMinutes % 60;
-            const etaTime = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')} WIB`;
-
-            // Calculate active load at this stop
-            let loadAtStop = 0;
-            let loadedCount = 0;
-            let unloadedCount = 0;
-            for (const item of cargoItems) {
-              const loadSeq = item.loaded_at_seq ? Number(item.loaded_at_seq) : 1;
-              const destSeq = item.unloaded_at_seq ? Number(item.unloaded_at_seq) : totalStopsCount;
-
-              if (loadSeq === seq) loadedCount++;
-              if (destSeq === seq) unloadedCount++;
-
-              if (loadSeq <= seq && destSeq > seq) {
-                loadAtStop += (item.weight_kg || 0);
+          const routeId = activeJourney?.route_id || 'RT-MALAM-B9910-PCX';
+          
+          // Vehicle Capacity Calculation
+          const vehicleDoc = await db.collection('master_kendaraan').findOne({ nopol: vehicleNopol }) || {};
+          const maxCapacityKg = vehicleDoc.kapasitas_kg || vehicleDoc.max_capacity_kg || activeJourney?.maximum_capacity_kg || 1500;
+          
+          // Cargo in vehicle (Historical or Active)
+          let cargoItems = activeJourney?.cargo || [];
+          if ((!cargoItems || cargoItems.length === 0) && activeJourney?.processed_stops) {
+            const processed = [];
+            for (const pStop of activeJourney.processed_stops) {
+              if (pStop.acceptedItems && pStop.acceptedItems.length > 0) {
+                processed.push(...pStop.acceptedItems);
               }
             }
-            loadAtStop = Number(loadAtStop.toFixed(1));
-            const utilPct = Math.round((loadAtStop / maxCapacityKg) * 100);
-            let capStatus = 'NORMAL';
-            if (utilPct > 100) capStatus = 'OVER CAPACITY';
-            else if (utilPct >= 90) capStatus = 'FULL';
-            else if (utilPct >= 70) capStatus = 'NEAR CAPACITY';
-
-            return {
-              seq,
-              nopen: stopItem.nopen,
-              officeName: officeMap.get(stopItem.nopen) || stopItem.officeName,
-              role: idx === 0 ? 'ORIGIN' : idx === totalStopsCount - 1 ? 'DESTINATION' : 'TRANSIT',
-              status,
-              etaTime,
-              jarakKm: segKm,
-              loadAtStopKg: loadAtStop,
-              utilizationPctAtStop: utilPct,
-              capacityStatusAtStop: capStatus,
-              loadedCount,
-              unloadedCount
-            };
-          });
-        } else {
-          dbStops = stops;
-        }
-
-        const currentLoadKg = cargoItems.reduce((acc, c) => acc + (c.weight_kg || 0), 0);
-        const availableCapacityKg = Math.max(0, maxCapacityKg - currentLoadKg);
-        const utilizationPct = Math.round((currentLoadKg / maxCapacityKg) * 100);
-
-        let capacityStatus = 'NORMAL';
-        if (utilizationPct > 100) capacityStatus = 'OVER CAPACITY';
-        else if (utilizationPct >= 90) capacityStatus = 'FULL';
-        else if (utilizationPct >= 70) capacityStatus = 'NEAR CAPACITY';
-
-        // Packages Inside Vehicle Grouped by Destination Stop
-        const destinationMap = new Map();
-        for (const item of cargoItems) {
-          const destKey = item.destination_nopen || '40400';
-          if (!destinationMap.has(destKey)) {
-            destinationMap.set(destKey, {
-              destination_nopen: destKey,
-              count: 0,
-              total_weight_kg: 0,
-              packages: []
-            });
+            if (processed.length > 0) cargoItems = processed;
           }
-          const group = destinationMap.get(destKey);
-          group.count++;
-          group.total_weight_kg = Number((group.total_weight_kg + (item.weight_kg || 0)).toFixed(2));
-          group.packages.push(item);
+
+          // Fetch all detail_route segments for this routeId from DB
+          const segments = await db.collection('detail_route').find({ route_id: routeId, status: 'AKTIF' }).sort({ seq: 1 }).toArray();
+          let dbStops = [];
+          if (segments && segments.length > 0) {
+            // Build sequential waypoints (Stop 1 = origin of seq 1, Stop 2..N = destination of each seq)
+            const rawStops = [
+              { seq: 1, nopen: String(segments[0].asal_nopen), officeName: segments[0].asal_nama || 'KCU Cimahi' }
+            ];
+            segments.forEach((seg, idx) => {
+              rawStops.push({
+                seq: idx + 2,
+                nopen: String(seg.tujuan_nopen),
+                officeName: seg.tujuan_nama || `KANTOR ${seg.tujuan_nopen}`
+              });
+            });
+
+            const officeCodes = [...new Set(rawStops.map(s => s.nopen))];
+            const offices = await db.collection('master_kantor').find({ nopend: { $in: officeCodes } }).toArray();
+            const officeMap = new Map(offices.map(o => [String(o.nopend), o.nama_nopend]));
+
+            const totalStopsCount = rawStops.length;
+            const currentStopSeq = activeJourney?.current_stop_seq || totalStopsCount;
+
+            let accumulatedMinutes = 10 * 60; // Start 10:00 WIB
+
+            dbStops = rawStops.map((stopItem, idx) => {
+              const seq = stopItem.seq;
+              let status = 'UPCOMING';
+              if (seq < currentStopSeq) status = 'COMPLETED';
+              else if (seq === currentStopSeq) status = 'CURRENT';
+
+              const segment = segments[Math.min(idx, segments.length - 1)] || {};
+              const segMin = segment.estimasi_menit || (idx === 0 ? 0 : 15);
+              const segKm = segment.jarak_km || (idx === 0 ? 0 : 5.0);
+
+              if (idx > 0) accumulatedMinutes += segMin;
+              const hours = Math.floor(accumulatedMinutes / 60) % 24;
+              const mins = accumulatedMinutes % 60;
+              const etaTime = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')} WIB`;
+
+              // Calculate active load at this stop
+              let loadAtStop = 0;
+              let loadedCount = 0;
+              let unloadedCount = 0;
+              for (const item of cargoItems) {
+                const loadSeq = item.loaded_at_seq ? Number(item.loaded_at_seq) : 1;
+                const destSeq = item.unloaded_at_seq ? Number(item.unloaded_at_seq) : totalStopsCount;
+
+                if (loadSeq === seq) loadedCount++;
+                if (destSeq === seq) unloadedCount++;
+
+                if (loadSeq <= seq && destSeq > seq) {
+                  loadAtStop += (item.weight_kg || 0);
+                }
+              }
+              loadAtStop = Number(loadAtStop.toFixed(1));
+              const utilPct = Math.round((loadAtStop / maxCapacityKg) * 100);
+              let capStatus = 'NORMAL';
+              if (utilPct > 100) capStatus = 'OVER CAPACITY';
+              else if (utilPct >= 90) capStatus = 'FULL';
+              else if (utilPct >= 70) capStatus = 'NEAR CAPACITY';
+
+              return {
+                seq,
+                nopen: stopItem.nopen,
+                officeName: officeMap.get(stopItem.nopen) || stopItem.officeName,
+                role: idx === 0 ? 'ORIGIN' : idx === totalStopsCount - 1 ? 'DESTINATION' : 'TRANSIT',
+                status,
+                etaTime,
+                jarakKm: segKm,
+                loadAtStopKg: loadAtStop,
+                utilizationPctAtStop: utilPct,
+                capacityStatusAtStop: capStatus,
+                loadedCount,
+                unloadedCount
+              };
+            });
+          } else {
+            dbStops = stops;
+          }
+
+          const currentLoadKg = cargoItems.reduce((acc, c) => acc + (c.weight_kg || 0), 0);
+          const availableCapacityKg = Math.max(0, maxCapacityKg - currentLoadKg);
+          const utilizationPct = Math.round((currentLoadKg / maxCapacityKg) * 100);
+
+          let capacityStatus = 'NORMAL';
+          if (utilizationPct > 100) capacityStatus = 'OVER CAPACITY';
+          else if (utilizationPct >= 90) capacityStatus = 'FULL';
+          else if (utilizationPct >= 70) capacityStatus = 'NEAR CAPACITY';
+
+          // Packages Inside Vehicle Grouped by Destination Stop
+          const destinationMap = new Map();
+          for (const item of cargoItems) {
+            const destKey = item.destination_nopen || '40400';
+            if (!destinationMap.has(destKey)) {
+              destinationMap.set(destKey, {
+                destination_nopen: destKey,
+                count: 0,
+                total_weight_kg: 0,
+                packages: []
+              });
+            }
+            const group = destinationMap.get(destKey);
+            group.count++;
+            group.total_weight_kg = Number((group.total_weight_kg + (item.weight_kg || 0)).toFixed(2));
+            group.packages.push(item);
+          }
+
+          const cargoGroupedByDestination = Array.from(destinationMap.values());
+
+          milkRunData = {
+            journey: activeJourney || null,
+            journey_id: activeJourney?.journey_id || null,
+            vehicleNopol,
+            vehicleDetails: vehicleDoc,
+            routeId,
+            shift: activeJourney?.shift || 'MALAM',
+            maxCapacityKg,
+            currentLoadKg,
+            availableCapacityKg,
+            utilizationPct,
+            capacityStatus,
+            currentStopSeq: activeJourney?.current_stop_seq || 1,
+            routeStops: dbStops,
+            cargoItems,
+            cargoGroupedByDestination,
+            operationalDate: targetDateStr,
+            dateContextStatus,
+            dateContextWarning
+          };
         }
-
-        const cargoGroupedByDestination = Array.from(destinationMap.values());
-
-        milkRunData = {
-          journey: activeJourney || null,
-          journey_id: activeJourney?.journey_id || null,
-          vehicleNopol,
-          vehicleDetails: vehicleDoc,
-          routeId,
-          shift: activeJourney?.shift || 'MALAM',
-          maxCapacityKg,
-          currentLoadKg,
-          availableCapacityKg,
-          utilizationPct,
-          capacityStatus,
-          currentStopSeq: activeJourney?.current_stop_seq || 1,
-          routeStops: dbStops,
-          cargoItems,
-          cargoGroupedByDestination,
-          operationalDate: targetDateStr,
-          dateContextStatus,
-          dateContextWarning
-        };
       } catch (e) {
         console.error('Error attaching milkRunData to checkRouting:', e.message);
       }
@@ -1579,6 +1738,7 @@ class TransactionController {
         success: true,
         connote: nopol,
         isVehicleQuery: true,
+        isFutureDate: vehicleRes.isFutureDate || false,
         hasCargo: vehicleRes.hasCargo,
         warningMessage: vehicleRes.warningMessage,
         data: vehicleRes

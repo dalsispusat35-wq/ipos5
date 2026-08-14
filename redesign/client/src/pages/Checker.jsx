@@ -12,9 +12,11 @@ import LiveGpsMapModal from '../components/LiveGpsMapModal.jsx';
 import CsvImportModal from '../components/CsvImportModal.jsx';
 
 const SAMPLE_RESIS = [
-  { code: 'P20260724000001', label: 'Resi In-Transit (Cimahi → SPP Bandung)', badge: 'In Transit', badgeClass: 'badge-orange' },
-  { code: 'P20260724000003', label: 'Resi Loaded (Cimahi Selatan)', badge: 'Loaded', badgeClass: 'badge-blue' },
-  { code: 'P20260724000005', label: 'Resi Selesai (SPP Bandung)', badge: 'Delivered', badgeClass: 'badge-emerald' },
+  { code: 'P260812000001', label: 'Resi 12 Aug (Cimahi → SPP Bandung)', badge: 'In Transit', badgeClass: 'badge-orange', date: '2026-08-12' },
+  { code: 'P260812000003', label: 'Resi 12 Aug (Cimahi Selatan)', badge: 'Loaded', badgeClass: 'badge-blue', date: '2026-08-12' },
+  { code: 'P20260724000001', label: 'Resi 24 Jul (Cimahi → SPP Bandung)', badge: 'In Transit', badgeClass: 'badge-orange', date: '2026-07-24' },
+  { code: 'P20260724000005', label: 'Resi 24 Jul (SPP Bandung)', badge: 'Delivered', badgeClass: 'badge-emerald', date: '2026-07-24' },
+  { code: 'B 9910 PCX', label: 'Armada Feeder GrandMax Box', badge: 'Fleet', badgeClass: 'badge-navy' }
 ];
 
 export default function Checker() {
@@ -174,15 +176,11 @@ export default function Checker() {
   // Search Connote Tracker Handler (Does NOT depend on query state in useCallback)
   const handleSearch = useCallback(async (codeToSearch, dateToSearch) => {
     const targetDate = dateToSearch || selectedDate;
-    const termToUse = codeToSearch !== undefined ? codeToSearch : '';
+    let termToUse = codeToSearch !== undefined ? codeToSearch : query;
 
+    // If query is empty, default to sample resi/armada for target date so operational date data is always displayed
     if (!termToUse || !termToUse.trim()) {
-      setQuery('');
-      setResult(null);
-      setErrorMsg('');
-      lastParamCodeRef.current = '';
-      setSearchParams({ code: '', date: targetDate });
-      return;
+      termToUse = targetDate === '2026-08-12' ? 'P260812000001' : (targetDate === '2026-07-24' ? 'P20260724000001' : 'B 9910 PCX');
     }
 
     const cleanTerm = termToUse.trim();
@@ -195,6 +193,31 @@ export default function Checker() {
     try {
       const res = await api.getCheckerData(cleanTerm, targetDate);
       if (res.success && res.data) {
+        const isFuture = res.isFutureDate || res.data?.isFutureDate || false;
+
+        if (isFuture && (!res.data?.milk_run || !res.data.milk_run.routeStops || res.data.milk_run.routeStops.length === 0)) {
+          const tx = res.data?.transaction || {};
+          setResult({
+            isFutureDate: true,
+            targetDateStr: targetDate,
+            connote: tx.connoteCode || cleanTerm,
+            bookingCode: tx.bookingCode || '-',
+            service: tx.service || 'Pos Reguler',
+            weight: formatWeight(tx.actualWeight),
+            stateStr: tx.state || 'ENTRY',
+            badgeClass: mapStateToBadgeClass(tx.state),
+            origin: tx.originName ? `${tx.originName} (${tx.originNopen})` : 'KCU Cimahi (40511)',
+            destination: tx.receiverAddress ? `${tx.receiverAddress} (${tx.destinationNopen})` : 'SPP Bandung (40400)',
+            senderName: tx.senderName || 'PT Pos Logistics',
+            receiverName: tx.receiverName || 'Penerima Pos',
+            createdAt: tx.createdAt ? formatDateDisplay(tx.createdAt) : '-',
+            warningMessage: res.warningMessage || res.data?.warningMessage || `⚠️ [TANGGAL OPERASIONAL BELUM TIBA]: Tanggal ${targetDate} merupakan tanggal di masa depan yang belum tiba.`,
+            timeline: [],
+            milkRun: null
+          });
+          return;
+        }
+
         const tx = res.data.transaction || {};
         const milk = res.data.milk_run || {};
 
@@ -277,18 +300,20 @@ export default function Checker() {
     const codeParam = searchParams.get('code');
     const dateParam = searchParams.get('date') || selectedDate;
 
+    // Sync selectedDate state if date in URL param differs
+    if (dateParam && dateParam !== selectedDate) {
+      setSelectedDate(dateParam);
+    }
+
     // Only run if the code in URL parameter has actually changed from external navigation
     if (codeParam !== lastParamCodeRef.current) {
       lastParamCodeRef.current = codeParam;
       if (codeParam && codeParam.trim()) {
         handleSearch(codeParam, dateParam);
-      } else if (codeParam === null) {
-        // Initial load when URL has no ?code parameter -> load default demo resi
-        handleSearch('P20260724000001', dateParam);
       } else {
-        setQuery('');
-        setResult(null);
-        setErrorMsg('');
+        // Initial load or empty code parameter -> auto-load operational data for target date
+        const defaultCode = dateParam === '2026-08-12' ? 'P260812000001' : (dateParam === '2026-07-24' ? 'P20260724000001' : 'B 9910 PCX');
+        handleSearch(defaultCode, dateParam);
       }
     }
   }, [searchParams, selectedDate, handleSearch]);
@@ -441,7 +466,8 @@ export default function Checker() {
               onChange={(e) => {
                 const newDate = e.target.value;
                 setSelectedDate(newDate);
-                handleSearch(query, newDate);
+                const termToSearch = (query && query.trim()) ? query.trim() : (newDate === '2026-08-12' ? 'P260812000001' : (newDate === '2026-07-24' ? 'P20260724000001' : 'B 9910 PCX'));
+                handleSearch(termToSearch, newDate);
               }}
               style={{
                 background: 'transparent',
@@ -628,7 +654,10 @@ export default function Checker() {
           {SAMPLE_RESIS.map((s) => (
             <button
               key={s.code}
-              onClick={() => handleSearch(s.code, selectedDate)}
+              onClick={() => {
+                if (s.date) setSelectedDate(s.date);
+                handleSearch(s.code, s.date || selectedDate);
+              }}
               className="btn-ghost"
               style={{ padding: '4px 10px', fontSize: 11, borderRadius: 6, gap: 6 }}
             >
@@ -651,102 +680,191 @@ export default function Checker() {
       {result ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-          {/* VEHICLE NO-CARGO WARNING BANNER */}
-          {result.warningMessage && (
-            <div style={{
-              padding: '16px 20px',
-              borderRadius: 16,
-              background: 'rgba(245, 158, 11, 0.14)',
-              border: '1.5px solid rgba(245, 158, 11, 0.5)',
-              color: '#fbbf24',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 14,
-              boxShadow: '0 8px 24px rgba(245, 158, 11, 0.12)'
-            }}>
-              <AlertTriangle size={24} color="#f59e0b" style={{ flexShrink: 0 }} />
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#f59e0b' }}>
-                  STATUS ARMADA TERKINI: KENDARAAN KOSONG / BELUM MEMILIKI MUATAN
+          {/* FUTURE OPERATIONAL DATE WARNING CARD */}
+          {(() => {
+            const todayStr = new Date().toISOString().slice(0, 10);
+            const isFutureDateSelected = result.isFutureDate || (selectedDate > todayStr && (!result.milkRun || !result.milkRun.routeStops || result.milkRun.routeStops.length === 0));
+            
+            if (isFutureDateSelected) {
+              return (
+                <div style={{
+                  padding: '32px 28px',
+                  borderRadius: 20,
+                  background: 'rgba(239, 68, 68, 0.08)',
+                  border: '1.5px solid rgba(239, 68, 68, 0.35)',
+                  color: '#f87171',
+                  textAlign: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 14,
+                  boxShadow: '0 12px 32px rgba(0,0,0,0.3)',
+                  marginTop: 10
+                }}>
+                  <div style={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: '50%',
+                    background: 'rgba(239, 68, 68, 0.15)',
+                    border: '1px solid rgba(239, 68, 68, 0.4)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <CalendarDays size={32} color="#f87171" />
+                  </div>
+
+                  <div style={{ maxWidth: 640 }}>
+                    <h3 style={{ fontSize: 17, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#ef4444', margin: 0 }}>
+                      Tanggal Operasional Belum Tiba ({formatDateDisplay(selectedDate)})
+                    </h3>
+                    <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 8, marginBottom: 0, lineHeight: 1.6 }}>
+                      Tanggal <strong>{formatDateDisplay(selectedDate)}</strong> merupakan tanggal operasional di masa depan yang belum tiba dan belum memiliki riwayat perjalanan armada maupun transaksi paket di sistem IPOS5.
+                    </p>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
+                    <button
+                      className="btn-primary"
+                      onClick={() => {
+                        setSelectedDate('2026-08-12');
+                        handleSearch(query, '2026-08-12');
+                      }}
+                      style={{ padding: '8px 16px', fontSize: 12, fontWeight: 800, borderRadius: 10 }}
+                    >
+                      📅 Pilih Tanggal Operasional Aktif (12 Ags 2026)
+                    </button>
+                    <button
+                      className="btn-ghost"
+                      onClick={() => {
+                        setSelectedDate('2026-07-24');
+                        handleSearch(query, '2026-07-24');
+                      }}
+                      style={{ padding: '8px 16px', fontSize: 12, fontWeight: 800, borderRadius: 10 }}
+                    >
+                      📅 Riwayat Operasional (24 Jul 2026)
+                    </button>
+                  </div>
                 </div>
-                <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.9)', marginTop: 4, lineHeight: 1.5 }}>
-                  {result.warningMessage}
+              );
+            }
+            return null;
+          })()}
+
+          {/* VEHICLE NO-CARGO WARNING BANNER (Only for past/current operational dates with empty load) */}
+          {(() => {
+            const todayStr = new Date().toISOString().slice(0, 10);
+            const isFutureDateSelected = result.isFutureDate || (selectedDate > todayStr && (!result.milkRun || !result.milkRun.routeStops || result.milkRun.routeStops.length === 0));
+            if (isFutureDateSelected) return null;
+
+            return result.warningMessage ? (
+              <div style={{
+                padding: '16px 20px',
+                borderRadius: 16,
+                background: 'rgba(245, 158, 11, 0.14)',
+                border: '1.5px solid rgba(245, 158, 11, 0.5)',
+                color: '#fbbf24',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 14,
+                boxShadow: '0 8px 24px rgba(245, 158, 11, 0.12)'
+              }}>
+                <AlertTriangle size={24} color="#f59e0b" style={{ flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#f59e0b' }}>
+                    STATUS ARMADA TERKINI: KENDARAAN KOSONG / BELUM MEMILIKI MUATAN
+                  </div>
+                  <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.9)', marginTop: 4, lineHeight: 1.5 }}>
+                    {result.warningMessage}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            ) : null;
+          })()}
 
-          {/* SUMMARY STATS CARDS — Fleet snapshot for this date */}
+          {/* OPERATIONAL CARDS (Only rendered when selected date is past/current with valid operation data) */}
           {(() => {
-            const stops = result.routeStops || [];
-            const totalStops = stops.length;
-            const activeSeq = isSimulating || simStopSeq !== null ? (simStopSeq || 1) : (result.currentStopSeq || 1);
-            const activeStopObj = stops[activeSeq - 1] || {};
-            const totalCargo = (result.cargoItems || []).length;
-            const totalWeight = (result.cargoItems || []).reduce((s, i) => s + (i.weight_kg || 0), 0).toFixed(1);
-            const utilPct = activeStopObj.utilizationPctAtStop ?? result.utilizationPct ?? 0;
-            const capColor = utilPct >= 100 ? '#ef4444' : utilPct >= 85 ? '#f59e0b' : '#10b981';
-            const cards = [
-              { icon: Package, color: '#38bdf8', label: 'Total Paket di Kendaraan', value: `${totalCargo} pcs`, sub: `${totalWeight} kg total muatan` },
-              { icon: Truck, color: '#f59e0b', label: 'Kendaraan Beroperasi', value: result.vehicleNopol, sub: `Rute: ${result.routeId}` },
-              { icon: Activity, color: capColor, label: `Utilisasi Kap. Stop #${activeSeq}`, value: `${utilPct}%`, sub: `${activeStopObj.loadAtStopKg ?? result.currentLoadKg ?? 0} / ${result.maxCapacityKg} kg` },
-              { icon: MapPin, color: '#a78bfa', label: 'Progress Rute', value: `${activeSeq} / ${totalStops} Stop`, sub: activeStopObj.officeName ? `Sekarang: ${activeStopObj.officeName}` : 'In Progress' },
-            ];
+            const todayStr = new Date().toISOString().slice(0, 10);
+            const isFutureDateSelected = result.isFutureDate || (selectedDate > todayStr && (!result.milkRun || !result.milkRun.routeStops || result.milkRun.routeStops.length === 0));
+            if (isFutureDateSelected) return null;
+
             return (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
-                {cards.map((c, i) => {
-                  const Icon = c.icon;
+              <>
+                {/* SUMMARY STATS CARDS — Fleet snapshot for this date */}
+                {(() => {
+                  const stops = result.routeStops || [];
+                  const totalStops = stops.length;
+                  const activeSeq = isSimulating || simStopSeq !== null ? (simStopSeq || 1) : (result.currentStopSeq || 1);
+                  const activeStopObj = stops[activeSeq - 1] || {};
+                  const totalCargo = (result.cargoItems || []).length;
+                  const totalWeight = (result.cargoItems || []).reduce((s, i) => s + (i.weight_kg || 0), 0).toFixed(1);
+                  const utilPct = activeStopObj.utilizationPctAtStop ?? result.utilizationPct ?? 0;
+                  const capColor = utilPct >= 100 ? '#ef4444' : utilPct >= 85 ? '#f59e0b' : '#10b981';
+                  const cards = [
+                    { icon: Package, color: '#38bdf8', label: 'Total Paket di Kendaraan', value: `${totalCargo} pcs`, sub: `${totalWeight} kg total muatan` },
+                    { icon: Truck, color: '#f59e0b', label: 'Kendaraan Beroperasi', value: result.vehicleNopol, sub: `Rute: ${result.routeId}` },
+                    { icon: Activity, color: capColor, label: `Utilisasi Kap. Stop #${activeSeq}`, value: `${utilPct}%`, sub: `${activeStopObj.loadAtStopKg ?? result.currentLoadKg ?? 0} / ${result.maxCapacityKg} kg` },
+                    { icon: MapPin, color: '#a78bfa', label: 'Progress Rute', value: `${activeSeq} / ${totalStops} Stop`, sub: activeStopObj.officeName ? `Sekarang: ${activeStopObj.officeName}` : 'In Progress' },
+                  ];
                   return (
-                    <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${c.color}33`, borderRadius: 14, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14 }}>
-                      <div style={{ width: 40, height: 40, borderRadius: 10, background: `${c.color}18`, border: `1px solid ${c.color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <Icon size={18} color={c.color} />
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+                      {cards.map((c, i) => {
+                        const Icon = c.icon;
+                        return (
+                          <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${c.color}33`, borderRadius: 14, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14 }}>
+                            <div style={{ width: 40, height: 40, borderRadius: 10, background: `${c.color}18`, border: `1px solid ${c.color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              <Icon size={18} color={c.color} />
+                            </div>
+                            <div>
+                              <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>{c.label}</div>
+                              <div style={{ fontSize: 16, fontWeight: 900, color: '#fff', fontFamily: i === 1 ? 'monospace' : 'inherit' }}>{c.value}</div>
+                              <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>{c.sub}</div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+
+                {/* CAPACITY ALERT BANNER — shown when vehicle is FULL or NEAR CAPACITY */}
+                {(() => {
+                  const activeSeq = isSimulating || simStopSeq !== null ? (simStopSeq || 1) : (result?.currentStopSeq || 1);
+                  const activeStopObj = result.routeStops?.[activeSeq - 1] || {};
+                  const capStatus = activeStopObj.capacityStatusAtStop || result.capacityStatus;
+                  if (capStatus === 'NORMAL') return null;
+                  const isOver = capStatus === 'OVER CAPACITY';
+                  const isFull = capStatus === 'FULL';
+                  return (
+                    <div style={{
+                      padding: '14px 18px',
+                      borderRadius: 14,
+                      background: isOver ? 'rgba(239,68,68,0.15)' : isFull ? 'rgba(249,115,22,0.12)' : 'rgba(245,158,11,0.10)',
+                      border: `1.5px solid ${isOver ? 'rgba(239,68,68,0.6)' : isFull ? 'rgba(249,115,22,0.5)' : 'rgba(245,158,11,0.4)'}`,
+                      display: 'flex', alignItems: 'center', gap: 14,
+                      animation: isOver ? 'pulse 2s infinite' : 'none'
+                    }}>
+                      <div style={{ fontSize: 28 }}>{isOver ? '🚨' : isFull ? '⚠️' : '🔶'}</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 900, fontSize: 13.5, color: isOver ? '#ef4444' : isFull ? '#f97316' : '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                          {isOver ? '🚨 PERINGATAN: OVER CAPACITY!' : isFull ? '⚠️ KAPASITAS PENUH (FULL)' : '🔶 Mendekati Batas Kapasitas'}
+                        </div>
+                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 3 }}>
+                          {isOver
+                            ? `Muatan di Stop #${activeSeq} melebihi batas maksimum ${result.maxCapacityKg} kg! Perlu redistribusi.`
+                            : isFull
+                            ? `Kendaraan ${result.vehicleNopol} sudah mencapai kapasitas penuh di Stop #${activeSeq}.`
+                            : `Muatan di Stop #${activeSeq} mendekati batas ${result.maxCapacityKg} kg. Perhatikan penambahan paket.`}
+                        </div>
                       </div>
-                      <div>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>{c.label}</div>
-                        <div style={{ fontSize: 16, fontWeight: 900, color: '#fff', fontFamily: i === 1 ? 'monospace' : 'inherit' }}>{c.value}</div>
-                        <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>{c.sub}</div>
+                      <div style={{ fontFamily: 'monospace', fontSize: 16, fontWeight: 900, color: isOver ? '#ef4444' : isFull ? '#f97316' : '#f59e0b' }}>
+                        {activeStopObj.utilizationPctAtStop || result.utilizationPct}%
                       </div>
                     </div>
                   );
-                })}
-              </div>
-            );
-          })()}
-
-          {/* CAPACITY ALERT BANNER — shown when vehicle is FULL or NEAR CAPACITY */}
-          {(() => {
-            const activeSeq = isSimulating || simStopSeq !== null ? (simStopSeq || 1) : (result?.currentStopSeq || 1);
-            const activeStopObj = result.routeStops?.[activeSeq - 1] || {};
-            const capStatus = activeStopObj.capacityStatusAtStop || result.capacityStatus;
-            if (capStatus === 'NORMAL') return null;
-            const isOver = capStatus === 'OVER CAPACITY';
-            const isFull = capStatus === 'FULL';
-            return (
-              <div style={{
-                padding: '14px 18px',
-                borderRadius: 14,
-                background: isOver ? 'rgba(239,68,68,0.15)' : isFull ? 'rgba(249,115,22,0.12)' : 'rgba(245,158,11,0.10)',
-                border: `1.5px solid ${isOver ? 'rgba(239,68,68,0.6)' : isFull ? 'rgba(249,115,22,0.5)' : 'rgba(245,158,11,0.4)'}`,
-                display: 'flex', alignItems: 'center', gap: 14,
-                animation: isOver ? 'pulse 2s infinite' : 'none'
-              }}>
-                <div style={{ fontSize: 28 }}>{isOver ? '🚨' : isFull ? '⚠️' : '🔶'}</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 900, fontSize: 13.5, color: isOver ? '#ef4444' : isFull ? '#f97316' : '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    {isOver ? '🚨 PERINGATAN: OVER CAPACITY!' : isFull ? '⚠️ KAPASITAS PENUH (FULL)' : '🔶 Mendekati Batas Kapasitas'}
-                  </div>
-                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 3 }}>
-                    {isOver
-                      ? `Muatan di Stop #${activeSeq} melebihi batas maksimum ${result.maxCapacityKg} kg! Perlu redistribusi.`
-                      : isFull
-                      ? `Kendaraan ${result.vehicleNopol} sudah mencapai kapasitas penuh di Stop #${activeSeq}.`
-                      : `Muatan di Stop #${activeSeq} mendekati batas ${result.maxCapacityKg} kg. Perhatikan penambahan paket.`}
-                  </div>
-                </div>
-                <div style={{ fontFamily: 'monospace', fontSize: 16, fontWeight: 900, color: isOver ? '#ef4444' : isFull ? '#f97316' : '#f59e0b' }}>
-                  {activeStopObj.utilizationPctAtStop || result.utilizationPct}%
-                </div>
-              </div>
+                })()}
+              </>
             );
           })()}
           
@@ -907,7 +1025,7 @@ export default function Checker() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span className="font-mono" style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>
-                  {result.timeline.length} Event Tercatat
+                  {(result.timeline || []).length} Event Tercatat
                 </span>
                 <button
                   onClick={() => window.print()}
@@ -922,8 +1040,8 @@ export default function Checker() {
 
             {/* Stepper Grid / List */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {result.timeline.map((event, idx) => {
-                const isLast = idx === result.timeline.length - 1;
+              {(result.timeline || []).map((event, idx) => {
+                const isLast = idx === (result.timeline || []).length - 1;
                 const eventStageUp = String(event.stage || '').toUpperCase();
                 const dotColor = isLast ? '#10b981'
                   : eventStageUp.includes('DELIVERED') ? '#10b981'
@@ -945,7 +1063,7 @@ export default function Checker() {
                       >
                         {idx + 1}
                       </div>
-                      {idx < result.timeline.length - 1 && (
+                      {idx < (result.timeline || []).length - 1 && (
                         <div style={{ width: 2, height: 28, background: `${dotColor}33`, margin: '4px 0' }} />
                       )}
                     </div>
@@ -1164,7 +1282,7 @@ export default function Checker() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 14 }}>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 900, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Navigation size={17} color="#38bdf8" /> MULTI-STOP ROUTE JOURNEY ({result.routeStops.length} WAYPOINTS DATABASE)
+                  <Navigation size={17} color="#38bdf8" /> MULTI-STOP ROUTE JOURNEY ({(result.routeStops || []).length} WAYPOINTS DATABASE)
                 </div>
                 <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 3 }}>
                   Lintasan armada {result.vehicleNopol} — Klik waypoint untuk memfilter muatan paket
@@ -1196,7 +1314,7 @@ export default function Checker() {
                 ) : (
                   <button
                     onClick={() => {
-                      if ((simStopSeq || result.currentStopSeq) >= result.routeStops.length) {
+                      if ((simStopSeq || result.currentStopSeq) >= (result.routeStops || []).length) {
                         setSimStopSeq(1);
                       }
                       setIsSimulating(true);
@@ -1209,7 +1327,7 @@ export default function Checker() {
                 )}
 
                 <button
-                  onClick={() => setSimStopSeq(prev => Math.min(result.routeStops.length, (prev ?? result.currentStopSeq ?? 1) + 1))}
+                  onClick={() => setSimStopSeq(prev => Math.min((result.routeStops || []).length, (prev ?? result.currentStopSeq ?? 1) + 1))}
                   className="btn-ghost"
                   style={{ padding: '4px 8px', fontSize: 11, borderRadius: 8, gap: 4 }}
                   title="Maju 1 Stop"

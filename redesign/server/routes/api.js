@@ -13,6 +13,8 @@ import PickupScheduleController from '../controllers/PickupScheduleController.js
 import RouteJourneyController from '../controllers/RouteJourneyController.js';
 import DailyOperationController from '../controllers/DailyOperationController.js';
 import UserController from '../controllers/UserController.js';
+import AnalyticsController from '../controllers/AnalyticsController.js';
+import NotificationController from '../controllers/NotificationController.js';
 import estimasiRouter from './estimasi.js';
 
 import KantorModel from '../models/KantorModel.js';
@@ -192,5 +194,14 @@ router.delete('/users/:username', requireDb, (req, res) => UserController.delete
 
 // ─── Estimasi Milk Run Logistik Routes ───────────────────────────────────────
 router.use('/estimasi', requireDb, estimasiRouter);
+
+// ─── Analytics & Reporting Hub Routes ─────────────────────────────────────────
+router.get('/analytics/sla', requireDb, (req, res) => AnalyticsController.getSlaPerformance(req, res));
+router.get('/analytics/throughput', requireDb, (req, res) => AnalyticsController.getVolumeThroughput(req, res));
+router.get('/analytics/export', requireDb, (req, res) => AnalyticsController.exportOperationalReport(req, res));
+
+// ─── Real-time Notification & System Alerts Routes ───────────────────────────
+router.get('/notifications/alerts', requireDb, (req, res) => NotificationController.getSystemAlerts(req, res));
+router.post('/notifications/alerts/:id/read', requireDb, (req, res) => NotificationController.markAlertAsRead(req, res));
 
 export default router;
