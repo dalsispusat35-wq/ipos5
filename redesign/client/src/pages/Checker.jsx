@@ -303,6 +303,9 @@ export default function Checker() {
     return `📍 Transit Stop #${stop.seq || idx + 1}`;
   };
 
+  // Alias used in handleSearch data mapping
+  const mapStateToBadgeClass = (state) => mapStateToBadge(state).class;
+
   // Gating check for CSV import tool button
   const isDevOrAdminMode = process.env.NODE_ENV !== 'production' || searchParams.get('dev') === 'true' || searchParams.get('dev') === '1';
 

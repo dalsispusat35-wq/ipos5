@@ -1499,8 +1499,9 @@ class TransactionController {
       try {
         const vehicleNopol = txDoc.vehicle_code || txDoc.vehicle_nopol || 'B 9910 PCX';
         const reqDateStr = req.query.date ? String(req.query.date).trim() : null;
-        const pkgCreatedDateStr = (createdAtNorm && createdAtNorm !== '-') 
-          ? new Date(createdAtNorm).toISOString().slice(0, 10) 
+        const pkgCreatedDate = (createdAtNorm && createdAtNorm !== '-') ? new Date(createdAtNorm) : null;
+        const pkgCreatedDateStr = (pkgCreatedDate && !isNaN(pkgCreatedDate.getTime()))
+          ? pkgCreatedDate.toISOString().slice(0, 10)
           : new Date().toISOString().slice(0, 10);
         
         const targetDateStr = reqDateStr || pkgCreatedDateStr;
