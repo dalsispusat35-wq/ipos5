@@ -647,8 +647,6 @@ class TransactionController {
     endDate.setHours(23, 59, 59, 999);
 
     const cleanDateOnlyStr = targetDateStr.replace(/-/g, '');
-
-    const todayStr = new Date().toISOString().slice(0, 10);
     const isFutureDate = targetDateStr > todayStr;
 
     let activeJourney = await db.collection('route_journeys').findOne({
@@ -904,7 +902,6 @@ class TransactionController {
       }
 
       // Intercept Future Operational Date for Package/Resi Tracking
-      const todayStr = new Date().toISOString().slice(0, 10);
       if (reqDateStr && reqDateStr > todayStr) {
         const startDate = new Date(reqDateStr);
         startDate.setHours(0, 0, 0, 0);
@@ -1514,8 +1511,6 @@ class TransactionController {
         endDate.setHours(23, 59, 59, 999);
 
         const cleanDateOnlyStr = targetDateStr.replace(/-/g, '');
-
-        const todayStr = new Date().toISOString().slice(0, 10);
         const isFutureDate = targetDateStr > todayStr;
 
         let activeJourney = await db.collection('route_journeys').findOne({
