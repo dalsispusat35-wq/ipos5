@@ -254,6 +254,13 @@ export default function Checker() {
     return d.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB';
   };
 
+  const formatWeight = (kg) => {
+    if (kg === null || kg === undefined) return '-';
+    const num = parseFloat(kg);
+    if (isNaN(num)) return '-';
+    return num % 1 === 0 ? `${num} kg` : `${num.toFixed(1)} kg`;
+  };
+
   const mapStateToBadge = (stateStr) => {
     if (!stateStr) return { label: 'ENTRY', class: 'badge-navy' };
     const s = String(stateStr).toUpperCase();
@@ -275,6 +282,25 @@ export default function Checker() {
       default:
         return { label: 'NORMAL CAPACITY', color: '#10b981', bg: 'rgba(16,185,129,0.2)', border: 'rgba(16,185,129,0.4)' };
     }
+  };
+
+  const getCapacityStatusBadge = (status) => {
+    switch ((status || '').toUpperCase()) {
+      case 'OVER CAPACITY':
+        return { label: '🚨 OVER CAPACITY', color: '#ef4444', bg: 'rgba(239,68,68,0.15)', border: 'rgba(239,68,68,0.5)' };
+      case 'FULL':
+        return { label: '⚠️ FULL', color: '#f97316', bg: 'rgba(249,115,22,0.15)', border: 'rgba(249,115,22,0.45)' };
+      case 'NEAR CAPACITY':
+        return { label: '🔶 NEAR CAPACITY', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.4)' };
+      default:
+        return { label: '✅ NORMAL', color: '#10b981', bg: 'rgba(16,185,129,0.15)', border: 'rgba(16,185,129,0.4)' };
+    }
+  };
+
+  const getWaypointSubLabel = (stop, idx, total) => {
+    if (idx === 0) return '🏁 Titik Awal / Origin';
+    if (idx === total - 1) return '🏆 Titik Akhir / Tujuan';
+    return `📍 Transit Stop #${stop.seq || idx + 1}`;
   };
 
   // Gating check for CSV import tool button
