@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { 
   Search, MapPin, CheckCircle2, Circle, Clock, Package, Truck, Navigation, 
   Copy, Check, RefreshCw, ShieldCheck, Zap, X, Filter, Eye,
-  CalendarDays, ArrowRight, Layers, FileSpreadsheet,
+  Calendar, CalendarDays, ArrowRight, Layers, FileSpreadsheet,
   AlertCircle, AlertTriangle, ChevronDown, ChevronRight, User, Building2, Weight,
   Car, TrendingUp, Activity, BoxIcon, Timer, AlertOctagon, Info, ArrowUpRight,
   Printer, History, Sparkles, Pause, Play, SkipForward, SkipBack, RotateCcw
@@ -841,8 +841,8 @@ export default function Checker() {
         </div>
       )}
 
-      {/* MAIN VIEW CONTENT AREA — NORMAL TRACKING RESULT */}
-      {result && !(selectedDate > '2026-08-14' || result.isFutureDate || result.hasData === false) && (
+      {/* MAIN VIEW CONTENT AREA — SINGLE PACKAGE TRACKING RESULT */}
+      {activeTab === 'PACKAGE' && result && !(selectedDate > '2026-08-14' || result.isFutureDate || result.hasData === false) && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
           {/* VEHICLE NO-CARGO / FUTURE DATE WARNINGS (inline in normal view) */}
@@ -1520,7 +1520,7 @@ export default function Checker() {
                   <div style={{
                     position: 'absolute',
                     top: 0,
-                    left: `${Math.min(94, Math.max(3, ((activeSeq - 0.5) / result.routeStops.length) * 100))}%`,
+                    left: `${Math.min(94, Math.max(3, ((activeSeq - 0.5) / ((result.routeStops || []).length || 1)) * 100))}%`,
                     transform: 'translateX(-50%)',
                     transition: 'all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
                     zIndex: 10
@@ -1545,21 +1545,21 @@ export default function Checker() {
                   </div>
 
                   {/* Connected Stepper Line & Waypoint Nodes */}
-                  <div style={{ display: 'grid', gridTemplateColumns: `repeat(${result.routeStops.length}, 1fr)`, gap: 4, width: '100%', position: 'relative' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.max(1, (result.routeStops || []).length)}, 1fr)`, gap: 4, width: '100%', position: 'relative' }}>
                     
                     {/* Underlying Track Progress Line */}
                     <div style={{
                       position: 'absolute',
                       top: 24,
-                      left: `${100 / (result.routeStops.length * 2)}%`,
-                      right: `${100 / (result.routeStops.length * 2)}%`,
+                      left: `${100 / (Math.max(1, (result.routeStops || []).length) * 2)}%`,
+                      right: `${100 / (Math.max(1, (result.routeStops || []).length) * 2)}%`,
                       height: 4,
                       background: 'rgba(255,255,255,0.1)',
                       borderRadius: 2,
                       zIndex: 1
                     }}>
                       <div style={{
-                        width: `${Math.min(100, Math.max(0, ((activeSeq - 1) / (result.routeStops.length - 1)) * 100))}%`,
+                        width: `${Math.min(100, Math.max(0, ((activeSeq - 1) / Math.max(1, (result.routeStops || []).length - 1)) * 100))}%`,
                         height: '100%',
                         background: 'linear-gradient(90deg, #10b981, #38bdf8, #e8431f)',
                         borderRadius: 2,
@@ -1567,7 +1567,7 @@ export default function Checker() {
                       }} />
                     </div>
 
-                    {result.routeStops.map((stop, sIdx) => {
+                    {(result.routeStops || []).map((stop, sIdx) => {
                       const isCurrent = stop.seq === activeSeq;
                       const isPassed = stop.seq < activeSeq;
                       const isSelected = selectedStopFilter === stop.nopen;
@@ -1667,7 +1667,7 @@ export default function Checker() {
                             )}
 
                             <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', fontWeight: 600, marginTop: 2 }}>
-                              {getWaypointSubLabel(stop, sIdx, result.routeStops.length)}
+                              {getWaypointSubLabel(stop, sIdx, (result.routeStops || []).length)}
                             </div>
                           </div>
 

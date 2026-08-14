@@ -61,6 +61,16 @@ export default function VehicleDetailModal({ nopol, onClose, onViewTransaction }
     setPage(1);
   }, [stateFilter, serviceFilter]);
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && !inspectRouteTx) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose, inspectRouteTx]);
+
   if (!nopol) return null;
 
   const formatIDR = (val) => {
@@ -86,16 +96,6 @@ export default function VehicleDetailModal({ nopol, onClose, onViewTransaction }
     if (upper.includes('AGEN') || upper.startsWith('AGEN ')) return { label: 'AGEN', color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.05)' };
     return { label: 'LAINNYA', color: '#94a3b8', bg: 'rgba(148, 163, 184, 0.05)' };
   };
-
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && !inspectRouteTx) {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose, inspectRouteTx]);
 
   return (
     <div 
