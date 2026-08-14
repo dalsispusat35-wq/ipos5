@@ -651,9 +651,8 @@ export default function Checker() {
       </div>
     )}
 
-      {/* MAIN VIEW CONTENT AREA */}
-      {result ? (
-        (selectedDate > '2026-08-14' || result.isFutureDate || result.hasData === false) ? (
+      {/* MAIN VIEW CONTENT AREA — WARNING (future date / no data) */}
+      {result && (selectedDate > '2026-08-14' || result.isFutureDate || result.hasData === false) && (
         <div style={{
           background: 'rgba(15, 23, 42, 0.75)',
           border: '1.5px solid rgba(245, 158, 11, 0.4)',
@@ -725,10 +724,13 @@ export default function Checker() {
             </div>
           </div>
         </div>
-      ) : (
+      )}
+
+      {/* MAIN VIEW CONTENT AREA — NORMAL TRACKING RESULT */}
+      {result && !(selectedDate > '2026-08-14' || result.isFutureDate || result.hasData === false) && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-          {/* FUTURE OPERATIONAL DATE WARNING CARD */}
+          {/* VEHICLE NO-CARGO / FUTURE DATE WARNINGS (inline in normal view) */}
           {(() => {
             const todayStr = new Date().toISOString().slice(0, 10);
             const isFutureDateSelected = result.isFutureDate || (selectedDate > todayStr && (!result.milkRun || !result.milkRun.routeStops || result.milkRun.routeStops.length === 0));
@@ -1056,7 +1058,7 @@ export default function Checker() {
           </div>
 
         </div>
-      ) : null}
+      )}
 
       {/* ─── MODE C: VEHICLE SEARCH RESULT ────────────────────────────────────── */}
       {activeTab === 'VEHICLE' && result && (result.data || result.isVehicleQuery) && (() => {
@@ -1262,8 +1264,12 @@ export default function Checker() {
 
           </div>
         </div>
-      )}
+      );
+    })()}
 
+      {/* MAIN VIEW CONTENT AREA — ROUTE JOURNEY & PACKAGES (normal result only) */}
+      {result && !(selectedDate > '2026-08-14' || result.isFutureDate || result.hasData === false) && (
+        <>
           {/* 6. SECTION: ROUTE JOURNEY (MULTI-STOP WAYPOINTS & DEMO SIMULATION) */}
           {result.hasRoute !== false && (result.routeStops || []).length > 0 && (
           <div 
@@ -1746,6 +1752,8 @@ export default function Checker() {
               </div>
             )}
           </div>
+        )}
+        </>
       )}
 
       {/* ─── EMPTY STATE ──────────────────────────────────────────────────────── */}
