@@ -12,9 +12,10 @@ import LiveGpsMapModal from '../components/LiveGpsMapModal.jsx';
 import CsvImportModal from '../components/CsvImportModal.jsx';
 
 const SAMPLE_RESIS = [
-  { code: 'P20260724000001', label: 'Resi In-Transit (Cimahi → SPP Bandung)', badge: 'In Transit', badgeClass: 'badge-orange' },
-  { code: 'P20260724000003', label: 'Resi Loaded (Cimahi Selatan)', badge: 'Loaded', badgeClass: 'badge-blue' },
-  { code: 'P20260724000005', label: 'Resi Selesai (SPP Bandung)', badge: 'Delivered', badgeClass: 'badge-emerald' },
+  { code: 'P20260811000001', date: '2026-08-11', label: 'Resi 11 Aug (B 9910 PCX - 8 Paket)', badge: '11 Aug', badgeClass: 'badge-orange' },
+  { code: 'P260812000001', date: '2026-08-12', label: 'Resi 12 Aug (B 9910 PCX - 35 Paket)', badge: '12 Aug', badgeClass: 'badge-blue' },
+  { code: 'P20260813000001', date: '2026-08-13', label: 'Resi 13 Aug (B 9910 PCX - 3 Paket)', badge: '13 Aug', badgeClass: 'badge-blue' },
+  { code: 'P20260724000001', date: '2026-07-24', label: 'Resi 24 Jul (Cimahi → SPP)', badge: '24 Jul', badgeClass: 'badge-emerald' },
 ];
 
 export default function Checker() {
@@ -174,15 +175,10 @@ export default function Checker() {
   // Search Connote Tracker Handler (Does NOT depend on query state in useCallback)
   const handleSearch = useCallback(async (codeToSearch, dateToSearch) => {
     const targetDate = dateToSearch || selectedDate;
-    const termToUse = codeToSearch !== undefined ? codeToSearch : '';
+    let termToUse = codeToSearch !== undefined ? codeToSearch : '';
 
     if (!termToUse || !termToUse.trim()) {
-      setQuery('');
-      setResult(null);
-      setErrorMsg('');
-      lastParamCodeRef.current = '';
-      setSearchParams({ code: '', date: targetDate });
-      return;
+      termToUse = 'B 9910 PCX'; // Auto-load active fleet operation for this date context
     }
 
     const cleanTerm = termToUse.trim();
@@ -199,12 +195,16 @@ export default function Checker() {
         const milk = res.data.milk_run || {};
 
         const isVehicle = res.isVehicleQuery || res.data?.isVehicleQuery || false;
+        const isFuture = res.isFutureDate || res.data?.isFutureDate || (targetDate > '2026-08-14');
+        const hasData = res.hasData !== undefined ? res.hasData : (res.data?.hasData !== undefined ? res.data.hasData : true);
         const hasCargo = res.hasCargo !== undefined ? res.hasCargo : (res.data?.hasCargo !== undefined ? res.data.hasCargo : true);
         const warningMsg = res.warningMessage || res.data?.warningMessage || null;
         const vInfo = res.data?.vehicle || null;
 
         setResult({
           isVehicleQuery: isVehicle,
+          isFutureDate: isFuture,
+          hasData: hasData,
           hasCargo,
           warningMessage: warningMsg,
           vehicleInfo: vInfo,
@@ -282,13 +282,9 @@ export default function Checker() {
       lastParamCodeRef.current = codeParam;
       if (codeParam && codeParam.trim()) {
         handleSearch(codeParam, dateParam);
-      } else if (codeParam === null) {
-        // Initial load when URL has no ?code parameter -> load default demo resi
-        handleSearch('P20260724000001', dateParam);
       } else {
-        setQuery('');
-        setResult(null);
-        setErrorMsg('');
+        // Initial load or date switch when ?code is empty -> load active fleet operation for date
+        handleSearch('B 9910 PCX', dateParam);
       }
     }
   }, [searchParams, selectedDate, handleSearch]);
@@ -437,6 +433,7 @@ export default function Checker() {
             <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>Tanggal Operasional:</span>
             <input
               type="date"
+              max="2026-08-14"
               value={selectedDate}
               onChange={(e) => {
                 const newDate = e.target.value;
@@ -628,7 +625,10 @@ export default function Checker() {
           {SAMPLE_RESIS.map((s) => (
             <button
               key={s.code}
-              onClick={() => handleSearch(s.code, selectedDate)}
+              onClick={() => {
+                if (s.date) setSelectedDate(s.date);
+                handleSearch(s.code, s.date || selectedDate);
+              }}
               className="btn-ghost"
               style={{ padding: '4px 10px', fontSize: 11, borderRadius: 6, gap: 6 }}
             >
@@ -648,7 +648,79 @@ export default function Checker() {
       </div>
 
       {/* MAIN VIEW CONTENT AREA */}
-      {result ? (
+      {result && (selectedDate > '2026-08-14' || result.isFutureDate || result.hasData === false) ? (
+        <div style={{
+          background: 'rgba(15, 23, 42, 0.75)',
+          border: '1.5px solid rgba(245, 158, 11, 0.4)',
+          borderRadius: 20,
+          padding: '48px 32px',
+          textAlign: 'center',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 16,
+          boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+          backdropFilter: 'blur(10px)',
+          minHeight: 320
+        }}>
+          <div style={{
+            width: 64,
+            height: 64,
+            borderRadius: '50%',
+            background: 'rgba(245, 158, 11, 0.15)',
+            border: '2px solid rgba(245, 158, 11, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <AlertTriangle size={32} color="#f59e0b" />
+          </div>
+
+          <div style={{ maxWidth: 640 }}>
+            <h3 style={{ fontSize: 18, fontWeight: 900, color: '#f59e0b', marginBottom: 8, letterSpacing: '0.02em', textTransform: 'uppercase' }}>
+              {selectedDate > '2026-08-14' || result.isFutureDate
+                ? '⚠️ PERINGATAN: TANGGAL MASA DEPAN'
+                : '⚠️ DATA TRANSAKSI / OPERASIONAL TIDAK TERSEDIA'}
+            </h3>
+
+            <p style={{ fontSize: 13.5, color: 'rgba(255,255,255,0.88)', lineHeight: 1.6, margin: '0 0 16px 0' }}>
+              {result.warningMessage || (selectedDate > '2026-08-14'
+                ? `Tanggal operasional yang Anda pilih (${formatDateDisplay(selectedDate)}) merupakan tanggal di masa depan. Belum ada transaksi yang muncul dikarenakan tanggal tersebut belum terjadi.`
+                : `Tidak ada data transaksi atau rute perjalanan armada yang tercatat untuk pencarian "${query || 'resi'}" pada tanggal operasional ${formatDateDisplay(selectedDate)}.`
+              )}
+            </p>
+
+            <div style={{
+              background: 'rgba(56, 189, 248, 0.08)',
+              border: '1px solid rgba(56, 189, 248, 0.25)',
+              borderRadius: 12,
+              padding: '12px 18px',
+              fontSize: 12,
+              color: '#93c5fd',
+              display: 'inline-block',
+              marginBottom: 20
+            }}>
+              💡 <strong style={{ color: '#fff' }}>Petunjuk:</strong> Sistem secara otomatis membatasi prediksi transaksi tanggal di masa depan. Silakan pilih tanggal operasional hari ini (14 Agu 2026) atau tanggal terdaftar lainnya.
+            </div>
+
+            <div>
+              <button
+                className="btn-primary"
+                onClick={() => {
+                  const today = '2026-08-14';
+                  setSelectedDate(today);
+                  handleSearch(query || 'P20260724000001', today);
+                }}
+                style={{ padding: '10px 24px', fontWeight: 800, fontSize: 13, gap: 8, margin: '0 auto' }}
+              >
+                <CalendarDays size={16} />
+                Kembali ke Tanggal Hari Ini (14 Agu 2026)
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : result ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
           {/* VEHICLE NO-CARGO WARNING BANNER */}

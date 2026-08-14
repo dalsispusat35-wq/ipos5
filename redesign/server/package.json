@@ -17,5 +17,8 @@
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.3",
     "mongodb": "^6.8.0"
+  },
+  "devDependencies": {
+    "docx": "^9.7.1"
   }
 }

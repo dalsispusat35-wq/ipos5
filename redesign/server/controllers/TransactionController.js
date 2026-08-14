@@ -613,6 +613,32 @@ class TransactionController {
 
     const vehicleNopol = matchedVehicle.nopol;
     const targetDateStr = reqDateStr || new Date().toISOString().slice(0, 10);
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    if (targetDateStr > todayStr) {
+      return {
+        isVehicleQuery: true,
+        isFutureDate: true,
+        hasData: false,
+        hasRoute: false,
+        hasCargo: false,
+        vehicle: {
+          nopol: vehicleNopol,
+          nama_kendaraan: matchedVehicle.nama_kendaraan || `Armada ${vehicleNopol}`,
+          jenis_kendaraan: matchedVehicle.jenis_kendaraan || 'Truk Box',
+          maxCapacityKg: matchedVehicle.max_capacity_kg || (matchedVehicle.kapasitas_ton ? matchedVehicle.kapasitas_ton * 1000 : 1500),
+          driver: matchedVehicle.driver || '-',
+          driverPhone: matchedVehicle.driver_phone || '-',
+          homeBase: matchedVehicle.home_base || '-',
+          assignedRouteId: matchedVehicle.assigned_route_id || 'TIDAK ADA',
+          status: matchedVehicle.status || 'AKTIF'
+        },
+        warningMessage: `⚠️ [TANGGAL MASA DEPAN]: Tanggal operasional (${targetDateStr}) merupakan tanggal di masa depan. Sistem tidak dapat meramal data operasional atau transaksi yang belum terjadi.`,
+        targetDateStr,
+        milk_run: null
+      };
+    }
+
     const maxCapacityKg = matchedVehicle.max_capacity_kg || (matchedVehicle.kapasitas_ton ? matchedVehicle.kapasitas_ton * 1000 : 1500);
 
     const startDate = new Date(targetDateStr);
@@ -762,8 +788,28 @@ class TransactionController {
       const db = await DbConnection.getDb();
       const connoteClean = String(connoteCode).trim();
       const reqDateStr = req.query.date ? String(req.query.date).trim() : null;
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const targetDateStr = reqDateStr || todayStr;
 
-      // 0. Auto-detect if user searched for a Vehicle Nopol
+      // 0a. Check if targetDateStr is in the future (> todayStr)
+      if (targetDateStr > todayStr) {
+        return res.json({
+          success: true,
+          connote: connoteClean,
+          isFutureDate: true,
+          hasData: false,
+          warningMessage: `⚠️ [TANGGAL MASA DEPAN]: Tanggal operasional (${targetDateStr}) merupakan tanggal di masa depan. Belum ada transaksi yang muncul dikarenakan tanggal tersebut belum terjadi.`,
+          data: {
+            isFutureDate: true,
+            hasData: false,
+            warningMessage: `⚠️ [TANGGAL MASA DEPAN]: Tanggal operasional (${targetDateStr}) merupakan tanggal di masa depan. Belum ada transaksi yang muncul dikarenakan tanggal tersebut belum terjadi.`,
+            transaction: null,
+            milk_run: null
+          }
+        });
+      }
+
+      // 0b. Auto-detect if user searched for a Vehicle Nopol
       const vehicleRes = await this.resolveVehicleQuery(connoteClean, reqDateStr, db);
       if (vehicleRes) {
         return res.json({
@@ -816,6 +862,37 @@ class TransactionController {
       const senderNameNorm = txDoc.connote?.connote_sender_name || '-';
       const receiverAddressNorm = txDoc.connote?.connote_receiver_address || '-';
       const createdAtNorm = txDoc.createdAt || txDoc.connote?.created_at || txDoc.created_at || '-';
+
+      // Check package creation date vs targetDateStr
+      let txDateStr = '';
+      if (createdAtNorm && createdAtNorm !== '-') {
+        const rawStr = createdAtNorm instanceof Date ? createdAtNorm.toISOString() : String(createdAtNorm);
+        if (rawStr.includes('/')) {
+          const parts = rawStr.split(' ')[0].split('/');
+          if (parts.length === 3) {
+            txDateStr = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+          }
+        } else if (rawStr.includes('-')) {
+          txDateStr = rawStr.split('T')[0].slice(0, 10);
+        }
+      }
+
+      if (txDateStr && targetDateStr < txDateStr) {
+        return res.json({
+          success: true,
+          connote: connoteClean,
+          isFutureDate: false,
+          hasData: false,
+          warningMessage: `⚠️ [BELUM ADA TRANSAKSI]: Paket ${connoteClean} belum dicatat di sistem pada tanggal ${targetDateStr} (Tanggal dibuat paket: ${txDateStr}).`,
+          data: {
+            isFutureDate: false,
+            hasData: false,
+            warningMessage: `⚠️ [BELUM ADA TRANSAKSI]: Paket ${connoteClean} belum dicatat di sistem pada tanggal ${targetDateStr} (Tanggal dibuat paket: ${txDateStr}).`,
+            transaction: null,
+            milk_run: null
+          }
+        });
+      }
       const destinationRegNorm = txDoc.custom_field?.destination_reg !== undefined 
         ? String(txDoc.custom_field.destination_reg) 
         : (txDoc.location_data_created?.custom_field?.destination_reg !== undefined 
@@ -1300,11 +1377,19 @@ class TransactionController {
         endDate.setHours(23, 59, 59, 999);
 
         let activeJourney = await db.collection('route_journeys').findOne({
-          $or: [{ vehicle_nopol: vehicleNopol }, { resolved_vehicle_nopol: vehicleNopol }],
-          journey_date: { $gte: startDate, $lte: endDate }
+          $and: [
+            { $or: [{ vehicle_nopol: vehicleNopol }, { resolved_vehicle_nopol: vehicleNopol }] },
+            {
+              $or: [
+                { journey_date: { $gte: startDate, $lte: endDate } },
+                { tanggal_operasional: targetDateStr }
+              ]
+            }
+          ]
         });
 
-        if (!activeJourney) {
+        // Only fallback to latest journey if NO reqDateStr parameter was provided in request query
+        if (!activeJourney && !reqDateStr) {
           activeJourney = await db.collection('route_journeys').findOne({
             $or: [{ vehicle_nopol: vehicleNopol }, { resolved_vehicle_nopol: vehicleNopol }]
           }, { sort: { journey_date: -1, updated_at: -1 } });
