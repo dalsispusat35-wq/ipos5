@@ -5,11 +5,12 @@ import {
   LayoutDashboard, Package, Building2, Tag, Truck, Map, 
   CalendarClock, Calendar, ShieldCheck, Database, Settings, 
   Search, Bell, ChevronDown, User, Activity, Menu, ChevronLeft, PanelLeftClose, PanelLeftOpen,
-  TrendingUp, LogOut
+  TrendingUp, LogOut, BarChart3, FileSpreadsheet
 } from 'lucide-react';
 import logoImg from './assets/logo.png';
 
-// Import Pages
+// Import Component & Pages
+import NotificationDrawer from './components/NotificationDrawer.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Checker from './pages/Checker.jsx';
 import MasterKantor from './pages/MasterKantor.jsx';
@@ -27,6 +28,7 @@ import RouteJourney from './pages/RouteJourney.jsx';
 import EstimasiMilkRun from './pages/estimasi/index.jsx';
 import Profile from './pages/Profile.jsx';
 import Login from './pages/Login.jsx';
+import AnalyticsReport from './pages/AnalyticsReport.jsx';
 
 function Header({ title, sidebarCollapsed, onToggleSidebar, onToggleMobileMenu, currentUser, onLogout }) {
   const [searchVal, setSearchVal] = useState('');
@@ -117,6 +119,8 @@ function Header({ title, sidebarCollapsed, onToggleSidebar, onToggleMobileMenu, 
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+        <NotificationDrawer />
+
         {currentUser && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: 20, border: '1px solid rgba(255,255,255,0.1)' }}>
             <span style={{ fontSize: 12, fontWeight: 600, color: '#48cae4' }}>{currentUser.name}</span>
@@ -277,6 +281,7 @@ function AppContent() {
     if (p.startsWith('/estimasi')) return 'Estimasi Milk Run Logistik';
     if (p.startsWith('/transit-monitoring')) return 'Gate Monitoring';
     if (p.startsWith('/transaksi')) return 'Data Transaksi Paket';
+    if (p.startsWith('/analytics')) return 'Analitik SLA & Laporan Logistik';
     if (p.startsWith('/compass')) return 'Database Viewer';
     if (p.startsWith('/settings')) return 'Settings';
     if (p.startsWith('/profile')) return 'User Profile';
@@ -325,6 +330,9 @@ function AppContent() {
       </Link>
       <Link to="/transit-monitoring" title="Gate Monitoring" className={`nav-item ${isLinkActive('/transit-monitoring') ? 'active' : ''}`} style={{ justifyContent: (sidebarCollapsed && !isMobile) ? 'center' : 'flex-start', padding: (sidebarCollapsed && !isMobile) ? '10px 0' : '9px 12px' }}>
         <ShieldCheck size={17} /> {(!sidebarCollapsed || isMobile) && <span>Gate Monitoring</span>}
+      </Link>
+      <Link to="/analytics" title="Analitik & Laporan" className={`nav-item ${isLinkActive('/analytics') ? 'active' : ''}`} style={{ justifyContent: (sidebarCollapsed && !isMobile) ? 'center' : 'flex-start', padding: (sidebarCollapsed && !isMobile) ? '10px 0' : '9px 12px' }}>
+        <BarChart3 size={17} /> {(!sidebarCollapsed || isMobile) && <span>Analitik & Laporan</span>}
       </Link>
 
       {/* Restricted System Modules: Only visible to SUPER_ADMIN */}
@@ -578,6 +586,7 @@ function AppContent() {
             <Route path="/estimasi" element={<RequireAuth currentUser={currentUser}><EstimasiMilkRun /></RequireAuth>} />
             <Route path="/transit-monitoring" element={<RequireAuth currentUser={currentUser}><GateMonitoring /></RequireAuth>} />
             <Route path="/transaksi" element={<RequireAuth currentUser={currentUser}><Transaksi /></RequireAuth>} />
+            <Route path="/analytics" element={<RequireAuth currentUser={currentUser}><AnalyticsReport /></RequireAuth>} />
             <Route path="/compass" element={<RequireAuth currentUser={currentUser} requiredRole="SUPER_ADMIN"><Compass activeConnection={activeConnection} /></RequireAuth>} />
             <Route path="/settings" element={<RequireAuth currentUser={currentUser} requiredRole="SUPER_ADMIN"><SettingsPage activeConnection={activeConnection} onConnectionSwitch={handleConnectionSwitch} onDisconnect={handleDisconnect} /></RequireAuth>} />
             <Route path="/profile" element={<RequireAuth currentUser={currentUser}><Profile /></RequireAuth>} />

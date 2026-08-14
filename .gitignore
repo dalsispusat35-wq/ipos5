@@ -6,3 +6,7 @@ mingit/
 .DS_Store
 Thumbs.db
 backup_file_terhapus.zip
+__pycache__/
+*.pyc
+~$*.docx
+

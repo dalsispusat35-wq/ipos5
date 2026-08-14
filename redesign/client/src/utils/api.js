@@ -73,6 +73,8 @@ export const api = {
   // Checker
   checkRouting: (connoteCode, date) => fetchApi(`/checker/${encodeURIComponent(connoteCode)}${date ? `?date=${encodeURIComponent(date)}` : ''}`),
   getCheckerData: (connoteCode, date) => fetchApi(`/checker/${encodeURIComponent(connoteCode)}${date ? `?date=${encodeURIComponent(date)}` : ''}`),
+  getControlTowerData: (date) => fetchApi(`/checker/control-tower${date ? `?date=${encodeURIComponent(date)}` : ''}`),
+  getVehicleCheckerData: (nopol, date) => fetchApi(`/checker/vehicle/${encodeURIComponent(nopol)}${date ? `?date=${encodeURIComponent(date)}` : ''}`),
 
   // Kantor
   getKantor: (params = '') => fetchApi(`/kantor?${params}`),
@@ -189,5 +191,14 @@ export const api = {
   createUser: (data) => fetchApi('/users', { method: 'POST', body: data }),
   updateUser: (username, data) => fetchApi(`/users/${encodeURIComponent(username)}`, { method: 'PUT', body: data }),
   updateUserPassword: (username, data) => fetchApi(`/users/${encodeURIComponent(username)}/password`, { method: 'PUT', body: data }),
-  deleteUser: (username) => fetchApi(`/users/${encodeURIComponent(username)}`, { method: 'DELETE' })
+  deleteUser: (username) => fetchApi(`/users/${encodeURIComponent(username)}`, { method: 'DELETE' }),
+
+  // Analytics & Reports
+  getSlaPerformance: () => fetchApi('/analytics/sla'),
+  getVolumeThroughput: () => fetchApi('/analytics/throughput'),
+  getExportCsvUrl: (params = '') => `${API_BASE}/analytics/export?${params}`,
+
+  // Notifications & Alerts
+  getSystemAlerts: () => fetchApi('/notifications/alerts'),
+  markAlertRead: (id) => fetchApi(`/notifications/alerts/${id}/read`, { method: 'POST' })
 };

@@ -2,10 +2,11 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { 
   Search, MapPin, CheckCircle2, Circle, Clock, Package, Truck, Navigation, 
-  Copy, Check, RefreshCw, History, ShieldCheck, Zap, Sparkles, X, Filter, Eye,
-  CalendarDays, Play, Pause, RotateCcw, SkipForward, SkipBack, ArrowRight, Layers, FileSpreadsheet,
-  AlertCircle, AlertTriangle, ChevronDown, ChevronRight, User, Building2, Weight, Calendar,
-  Printer, Car, TrendingUp, Activity, BoxIcon, Timer
+  Copy, Check, RefreshCw, ShieldCheck, Zap, X, Filter, Eye,
+  CalendarDays, ArrowRight, Layers, FileSpreadsheet,
+  AlertCircle, AlertTriangle, ChevronDown, ChevronRight, User, Building2, Weight,
+  Car, TrendingUp, Activity, BoxIcon, Timer, AlertOctagon, Info, ArrowUpRight,
+  Printer, History, Sparkles, Pause, Play, SkipForward, SkipBack, RotateCcw
 } from 'lucide-react';
 import { api } from '../utils/api.js';
 import LiveGpsMapModal from '../components/LiveGpsMapModal.jsx';
@@ -15,170 +16,81 @@ const SAMPLE_RESIS = [
   { code: 'P20260811000001', date: '2026-08-11', label: 'Resi 11 Aug (B 9910 PCX - 8 Paket)', badge: '11 Aug', badgeClass: 'badge-orange' },
   { code: 'P260812000001', date: '2026-08-12', label: 'Resi 12 Aug (B 9910 PCX - 35 Paket)', badge: '12 Aug', badgeClass: 'badge-blue' },
   { code: 'P20260813000001', date: '2026-08-13', label: 'Resi 13 Aug (B 9910 PCX - 3 Paket)', badge: '13 Aug', badgeClass: 'badge-blue' },
-  { code: 'P20260724000001', date: '2026-07-24', label: 'Resi 24 Jul (Cimahi → SPP)', badge: '24 Jul', badgeClass: 'badge-emerald' },
+  { code: 'P20260724000001', date: '2026-07-24', label: 'Resi 24 Jul (Cimahi → SPP Bandung)', badge: '24 Jul', badgeClass: 'badge-emerald' },
+  { code: 'B 9910 PCX', label: 'Armada Feeder GrandMax Box', badge: 'Fleet', badgeClass: 'badge-navy' }
 ];
 
 export default function Checker() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState(() => searchParams.get('code') || '');
   const [result, setResult] = useState(null);
+  const [controlTower, setControlTower] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [controlTowerLoading, setControlTowerLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [copied, setCopied] = useState(false);
 
-  // Track previous URL param code to prevent useEffect re-firing while user is typing in input
+  // Dynamic Operational Date in Asia/Jakarta Timezone (WIB)
+  const getTodayWibStr = () => {
+    try {
+      return new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Jakarta' });
+    } catch (e) {
+      return new Date().toISOString().slice(0, 10);
+    }
+  };
+
+  const [selectedDate, setSelectedDate] = useState(() => {
+    return searchParams.get('date') || getTodayWibStr();
+  });
+
   const lastParamCodeRef = useRef(undefined);
 
-  // ─── Daily Operation Date Context State ────────────────────────────────────
-  const [selectedDate, setSelectedDate] = useState(() => {
-    return searchParams.get('date') || '2026-08-12';
-  });
-
-  // ─── Filter & Selection States ─────────────────────────────────────────────
-  const [selectedStopFilter, setSelectedStopFilter] = useState(null);
+  // UI state
+  const [searchMode, setSearchMode] = useState('AUTO'); // 'AUTO', 'PACKAGE', 'VEHICLE'
+  const [activeTab, setActiveTab] = useState('OVERVIEW'); // 'OVERVIEW', 'PACKAGE', 'VEHICLE'
   const [cargoSearchTerm, setCargoSearchTerm] = useState('');
+  const [expandedDestGroups, setExpandedDestGroups] = useState({});
   const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
-
-  // ─── Simulation Mode States (For Demo / Academic Advisor) ───────────────────
-  const [isSimulating, setIsSimulating] = useState(false);
-  const [simStopSeq, setSimStopSeq] = useState(null);
-  const [simSpeed, setSimSpeed] = useState(1500);
   const [nowTime, setNowTime] = useState(new Date());
-  const [expandedDestGroups, setExpandedDestGroups] = useState({});
-  const [searchByVehicle, setSearchByVehicle] = useState(false);
-  const [fleetVehicles, setFleetVehicles] = useState([]);
-  const [fleetSearchTerm, setFleetSearchTerm] = useState('');
 
-  const defaultFleet = [
-    { nopol: 'B 9910 PCX', nama_kendaraan: 'Daihatsu Gran Max Box - Feeder Express', jenis_kendaraan: 'MOBIL BOX INTERCITY (1.5 TON)', max_capacity_kg: 1500, driver: 'Ahmad Supriadi', driver_phone: '0812-9876-54321', home_base: '40511 - KCU Cimahi', assigned_route_id: 'RT-MALAM-B9910-PCX' },
-    { nopol: 'B 9945 PCY', nama_kendaraan: 'Isuzu Elf Box - Express Gateway MPC Jakarta', jenis_kendaraan: 'TRUK BOX INTERCITY (4 TON)', max_capacity_kg: 4000, driver: 'Budi Santoso', driver_phone: '0813-8765-43210', home_base: '40000 - SPP Bandung', assigned_route_id: 'RT-MALAM-B9945-PCY-PU1' },
-    { nopol: 'D 8812 AB', nama_kendaraan: 'Mitsubishi Canter - Feeder KCU Cimahi', jenis_kendaraan: 'TRUK ENGKEL BOX (3.5 TON)', max_capacity_kg: 3500, driver: 'Dede Kurnia', driver_phone: '0815-7654-32109', home_base: '40500 - KCU Cimahi', assigned_route_id: 'RT-REGULER-D8812-AB' },
-    { nopol: 'D 8990 SPP', nama_kendaraan: 'Hino Wingbox Heavy Freight', jenis_kendaraan: 'TRUK HEAVY WINGBOX (10 TON)', max_capacity_kg: 10000, driver: 'Hendra Wijaya', driver_phone: '0811-2345-67890', home_base: '40400 - SPP Bandung', assigned_route_id: 'RT-HEAVY-D8990-SPP' },
-    { nopol: 'D 1234 POS', nama_kendaraan: 'Blind Van Feeder AGP Gatsu', jenis_kendaraan: 'BLIND VAN FEEDER (0.8 TON)', max_capacity_kg: 800, driver: 'Rizki Pratama', driver_phone: '0817-6543-21098', home_base: '40000 - SPP Bandung', assigned_route_id: null }
-  ];
-
-  useEffect(() => {
-    async function loadFleet() {
-      try {
-        const res = await api.getKendaraan('limit=100');
-        if (res?.success && Array.isArray(res.data) && res.data.length > 0) {
-          setFleetVehicles(res.data);
-        } else if (res?.items && Array.isArray(res.items) && res.items.length > 0) {
-          setFleetVehicles(res.items);
-        } else {
-          setFleetVehicles(defaultFleet);
-        }
-      } catch (e) {
-        setFleetVehicles(defaultFleet);
-      }
-    }
-    loadFleet();
-  }, []);
-
-  const activeFleetList = fleetVehicles.length > 0 ? fleetVehicles : defaultFleet;
-  const filteredFleetVehicles = activeFleetList.filter(v => {
-    if (!fleetSearchTerm) return true;
-    const term = fleetSearchTerm.trim().toLowerCase();
-    return (
-      (v.nopol && v.nopol.toLowerCase().includes(term)) ||
-      (v.nama_kendaraan && v.nama_kendaraan.toLowerCase().includes(term)) ||
-      (v.driver && v.driver.toLowerCase().includes(term)) ||
-      (v.jenis_kendaraan && v.jenis_kendaraan.toLowerCase().includes(term)) ||
-      (v.assigned_route_id && v.assigned_route_id.toLowerCase().includes(term))
-    );
-  });
-
-  // Clock tick for ETA countdown
+  // Clock tick for real-time ETA updates
   useEffect(() => {
     const clockTick = setInterval(() => setNowTime(new Date()), 1000);
     return () => clearInterval(clockTick);
   }, []);
 
+  // ─── Mode A: Load Daily Control Tower Overview ─────────────────────────────
+  const loadControlTower = useCallback(async (dateToUse) => {
+    const targetDate = dateToUse || selectedDate;
+    setControlTowerLoading(true);
+    try {
+      const res = await api.getControlTowerData(targetDate);
+      if (res?.success && res?.data) {
+        setControlTower(res.data);
+      } else {
+        setControlTower(null);
+      }
+    } catch (err) {
+      console.error('Failed to load Control Tower data:', err);
+      setControlTower(null);
+    } finally {
+      setControlTowerLoading(false);
+    }
+  }, [selectedDate]);
+
   useEffect(() => {
-    let timer = null;
-    if (isSimulating && result?.routeStops?.length) {
-      timer = setInterval(() => {
-        setSimStopSeq((prevSeq) => {
-          const current = prevSeq ?? result.currentStopSeq ?? 1;
-          if (current >= result.routeStops.length) {
-            setIsSimulating(false);
-            return current;
-          }
-          return current + 1;
-        });
-      }, simSpeed);
-    }
-    return () => {
-      if (timer) clearInterval(timer);
-    };
-  }, [isSimulating, simSpeed, result]);
+    loadControlTower(selectedDate);
+  }, [selectedDate, loadControlTower]);
 
-  // Gating check for CSV import tool button
-  const isDevOrAdminMode = process.env.NODE_ENV !== 'production' || searchParams.get('dev') === 'true' || searchParams.get('dev') === '1';
-
-  // Format helpers
-  const formatDateDisplay = (dateStr) => {
-    if (!dateStr || dateStr === '-') return '24 Jul 2026';
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    return d.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
-  };
-
-  const getWaypointSubLabel = (stop, index, total) => {
-    if (index === 0) return 'Origin Counter (Awal)';
-    if (index === total - 1) return 'Terminal Akhir (SPP)';
-    const name = stop.officeName || '';
-    if (name.includes('SPP')) {
-      if (index === 5) return 'Gerbang Kedatangan SPP';
-      if (index === 6) return 'Sorting Terminal Hub';
-      if (index === 7) return 'Bongkar Kantong Final';
-    }
-    return `Transit Waypoint #${stop.seq}`;
-  };
-
-  const formatWeight = (w) => {
-    if (w === null || w === undefined || w === '-' || w === 'undefined') return '1.0 kg';
-    const num = parseFloat(w);
-    return isNaN(num) ? `${w} kg` : `${num.toFixed(1)} kg`;
-  };
-
-  const mapStateToBadgeClass = (state) => {
-    if (!state) return 'badge-navy';
-    const s = String(state).toUpperCase();
-    if (s.includes('DELIVERED') || s.includes('SELESAI')) return 'badge-emerald';
-    if (s.includes('ARRIVED') || s.includes('TIBA')) return 'badge-amber';
-    if (s.includes('TRANSIT') || s.includes('IN_TRANSIT')) return 'badge-orange';
-    if (s.includes('LOADED') || s.includes('MANIFEST')) return 'badge-blue';
-    return 'badge-navy';
-  };
-
-  // ETA countdown helper: parse "HH:MM WIB" into today's Date, compute minutes remaining
-  const getEtaCountdown = (etaTimeStr) => {
-    if (!etaTimeStr || !etaTimeStr.includes(':')) return null;
-    const [hh, mmRaw] = etaTimeStr.replace(' WIB', '').split(':');
-    const etaDate = new Date(nowTime);
-    etaDate.setHours(parseInt(hh, 10), parseInt(mmRaw, 10), 0, 0);
-    const diffMs = etaDate - nowTime;
-    if (diffMs < 0) return 'Sudah lewat';
-    const diffMin = Math.floor(diffMs / 60000);
-    const diffSec = Math.floor((diffMs % 60000) / 1000);
-    if (diffMin === 0) return `${diffSec}d lagi`;
-    return `${diffMin}m ${diffSec}s lagi`;
-  };
-
-  // Toggle accordion destination group in cargo list
-  const toggleDestGroup = (key) => {
-    setExpandedDestGroups(prev => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  // Search Connote Tracker Handler (Does NOT depend on query state in useCallback)
+  // ─── Search Package or Vehicle Tracker ─────────────────────────────────────
   const handleSearch = useCallback(async (codeToSearch, dateToSearch) => {
     const targetDate = dateToSearch || selectedDate;
-    let termToUse = codeToSearch !== undefined ? codeToSearch : '';
+    let termToUse = codeToSearch !== undefined ? codeToSearch : query;
 
+    // If query is empty, default to sample resi/armada for target date so operational date data is always displayed
     if (!termToUse || !termToUse.trim()) {
-      termToUse = 'B 9910 PCX'; // Auto-load active fleet operation for this date context
+      termToUse = targetDate === '2026-08-12' ? 'P260812000001' : (targetDate === '2026-07-24' ? 'P20260724000001' : 'B 9910 PCX');
     }
 
     const cleanTerm = termToUse.trim();
@@ -191,19 +103,46 @@ export default function Checker() {
     try {
       const res = await api.getCheckerData(cleanTerm, targetDate);
       if (res.success && res.data) {
+        const isFuture = res.isFutureDate || res.data?.isFutureDate || false;
+
+        if (isFuture && (!res.data?.milk_run || !res.data.milk_run.routeStops || res.data.milk_run.routeStops.length === 0)) {
+          const tx = res.data?.transaction || {};
+          setResult({
+            isFutureDate: true,
+            targetDateStr: targetDate,
+            connote: tx.connoteCode || cleanTerm,
+            bookingCode: tx.bookingCode || '-',
+            service: tx.service || 'Pos Reguler',
+            weight: formatWeight(tx.actualWeight),
+            stateStr: tx.state || 'ENTRY',
+            badgeClass: mapStateToBadgeClass(tx.state),
+            origin: tx.originName ? `${tx.originName} (${tx.originNopen})` : 'KCU Cimahi (40511)',
+            destination: tx.receiverAddress ? `${tx.receiverAddress} (${tx.destinationNopen})` : 'SPP Bandung (40400)',
+            senderName: tx.senderName || 'PT Pos Logistics',
+            receiverName: tx.receiverName || 'Penerima Pos',
+            createdAt: tx.createdAt ? formatDateDisplay(tx.createdAt) : '-',
+            warningMessage: res.warningMessage || res.data?.warningMessage || `⚠️ [TANGGAL OPERASIONAL BELUM TIBA]: Tanggal ${targetDate} merupakan tanggal di masa depan yang belum tiba.`,
+            timeline: [],
+            milkRun: null
+          });
+          return;
+        }
+
         const tx = res.data.transaction || {};
         const milk = res.data.milk_run || {};
 
         const isVehicle = res.isVehicleQuery || res.data?.isVehicleQuery || false;
-        const isFuture = res.isFutureDate || res.data?.isFutureDate || (targetDate > '2026-08-14');
+        const isFutureFlag = res.isFutureDate || res.data?.isFutureDate || (targetDate > '2026-08-14');
         const hasData = res.hasData !== undefined ? res.hasData : (res.data?.hasData !== undefined ? res.data.hasData : true);
         const hasCargo = res.hasCargo !== undefined ? res.hasCargo : (res.data?.hasCargo !== undefined ? res.data.hasCargo : true);
         const warningMsg = res.warningMessage || res.data?.warningMessage || null;
         const vInfo = res.data?.vehicle || null;
 
+        const formattedResult = (res.data && res.data.data) ? res.data : { ...res.data, data: res.data };
         setResult({
+          ...formattedResult,
           isVehicleQuery: isVehicle,
-          isFutureDate: isFuture,
+          isFutureDate: isFutureFlag,
           hasData: hasData,
           hasCargo,
           warningMessage: warningMsg,
@@ -222,8 +161,6 @@ export default function Checker() {
           createdRaw: tx.createdAt || null,
           finalSwp: tx.finalSwp || '-',
           finalSwpDate: tx.finalSwpDate || '-',
-          
-          // Tracking Event Timeline
           timeline: (() => {
             const rawList = (res.data.trackingHistory && res.data.trackingHistory.length > 0)
               ? res.data.trackingHistory
@@ -244,8 +181,6 @@ export default function Checker() {
               { stage: tx.state || 'ENTRY', note: `Pencarian armada/paket ${cleanTerm} tercatat di sistem IPOS5.`, time: formatDateDisplay(tx.createdAt), location: tx.originName || 'KCU Cimahi' }
             ];
           })(),
-
-          // Real-Time Vehicle Journey & Capacity
           milkRun: milk,
           hasRoute: res.data?.hasRoute !== undefined ? res.data.hasRoute : (milk.routeStops && milk.routeStops.length > 0),
           vehicleNopol: milk.vehicleNopol || vInfo?.nopol || cleanTerm,
@@ -260,22 +195,33 @@ export default function Checker() {
           cargoItems: milk.cargoList || milk.cargoItems || [],
           cargoGroupedByDestination: milk.cargoGroupedByDestination || []
         });
+
+        if (res.isVehicleQuery || (res.data?.found && res.data?.vehicle) || res.data?.vehicle) {
+          setActiveTab('VEHICLE');
+        } else {
+          setActiveTab('PACKAGE');
+        }
       } else {
-        setErrorMsg(res.message || `Kode resi "${cleanTerm}" tidak ditemukan.`);
         setResult(null);
+        setErrorMsg(res?.error?.message || `Data tidak ditemukan untuk "${cleanTerm}".`);
       }
     } catch (e) {
-      console.error('Package tracking search error:', e);
-      setErrorMsg(e.message || `Resi "${cleanTerm}" tidak ditemukan atau server error.`);
+      console.error('Checker search error:', e);
       setResult(null);
+      setErrorMsg(e.message || `Tidak ditemukan data untuk "${cleanTerm}". Silakan periksa kembali query atau tanggal operasional.`);
     } finally {
       setLoading(false);
     }
-  }, [selectedDate, setSearchParams]);
+  }, [selectedDate, query, setSearchParams]);
 
   useEffect(() => {
     const codeParam = searchParams.get('code');
     const dateParam = searchParams.get('date') || selectedDate;
+
+    // Sync selectedDate state if date in URL param differs
+    if (dateParam && dateParam !== selectedDate) {
+      setSelectedDate(dateParam);
+    }
 
     // Only run if the code in URL parameter has actually changed from external navigation
     if (codeParam !== lastParamCodeRef.current) {
@@ -289,114 +235,99 @@ export default function Checker() {
     }
   }, [searchParams, selectedDate, handleSearch]);
 
-  const handleCopyCode = () => {
-    if (result?.connote) {
-      navigator.clipboard.writeText(result.connote);
+  const handleCopyCode = (codeText) => {
+    if (codeText) {
+      navigator.clipboard.writeText(codeText);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
   };
 
-  // Capacity Gauge Badge Config
-  const getCapacityStatusBadge = (status) => {
+  const toggleDestGroup = (destNopen) => {
+    setExpandedDestGroups(prev => ({ ...prev, [destNopen]: !prev[destNopen] }));
+  };
+
+  const formatDateDisplay = (dateStr) => {
+    if (!dateStr || dateStr === '-') return '-';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' WIB';
+  };
+
+  const mapStateToBadge = (stateStr) => {
+    if (!stateStr) return { label: 'ENTRY', class: 'badge-navy' };
+    const s = String(stateStr).toUpperCase();
+    if (s.includes('DELIVERED') || s.includes('SELESAI')) return { label: 'DELIVERED', class: 'badge-emerald' };
+    if (s.includes('ARRIVED') || s.includes('TIBA')) return { label: 'ARRIVED', class: 'badge-amber' };
+    if (s.includes('TRANSIT') || s.includes('IN_TRANSIT')) return { label: 'IN TRANSIT', class: 'badge-orange' };
+    if (s.includes('LOADED') || s.includes('MANIFEST')) return { label: 'LOADED', class: 'badge-blue' };
+    return { label: s, class: 'badge-navy' };
+  };
+
+  const getCapacityBadge = (status) => {
     switch (status) {
       case 'OVER CAPACITY':
-        return { label: 'OVER CAPACITY', class: 'badge-orange', color: '#ef4444', bg: 'rgba(239,68,68,0.2)', border: 'rgba(239,68,68,0.5)' };
+        return { label: 'OVER CAPACITY', color: '#ef4444', bg: 'rgba(239,68,68,0.2)', border: 'rgba(239,68,68,0.5)' };
       case 'FULL':
-        return { label: 'FULL CAPACITY', class: 'badge-orange', color: '#f97316', bg: 'rgba(249,115,22,0.2)', border: 'rgba(249,115,22,0.4)' };
+        return { label: 'FULL CAPACITY', color: '#f97316', bg: 'rgba(249,115,22,0.2)', border: 'rgba(249,115,22,0.4)' };
       case 'NEAR CAPACITY':
-        return { label: 'NEAR CAPACITY', class: 'badge-amber', color: '#f59e0b', bg: 'rgba(245,158,11,0.2)', border: 'rgba(245,158,11,0.4)' };
+        return { label: 'NEAR CAPACITY', color: '#f59e0b', bg: 'rgba(245,158,11,0.2)', border: 'rgba(245,158,11,0.4)' };
       default:
-        return { label: 'NORMAL CAPACITY', class: 'badge-emerald', color: '#10b981', bg: 'rgba(16,185,129,0.2)', border: 'rgba(16,185,129,0.4)' };
+        return { label: 'NORMAL CAPACITY', color: '#10b981', bg: 'rgba(16,185,129,0.2)', border: 'rgba(16,185,129,0.4)' };
     }
   };
 
-  // Filter cargo inside vehicle dynamically based on activeSeq (Milk Run active cargo at active stop)
-  const activeSeq = isSimulating || simStopSeq !== null ? (simStopSeq || 1) : (result?.currentStopSeq || 1);
-  const nopenToSeq = new Map((result?.routeStops || []).map(s => [String(s.nopen), s.seq]));
-
-  const [showOnlyNewlyLoaded, setShowOnlyNewlyLoaded] = useState(false);
-
-  const activeCargoItems = (result?.cargoItems || []).filter(item => {
-    const loadSeq = item.loaded_at_seq || 1;
-    const destSeq = nopenToSeq.get(String(item.destination_nopen)) || (result?.routeStops?.length || 6);
-
-    if (showOnlyNewlyLoaded) {
-      return loadSeq === activeSeq;
-    }
-
-    // Item is inside vehicle at activeSeq IF loaded_at_seq <= activeSeq AND destSeq > activeSeq
-    return loadSeq <= activeSeq && destSeq > activeSeq;
-  });
-
-  // Group active cargo items by destination
-  const activeDestinationMap = new Map();
-  for (const item of activeCargoItems) {
-    const destKey = item.destination_nopen || '40400';
-    if (!activeDestinationMap.has(destKey)) {
-      activeDestinationMap.set(destKey, {
-        destination_nopen: destKey,
-        count: 0,
-        total_weight_kg: 0,
-        packages: []
-      });
-    }
-    const group = activeDestinationMap.get(destKey);
-    group.count++;
-    group.total_weight_kg = Number((group.total_weight_kg + (item.weight_kg || 0)).toFixed(2));
-    group.packages.push(item);
-  }
-
-  const dynamicCargoGroups = Array.from(activeDestinationMap.values());
-
-  const filteredCargoGroups = dynamicCargoGroups.map(group => {
-    const matchingPackages = (group.packages || []).filter(pkg => {
-      const matchSearch = !cargoSearchTerm || 
-        pkg.connote_code.toLowerCase().includes(cargoSearchTerm.toLowerCase()) ||
-        (pkg.destination_nopen && pkg.destination_nopen.includes(cargoSearchTerm));
-      const matchStop = !selectedStopFilter || group.destination_nopen === selectedStopFilter;
-      return matchSearch && matchStop;
-    });
-
-    return {
-      ...group,
-      packages: matchingPackages
-    };
-  }).filter(group => group.packages.length > 0);
+  // Gating check for CSV import tool button
+  const isDevOrAdminMode = process.env.NODE_ENV !== 'production' || searchParams.get('dev') === 'true' || searchParams.get('dev') === '1';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20, width: '100%', padding: '0 4px' }}>
       
-      {/* 1. TOP HEADER: SEARCH BAR, SAMPLE CHIPS & DEV TESTING TOOL BUTTON */}
+      {/* ─── 1. TOP HEADER BAR: CONTROL TOWER DATE PICKER & SEARCH BAR ─────────────────── */}
       <div className="glass-card-solid" style={{ padding: 20, borderRadius: 16 }}>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
           
-          {/* Vehicle plate / connote toggle */}
+          {/* Active Mode Tabs */}
           <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: 3, border: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
             <button
-              onClick={() => setSearchByVehicle(false)}
-              style={{ padding: '5px 12px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 800, transition: 'all 0.2s',
-                background: !searchByVehicle ? 'rgba(56,189,248,0.25)' : 'transparent',
-                color: !searchByVehicle ? '#38bdf8' : 'rgba(255,255,255,0.4)' }}
-            ><Package size={12} style={{ marginRight: 4, verticalAlign: 'middle' }} />No. Resi</button>
+              onClick={() => {
+                setActiveTab('OVERVIEW');
+                setQuery('');
+                setResult(null);
+                setErrorMsg('');
+                setSearchParams({ code: '', date: selectedDate });
+              }}
+              style={{
+                padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 800, transition: 'all 0.2s',
+                background: activeTab === 'OVERVIEW' ? 'rgba(56,189,248,0.25)' : 'transparent',
+                color: activeTab === 'OVERVIEW' ? '#38bdf8' : 'rgba(255,255,255,0.4)'
+              }}
+            >
+              <Activity size={13} style={{ marginRight: 5, verticalAlign: 'middle' }} />
+              Control Tower Overview
+            </button>
             <button
-              onClick={() => setSearchByVehicle(true)}
-              style={{ padding: '5px 12px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 800, transition: 'all 0.2s',
-                background: searchByVehicle ? 'rgba(56,189,248,0.25)' : 'transparent',
-                color: searchByVehicle ? '#38bdf8' : 'rgba(255,255,255,0.4)' }}
-            ><Car size={12} style={{ marginRight: 4, verticalAlign: 'middle' }} />List Fleet Mobil Armada ({activeFleetList.length})</button>
+              onClick={() => setSearchMode('AUTO')}
+              style={{
+                padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 800, transition: 'all 0.2s',
+                background: activeTab !== 'OVERVIEW' ? 'rgba(56,189,248,0.25)' : 'transparent',
+                color: activeTab !== 'OVERVIEW' ? '#38bdf8' : 'rgba(255,255,255,0.4)'
+              }}
+            >
+              <Search size={13} style={{ marginRight: 5, verticalAlign: 'middle' }} />
+              Pencarian Lacak (Resi / Nopol)
+            </button>
           </div>
 
           {/* Main Search Input */}
           <div style={{ flex: 1, minWidth: 280, position: 'relative' }}>
-            {searchByVehicle ? <Car size={16} color="rgba(255,255,255,0.4)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
-              : <Search size={16} color="rgba(255,255,255,0.4)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />}
+            <Search size={16} color="rgba(255,255,255,0.4)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
             <input
               className="input-navy font-mono"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSearch(query, selectedDate)}
-              placeholder={searchByVehicle ? 'Cari berdasarkan plat (contoh: B 9910 PCX)...' : 'Lacak nomor resi / connote (contoh: P20260724000001)...'}
+              placeholder="Masukkan nomor resi (contoh: P20260724000001) atau plat armada (contoh: B 9910 PCX)..."
               style={{ paddingLeft: 38, paddingRight: 36, height: 42, fontSize: 13.5 }}
             />
             {query && (
@@ -405,12 +336,12 @@ export default function Checker() {
                   setQuery('');
                   setResult(null);
                   setErrorMsg('');
+                  setActiveTab('OVERVIEW');
                   lastParamCodeRef.current = '';
                   setSearchParams({ code: '', date: selectedDate });
                 }}
-                style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)',
-                  background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}
-                title="Hapus / Reset Pencarian"
+                style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}
+                title="Reset Pencarian"
               >
                 <X size={15} />
               </button>
@@ -424,13 +355,13 @@ export default function Checker() {
             style={{ height: 42, padding: '0 20px', fontWeight: 800, gap: 8 }}
           >
             {loading ? <RefreshCw size={15} className="spin" /> : <Search size={15} />}
-            {loading ? 'Mencari...' : 'Lacak Paket'}
+            {loading ? 'Mencari...' : 'Lacak Data'}
           </button>
 
-          {/* Daily Operation Date Picker Context */}
+          {/* Dynamic Operational Date Picker Context (Timezone Asia/Jakarta WIB) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.04)', padding: '4px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)' }}>
             <CalendarDays size={15} color="#38bdf8" />
-            <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>Tanggal Operasional:</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>Tanggal Operasional (WIB):</span>
             <input
               type="date"
               max="2026-08-14"
@@ -438,159 +369,237 @@ export default function Checker() {
               onChange={(e) => {
                 const newDate = e.target.value;
                 setSelectedDate(newDate);
-                handleSearch(query, newDate);
+                const termToSearch = (query && query.trim()) ? query.trim() : (newDate === '2026-08-12' ? 'P260812000001' : (newDate === '2026-07-24' ? 'P20260724000001' : 'B 9910 PCX'));
+                handleSearch(termToSearch, newDate);
               }}
               style={{
                 background: 'transparent',
                 border: 'none',
                 color: '#fff',
                 fontWeight: 800,
-                fontSize: 12,
-                fontFamily: 'monospace',
-                outline: 'none',
+                fontSize: 12.5,
+                colorScheme: 'dark',
                 cursor: 'pointer'
               }}
             />
           </div>
 
-          {/* QA / Dev CSV Import Button (Gated) */}
+          {/* CSV Import Dev Testing Tool Button */}
           {isDevOrAdminMode && (
             <button
-              className="btn-ghost"
               onClick={() => setIsCsvModalOpen(true)}
               style={{
-                height: 42,
-                padding: '0 14px',
-                fontSize: 11.5,
-                fontWeight: 800,
-                borderRadius: 10,
-                borderColor: 'rgba(56,189,248,0.4)',
-                color: '#38bdf8',
-                gap: 6,
-                background: 'rgba(56,189,248,0.08)'
+                height: 42, padding: '0 14px', borderRadius: 10, border: '1px solid rgba(56,189,248,0.3)',
+                background: 'rgba(56,189,248,0.1)', color: '#38bdf8', fontWeight: 700, fontSize: 12, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 6
               }}
-              title="Tooling testing import data CSV operasional harian"
             >
-              <FileSpreadsheet size={15} /> Tool Testing: Import CSV 📥
+              <FileSpreadsheet size={15} />
+              Import CSV
             </button>
           )}
+
+          <button
+            onClick={() => query ? handleSearch(query, selectedDate) : loadControlTower(selectedDate)}
+            style={{ height: 42, width: 42, borderRadius: 10, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            title="Refresh Data Operasional"
+          >
+            <RefreshCw size={15} className={loading || controlTowerLoading ? 'spin' : ''} />
+          </button>
         </div>
+      </div>
 
-        {/* FLEET VEHICLES LIST PANEL (DAFTAR MOBIL OPERASIONAL MONGODB) */}
-        {searchByVehicle && (
-          <div style={{ marginTop: 18, paddingTop: 18, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
-              <div>
-                <div style={{ fontSize: 12.5, fontWeight: 900, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Truck size={16} color="#38bdf8" /> DAFTAR FLEET ARMADA MOBIL OPERASIONAL ({activeFleetList.length} MOBIL DI MONGODB)
-                </div>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>
-                  Klik salah satu armada di bawah untuk langsung memuat rute & muatan tanpa perlu mengetik nomor plat.
-                </div>
+      {/* ─── ERROR STATE: HONEST EMPTY STATE (NO MOCK FALLBACK) ────────────────── */}
+      {errorMsg && (
+        <div className="glass-card-solid" style={{ padding: 24, borderRadius: 16, borderLeft: '4px solid #ef4444', background: 'rgba(239,68,68,0.08)' }}>
+          <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+            <AlertCircle size={24} color="#ef4444" style={{ flexShrink: 0, marginTop: 2 }} />
+            <div style={{ flex: 1 }}>
+              <h4 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#fca5a5' }}>
+                DATA TIDAK DITEMUKAN
+              </h4>
+              <p style={{ margin: '6px 0 0', fontSize: 13, color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>
+                {errorMsg}
+              </p>
+              <div style={{ marginTop: 14, display: 'flex', gap: 10 }}>
+                <button
+                  className="btn-secondary"
+                  onClick={() => {
+                    setQuery('');
+                    setErrorMsg('');
+                    setResult(null);
+                    setActiveTab('OVERVIEW');
+                    setSearchParams({ code: '', date: selectedDate });
+                  }}
+                  style={{ fontSize: 12, padding: '6px 14px' }}
+                >
+                  Kembali ke Control Tower
+                </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
 
-              {/* Live Fleet Search Input */}
-              <div style={{ position: 'relative', width: 280 }}>
-                <Search size={14} color="rgba(255,255,255,0.4)" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
-                <input
-                  className="input-navy"
-                  value={fleetSearchTerm}
-                  onChange={(e) => setFleetSearchTerm(e.target.value)}
-                  placeholder="Cari list mobil (nopol/driver/rute)..."
-                  style={{ paddingLeft: 32, fontSize: 12, height: 34 }}
-                />
-                {fleetSearchTerm && (
-                  <button
-                    onClick={() => setFleetSearchTerm('')}
-                    style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}
-                  >
-                    <X size={13} />
-                  </button>
-                )}
+      {/* ─── MODE A: DAILY CONTROL TOWER OVERVIEW ───────────────────────────────── */}
+      {activeTab === 'OVERVIEW' && !errorMsg && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          
+          {/* Section Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+            <div>
+              <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Activity size={20} color="#38bdf8" />
+                Operational Control Tower
+              </h2>
+              <p style={{ margin: '4px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>
+                Monitoring Perjalanan Paket & Utilisasi Kapasitas Armada Tanggal {selectedDate} (Timezone Asia/Jakarta WIB)
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <span className="badge-navy" style={{ fontSize: 11, padding: '4px 10px' }}>
+                <Clock size={12} style={{ marginRight: 4, verticalAlign: 'middle' }} />
+                Real-Time Database Sync
+              </span>
+            </div>
+          </div>
+
+          {/* 4 Stat Summary Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+            <div className="glass-card-solid" style={{ padding: 18, borderRadius: 14 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>TOTAL PACKAGES</span>
+                <Package size={18} color="#38bdf8" />
+              </div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: '#fff', marginTop: 10 }}>
+                {controlTower?.summary?.totalPackages ?? 0} <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.5)' }}>resi</span>
+              </div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>
+                Total Berat: {controlTower?.summary?.totalWeightKg ?? 0} kg
               </div>
             </div>
 
-            {/* Vehicle Cards Grid */}
-            {filteredFleetVehicles.length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 12 }}>
-                {filteredFleetVehicles.map((v, vIdx) => {
-                  const isSelected = result?.vehicleNopol === v.nopol || query === v.nopol;
-                  const maxCap = v.max_capacity_kg || (v.kapasitas_ton ? v.kapasitas_ton * 1000 : 1500);
+            <div className="glass-card-solid" style={{ padding: 18, borderRadius: 14 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>IN TRANSIT / LOADED</span>
+                <Truck size={18} color="#f97316" />
+              </div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: '#f97316', marginTop: 10 }}>
+                {(controlTower?.summary?.inTransitCount ?? 0) + (controlTower?.summary?.loadedCount ?? 0)} <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.5)' }}>resi</span>
+              </div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>
+                In Transit: {controlTower?.summary?.inTransitCount ?? 0} | Loaded: {controlTower?.summary?.loadedCount ?? 0}
+              </div>
+            </div>
 
+            <div className="glass-card-solid" style={{ padding: 18, borderRadius: 14 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>DELIVERED / ARRIVED</span>
+                <CheckCircle2 size={18} color="#10b981" />
+              </div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: '#10b981', marginTop: 10 }}>
+                {(controlTower?.summary?.deliveredCount ?? 0) + (controlTower?.summary?.arrivedCount ?? 0)} <span style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.5)' }}>resi</span>
+              </div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>
+                Selesai Diterima: {controlTower?.summary?.deliveredCount ?? 0}
+              </div>
+            </div>
+
+            <div className="glass-card-solid" style={{ padding: 18, borderRadius: 14 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>ACTIVE FLEET UTILIZATION</span>
+                <Car size={18} color="#38bdf8" />
+              </div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: '#fff', marginTop: 10 }}>
+                {controlTower?.summary?.overallSystemUtilPct ?? 0}%
+              </div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>
+                Armada Aktif: {controlTower?.summary?.activeVehiclesCount ?? 0} Mobil
+              </div>
+            </div>
+          </div>
+
+          {/* Operational Exceptions & Alerts Panel */}
+          {controlTower?.exceptions && controlTower.exceptions.length > 0 && (
+            <div className="glass-card-solid" style={{ padding: 20, borderRadius: 16, borderLeft: '4px solid #f59e0b' }}>
+              <h3 style={{ margin: 0, fontSize: 14, fontWeight: 800, color: '#fbbf24', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <AlertTriangle size={16} />
+                OPERATIONAL EXCEPTIONS & ALERTS ({controlTower.exceptions.length})
+              </h3>
+              <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {controlTower.exceptions.map((ex, idx) => (
+                  <div key={idx} style={{ background: 'rgba(245,158,11,0.08)', padding: '10px 14px', borderRadius: 10, border: '1px solid rgba(245,158,11,0.2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: 12.5, color: '#fef08a' }}>{ex.title}</div>
+                      <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>{ex.message}</div>
+                    </div>
+                    {ex.vehicle_nopol && (
+                      <button
+                        className="btn-secondary"
+                        onClick={() => handleSearch(ex.vehicle_nopol, selectedDate)}
+                        style={{ fontSize: 11, padding: '4px 10px', height: 28 }}
+                      >
+                        Inspeksi Armada <ArrowRight size={12} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Active Fleet Operational List */}
+          <div className="glass-card-solid" style={{ padding: 20, borderRadius: 16 }}>
+            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Car size={16} color="#38bdf8" />
+              STATUS ARMADA AKTIF & UTILISASI KAPASITAS HARI INI
+            </h3>
+
+            {controlTower?.activeVehicles && controlTower.activeVehicles.length > 0 ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 14, marginTop: 16 }}>
+                {controlTower.activeVehicles.map((v, i) => {
+                  const badge = getCapacityBadge(v.capacity_status);
                   return (
-                    <div
-                      key={v.nopol || vIdx}
-                      onClick={() => handleSearch(v.nopol, selectedDate)}
-                      style={{
-                        background: isSelected ? 'rgba(56,189,248,0.14)' : 'rgba(255,255,255,0.03)',
-                        border: `1.5px solid ${isSelected ? '#38bdf8' : 'rgba(255,255,255,0.08)'}`,
-                        boxShadow: isSelected ? '0 0 16px rgba(56,189,248,0.3)' : 'none',
-                        borderRadius: 12,
-                        padding: 14,
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'space-between',
-                        gap: 10
-                      }}
-                      onMouseEnter={e => { if (!isSelected) e.currentTarget.style.borderColor = 'rgba(56,189,248,0.5)'; }}
-                      onMouseLeave={e => { if (!isSelected) e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}
-                    >
+                    <div key={i} className="glass-card-solid" style={{ padding: 16, borderRadius: 12, border: `1px solid ${badge.border}` }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <Truck size={18} color={isSelected ? '#38bdf8' : '#f59e0b'} />
-                          <div>
-                            <div className="font-mono" style={{ fontSize: 14.5, fontWeight: 900, color: '#fff' }}>
-                              {v.nopol}
-                            </div>
-                            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)' }}>
-                              {v.jenis_kendaraan || 'TRUK BOX'}
-                            </div>
-                          </div>
+                        <div>
+                          <div style={{ fontSize: 15, fontWeight: 900, color: '#fff', fontFamily: 'monospace' }}>{v.vehicle_nopol}</div>
+                          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>{v.nama_kendaraan}</div>
                         </div>
-                        <span className={`badge ${isSelected ? 'badge-blue' : 'badge-ghost'}`} style={{ fontSize: 9.5 }}>
-                          {isSelected ? 'AKTIF TERPILIH' : `${maxCap} kg`}
+                        <span className={badge.class || 'badge-navy'} style={{ fontSize: 10, padding: '3px 8px' }}>
+                          {badge.label}
                         </span>
                       </div>
 
-                      <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', display: 'flex', flexDirection: 'column', gap: 3 }}>
-                        <div>👤 Driver: <strong style={{ color: '#fff' }}>{v.driver || 'Driver Armada'}</strong></div>
-                        <div>📍 Home Base: {v.home_base || 'SPP Bandung'}</div>
-                        <div>🛤️ Rute: <span style={{ color: '#38bdf8', fontFamily: 'monospace', fontWeight: 700 }}>{v.assigned_route_id || v.rute_utama || 'Belum Ditugaskan'}</span></div>
+                      <div style={{ marginTop: 14 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'rgba(255,255,255,0.6)', marginBottom: 4 }}>
+                          <span>Muatan Kargo: {v.current_load_kg} kg</span>
+                          <span>Batas: {v.max_capacity_kg} kg ({v.utilization_pct}%)</span>
+                        </div>
+                        <div style={{ width: '100%', height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 3, overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${Math.min(100, v.utilization_pct)}%`, background: badge.color, borderRadius: 3 }} />
+                        </div>
                       </div>
 
-                      <button
-                        style={{
-                          width: '100%',
-                          padding: '6px 0',
-                          fontSize: 11,
-                          fontWeight: 800,
-                          borderRadius: 8,
-                          border: 'none',
-                          background: isSelected ? '#38bdf8' : 'rgba(255,255,255,0.08)',
-                          color: isSelected ? '#000' : '#fff',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: 6
-                        }}
-                      >
-                        {isSelected ? <CheckCircle2 size={13} /> : <ArrowRight size={13} />}
-                        {isSelected ? 'Sedang Terpilih' : 'Lacak Armada Ini'}
-                      </button>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)', fontSize: 11 }}>
+                        <span style={{ color: 'rgba(255,255,255,0.5)' }}>Driver: {v.driver}</span>
+                        <button
+                          onClick={() => handleSearch(v.vehicle_nopol, selectedDate)}
+                          style={{ background: 'transparent', border: 'none', color: '#38bdf8', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                        >
+                          Lihat Kargo <ChevronRight size={13} />
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
               </div>
             ) : (
-              <div style={{ textAlign: 'center', padding: '16px 0', color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
-                Tidak ada mobil armada yang cocok dengan pencarian "{fleetSearchTerm}".
+              <div style={{ textAlign: 'center', padding: '30, 0', color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>
+                Tidak ada armada aktif tercatat di database untuk tanggal {selectedDate}.
               </div>
             )}
           </div>
-        )}
 
         {/* Operational Context Warning Banner (If date in past/completed) */}
         {result?.milkRun?.dateContextWarning && (
@@ -639,13 +648,8 @@ export default function Checker() {
             </button>
           ))}
         </div>
-
-        {errorMsg && (
-          <div style={{ marginTop: 12, fontSize: 12.5, color: '#ef4444', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <AlertCircle size={15} /> {errorMsg}
-          </div>
-        )}
       </div>
+    )}
 
       {/* MAIN VIEW CONTENT AREA */}
       {result && (selectedDate > '2026-08-14' || result.isFutureDate || result.hasData === false) ? (
@@ -723,225 +727,214 @@ export default function Checker() {
       ) : result ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-          {/* VEHICLE NO-CARGO WARNING BANNER */}
-          {result.warningMessage && (
-            <div style={{
-              padding: '16px 20px',
-              borderRadius: 16,
-              background: 'rgba(245, 158, 11, 0.14)',
-              border: '1.5px solid rgba(245, 158, 11, 0.5)',
-              color: '#fbbf24',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 14,
-              boxShadow: '0 8px 24px rgba(245, 158, 11, 0.12)'
-            }}>
-              <AlertTriangle size={24} color="#f59e0b" style={{ flexShrink: 0 }} />
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#f59e0b' }}>
-                  STATUS ARMADA TERKINI: KENDARAAN KOSONG / BELUM MEMILIKI MUATAN
+          {/* FUTURE OPERATIONAL DATE WARNING CARD */}
+          {(() => {
+            const todayStr = new Date().toISOString().slice(0, 10);
+            const isFutureDateSelected = result.isFutureDate || (selectedDate > todayStr && (!result.milkRun || !result.milkRun.routeStops || result.milkRun.routeStops.length === 0));
+            
+            if (isFutureDateSelected) {
+              return (
+                <div style={{
+                  padding: '32px 28px',
+                  borderRadius: 20,
+                  background: 'rgba(239, 68, 68, 0.08)',
+                  border: '1.5px solid rgba(239, 68, 68, 0.35)',
+                  color: '#f87171',
+                  textAlign: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 14,
+                  boxShadow: '0 12px 32px rgba(0,0,0,0.3)',
+                  marginTop: 10
+                }}>
+                  <div style={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: '50%',
+                    background: 'rgba(239, 68, 68, 0.15)',
+                    border: '1px solid rgba(239, 68, 68, 0.4)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <CalendarDays size={32} color="#f87171" />
+                  </div>
+
+                  <div style={{ maxWidth: 640 }}>
+                    <h3 style={{ fontSize: 17, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#ef4444', margin: 0 }}>
+                      Tanggal Operasional Belum Tiba ({formatDateDisplay(selectedDate)})
+                    </h3>
+                    <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', marginTop: 8, marginBottom: 0, lineHeight: 1.6 }}>
+                      Tanggal <strong>{formatDateDisplay(selectedDate)}</strong> merupakan tanggal operasional di masa depan yang belum tiba dan belum memiliki riwayat perjalanan armada maupun transaksi paket di sistem IPOS5.
+                    </p>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
+                    <button
+                      className="btn-primary"
+                      onClick={() => {
+                        setSelectedDate('2026-08-12');
+                        handleSearch(query, '2026-08-12');
+                      }}
+                      style={{ padding: '8px 16px', fontSize: 12, fontWeight: 800, borderRadius: 10 }}
+                    >
+                      📅 Pilih Tanggal Operasional Aktif (12 Ags 2026)
+                    </button>
+                    <button
+                      className="btn-ghost"
+                      onClick={() => {
+                        setSelectedDate('2026-07-24');
+                        handleSearch(query, '2026-07-24');
+                      }}
+                      style={{ padding: '8px 16px', fontSize: 12, fontWeight: 800, borderRadius: 10 }}
+                    >
+                      📅 Riwayat Operasional (24 Jul 2026)
+                    </button>
+                  </div>
                 </div>
-                <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.9)', marginTop: 4, lineHeight: 1.5 }}>
-                  {result.warningMessage}
+              );
+            }
+            return null;
+          })()}
+
+          {/* VEHICLE NO-CARGO WARNING BANNER (Only for past/current operational dates with empty load) */}
+          {(() => {
+            const todayStr = new Date().toISOString().slice(0, 10);
+            const isFutureDateSelected = result.isFutureDate || (selectedDate > todayStr && (!result.milkRun || !result.milkRun.routeStops || result.milkRun.routeStops.length === 0));
+            if (isFutureDateSelected) return null;
+
+            return result.warningMessage ? (
+              <div style={{
+                padding: '16px 20px',
+                borderRadius: 16,
+                background: 'rgba(245, 158, 11, 0.14)',
+                border: '1.5px solid rgba(245, 158, 11, 0.5)',
+                color: '#fbbf24',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 14,
+                boxShadow: '0 8px 24px rgba(245, 158, 11, 0.12)'
+              }}>
+                <AlertTriangle size={24} color="#f59e0b" style={{ flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#f59e0b' }}>
+                    STATUS ARMADA TERKINI: KENDARAAN KOSONG / BELUM MEMILIKI MUATAN
+                  </div>
+                  <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.9)', marginTop: 4, lineHeight: 1.5 }}>
+                    {result.warningMessage}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            ) : null;
+          })()}
 
-          {/* SUMMARY STATS CARDS — Fleet snapshot for this date */}
+          {/* OPERATIONAL CARDS (Only rendered when selected date is past/current with valid operation data) */}
           {(() => {
-            const stops = result.routeStops || [];
-            const totalStops = stops.length;
-            const activeSeq = isSimulating || simStopSeq !== null ? (simStopSeq || 1) : (result.currentStopSeq || 1);
-            const activeStopObj = stops[activeSeq - 1] || {};
-            const totalCargo = (result.cargoItems || []).length;
-            const totalWeight = (result.cargoItems || []).reduce((s, i) => s + (i.weight_kg || 0), 0).toFixed(1);
-            const utilPct = activeStopObj.utilizationPctAtStop ?? result.utilizationPct ?? 0;
-            const capColor = utilPct >= 100 ? '#ef4444' : utilPct >= 85 ? '#f59e0b' : '#10b981';
-            const cards = [
-              { icon: Package, color: '#38bdf8', label: 'Total Paket di Kendaraan', value: `${totalCargo} pcs`, sub: `${totalWeight} kg total muatan` },
-              { icon: Truck, color: '#f59e0b', label: 'Kendaraan Beroperasi', value: result.vehicleNopol, sub: `Rute: ${result.routeId}` },
-              { icon: Activity, color: capColor, label: `Utilisasi Kap. Stop #${activeSeq}`, value: `${utilPct}%`, sub: `${activeStopObj.loadAtStopKg ?? result.currentLoadKg ?? 0} / ${result.maxCapacityKg} kg` },
-              { icon: MapPin, color: '#a78bfa', label: 'Progress Rute', value: `${activeSeq} / ${totalStops} Stop`, sub: activeStopObj.officeName ? `Sekarang: ${activeStopObj.officeName}` : 'In Progress' },
-            ];
+            const todayStr = new Date().toISOString().slice(0, 10);
+            const isFutureDateSelected = result.isFutureDate || (selectedDate > todayStr && (!result.milkRun || !result.milkRun.routeStops || result.milkRun.routeStops.length === 0));
+            if (isFutureDateSelected) return null;
+
             return (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
-                {cards.map((c, i) => {
-                  const Icon = c.icon;
+              <>
+                {/* SUMMARY STATS CARDS — Fleet snapshot for this date */}
+                {(() => {
+                  const stops = result.routeStops || [];
+                  const totalStops = stops.length;
+                  const activeSeq = isSimulating || simStopSeq !== null ? (simStopSeq || 1) : (result.currentStopSeq || 1);
+                  const activeStopObj = stops[activeSeq - 1] || {};
+                  const totalCargo = (result.cargoItems || []).length;
+                  const totalWeight = (result.cargoItems || []).reduce((s, i) => s + (i.weight_kg || 0), 0).toFixed(1);
+                  const utilPct = activeStopObj.utilizationPctAtStop ?? result.utilizationPct ?? 0;
+                  const capColor = utilPct >= 100 ? '#ef4444' : utilPct >= 85 ? '#f59e0b' : '#10b981';
+                  const cards = [
+                    { icon: Package, color: '#38bdf8', label: 'Total Paket di Kendaraan', value: `${totalCargo} pcs`, sub: `${totalWeight} kg total muatan` },
+                    { icon: Truck, color: '#f59e0b', label: 'Kendaraan Beroperasi', value: result.vehicleNopol, sub: `Rute: ${result.routeId}` },
+                    { icon: Activity, color: capColor, label: `Utilisasi Kap. Stop #${activeSeq}`, value: `${utilPct}%`, sub: `${activeStopObj.loadAtStopKg ?? result.currentLoadKg ?? 0} / ${result.maxCapacityKg} kg` },
+                    { icon: MapPin, color: '#a78bfa', label: 'Progress Rute', value: `${activeSeq} / ${totalStops} Stop`, sub: activeStopObj.officeName ? `Sekarang: ${activeStopObj.officeName}` : 'In Progress' },
+                  ];
                   return (
-                    <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${c.color}33`, borderRadius: 14, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14 }}>
-                      <div style={{ width: 40, height: 40, borderRadius: 10, background: `${c.color}18`, border: `1px solid ${c.color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <Icon size={18} color={c.color} />
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+                      {cards.map((c, i) => {
+                        const Icon = c.icon;
+                        return (
+                          <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${c.color}33`, borderRadius: 14, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14 }}>
+                            <div style={{ width: 40, height: 40, borderRadius: 10, background: `${c.color}18`, border: `1px solid ${c.color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              <Icon size={18} color={c.color} />
+                            </div>
+                            <div>
+                              <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>{c.label}</div>
+                              <div style={{ fontSize: 16, fontWeight: 900, color: '#fff', fontFamily: i === 1 ? 'monospace' : 'inherit' }}>{c.value}</div>
+                              <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>{c.sub}</div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+
+                {/* CAPACITY ALERT BANNER — shown when vehicle is FULL or NEAR CAPACITY */}
+                {(() => {
+                  const activeSeq = isSimulating || simStopSeq !== null ? (simStopSeq || 1) : (result?.currentStopSeq || 1);
+                  const activeStopObj = result.routeStops?.[activeSeq - 1] || {};
+                  const capStatus = activeStopObj.capacityStatusAtStop || result.capacityStatus;
+                  if (capStatus === 'NORMAL') return null;
+                  const isOver = capStatus === 'OVER CAPACITY';
+                  const isFull = capStatus === 'FULL';
+                  return (
+                    <div style={{
+                      padding: '14px 18px',
+                      borderRadius: 14,
+                      background: isOver ? 'rgba(239,68,68,0.15)' : isFull ? 'rgba(249,115,22,0.12)' : 'rgba(245,158,11,0.10)',
+                      border: `1.5px solid ${isOver ? 'rgba(239,68,68,0.6)' : isFull ? 'rgba(249,115,22,0.5)' : 'rgba(245,158,11,0.4)'}`,
+                      display: 'flex', alignItems: 'center', gap: 14,
+                      animation: isOver ? 'pulse 2s infinite' : 'none'
+                    }}>
+                      <div style={{ fontSize: 28 }}>{isOver ? '🚨' : isFull ? '⚠️' : '🔶'}</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 900, fontSize: 13.5, color: isOver ? '#ef4444' : isFull ? '#f97316' : '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                          {isOver ? '🚨 PERINGATAN: OVER CAPACITY!' : isFull ? '⚠️ KAPASITAS PENUH (FULL)' : '🔶 Mendekati Batas Kapasitas'}
+                        </div>
+                        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 3 }}>
+                          {isOver
+                            ? `Muatan di Stop #${activeSeq} melebihi batas maksimum ${result.maxCapacityKg} kg! Perlu redistribusi.`
+                            : isFull
+                            ? `Kendaraan ${result.vehicleNopol} sudah mencapai kapasitas penuh di Stop #${activeSeq}.`
+                            : `Muatan di Stop #${activeSeq} mendekati batas ${result.maxCapacityKg} kg. Perhatikan penambahan paket.`}
+                        </div>
                       </div>
-                      <div>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>{c.label}</div>
-                        <div style={{ fontSize: 16, fontWeight: 900, color: '#fff', fontFamily: i === 1 ? 'monospace' : 'inherit' }}>{c.value}</div>
-                        <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>{c.sub}</div>
+                      <div style={{ fontFamily: 'monospace', fontSize: 16, fontWeight: 900, color: isOver ? '#ef4444' : isFull ? '#f97316' : '#f59e0b' }}>
+                        {activeStopObj.utilizationPctAtStop || result.utilizationPct}%
                       </div>
                     </div>
                   );
-                })}
-              </div>
-            );
-          })()}
-
-          {/* CAPACITY ALERT BANNER — shown when vehicle is FULL or NEAR CAPACITY */}
-          {(() => {
-            const activeSeq = isSimulating || simStopSeq !== null ? (simStopSeq || 1) : (result?.currentStopSeq || 1);
-            const activeStopObj = result.routeStops?.[activeSeq - 1] || {};
-            const capStatus = activeStopObj.capacityStatusAtStop || result.capacityStatus;
-            if (capStatus === 'NORMAL') return null;
-            const isOver = capStatus === 'OVER CAPACITY';
-            const isFull = capStatus === 'FULL';
-            return (
-              <div style={{
-                padding: '14px 18px',
-                borderRadius: 14,
-                background: isOver ? 'rgba(239,68,68,0.15)' : isFull ? 'rgba(249,115,22,0.12)' : 'rgba(245,158,11,0.10)',
-                border: `1.5px solid ${isOver ? 'rgba(239,68,68,0.6)' : isFull ? 'rgba(249,115,22,0.5)' : 'rgba(245,158,11,0.4)'}`,
-                display: 'flex', alignItems: 'center', gap: 14,
-                animation: isOver ? 'pulse 2s infinite' : 'none'
-              }}>
-                <div style={{ fontSize: 28 }}>{isOver ? '🚨' : isFull ? '⚠️' : '🔶'}</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 900, fontSize: 13.5, color: isOver ? '#ef4444' : isFull ? '#f97316' : '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    {isOver ? '🚨 PERINGATAN: OVER CAPACITY!' : isFull ? '⚠️ KAPASITAS PENUH (FULL)' : '🔶 Mendekati Batas Kapasitas'}
-                  </div>
-                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', marginTop: 3 }}>
-                    {isOver
-                      ? `Muatan di Stop #${activeSeq} melebihi batas maksimum ${result.maxCapacityKg} kg! Perlu redistribusi.`
-                      : isFull
-                      ? `Kendaraan ${result.vehicleNopol} sudah mencapai kapasitas penuh di Stop #${activeSeq}.`
-                      : `Muatan di Stop #${activeSeq} mendekati batas ${result.maxCapacityKg} kg. Perhatikan penambahan paket.`}
-                  </div>
-                </div>
-                <div style={{ fontFamily: 'monospace', fontSize: 16, fontWeight: 900, color: isOver ? '#ef4444' : isFull ? '#f97316' : '#f59e0b' }}>
-                  {activeStopObj.utilizationPctAtStop || result.utilizationPct}%
-                </div>
-              </div>
+                })()}
+              </>
             );
           })()}
           
-          {/* 2. SECTION: VEHICLE PROFILE OVERVIEW (IF VEHICLE) VS PACKAGE OVERVIEW (IF CONNOTE) */}
-          {result.isVehicleQuery ? (
-            <div 
-              className="glass-card-solid gradient-border-card" 
-              style={{ 
-                padding: 24, 
-                borderRadius: 18, 
-                background: 'linear-gradient(135deg, rgba(13,27,56,0.92), rgba(6,13,31,0.96))',
-                border: '1px solid rgba(56,189,248,0.3)',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.4)'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, marginBottom: 20 }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                    <span style={{ fontSize: 11, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <Truck size={14} color="#38bdf8" /> SPESIFIKASI & PROFIL ARMADA MOBIL (MONGODB)
-                    </span>
-                    <span className="badge badge-navy" style={{ fontSize: 10 }}>
-                      Konteks Tanggal: {formatDateDisplay(selectedDate)}
-                    </span>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                    <div className="font-mono" style={{ fontSize: 26, fontWeight: 900, color: '#fff', letterSpacing: '0.04em' }}>
-                      {result.vehicleInfo?.nopol || result.vehicleNopol || query}
-                    </div>
-                    <span className="badge badge-orange font-mono" style={{ fontSize: 11.5, fontWeight: 800 }}>
-                      {result.vehicleInfo?.jenis_kendaraan || 'ARMADA LOGISTIK'}
-                    </span>
-                    <span className={`badge ${result.hasRoute ? 'badge-emerald' : 'badge-amber'}`} style={{ fontSize: 11, padding: '4px 10px' }}>
-                      {result.hasRoute ? 'RUTE TERDAFTAR (ACTIVE)' : 'BELUM DITUGASKAN'}
-                    </span>
-                  </div>
-                  <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.7)', marginTop: 4, fontWeight: 600 }}>
-                    {result.vehicleInfo?.nama_kendaraan || `Kendaraan Operasional IPOS5`}
-                  </div>
-                </div>
-
+          {/* Header Resi Card */}
+          <div className="glass-card-solid" style={{ padding: 20, borderRadius: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14 }}>
+              <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <button
-                    onClick={handleCopyCode}
-                    className="btn-ghost"
-                    style={{ padding: '6px 14px', fontSize: 11.5, borderRadius: 8, borderColor: 'rgba(56,189,248,0.3)', color: '#38bdf8', gap: 6 }}
-                  >
-                    {copied ? <Check size={13} color="#10b981" /> : <Copy size={13} />}
-                    {copied ? 'Tercopy' : 'Copy Plat Nopol'}
+                  <h2 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: '#fff', fontFamily: 'monospace' }}>
+                    {result.connoteCode}
+                  </h2>
+                  <button onClick={() => handleCopyCode(result.connoteCode)} style={{ background: 'transparent', border: 'none', color: '#38bdf8', cursor: 'pointer' }}>
+                    {copied ? <Check size={16} color="#10b981" /> : <Copy size={16} />}
                   </button>
-                </div>
-              </div>
-
-              {/* Spec Details Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, paddingTop: 18, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-                {[
-                  { label: 'Driver / Pengemudi', value: result.vehicleInfo?.driver || 'Driver Armada Pos', sub: result.vehicleInfo?.driverPhone || '-', color: '#fff', icon: User },
-                  { label: 'Kapasitas Maksimal', value: `${result.maxCapacityKg} kg`, sub: `(${(result.maxCapacityKg / 1000).toFixed(1)} Ton Max Load)`, color: '#38bdf8', icon: Weight },
-                  { label: 'Home Base Operasional', value: result.vehicleInfo?.homeBase || '40000 - SPP Bandung', sub: 'Kantor Pangkalan Resmi', color: '#10b981', icon: Building2 },
-                  { label: 'Penugasan Rute (MongoDB)', value: result.vehicleInfo?.assignedRouteId || result.routeId || 'TIDAK ADA', sub: 'Rute Operasional Harian', color: '#f59e0b', icon: Navigation },
-                ].map((item) => {
-                  const IconComp = item.icon;
-                  return (
-                    <div key={item.label} style={{ background: 'rgba(255,255,255,0.03)', padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)' }}>
-                      <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <IconComp size={13} color={item.color} /> {item.label}
-                      </div>
-                      <div style={{ fontSize: 13.5, fontWeight: 800, color: item.color, fontFamily: item.label.includes('Rute') ? 'monospace' : 'inherit' }}>
-                        {item.value}
-                      </div>
-                      <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>
-                        {item.sub}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ) : (
-            <div 
-              className="glass-card-solid gradient-border-card" 
-              style={{ 
-                padding: 24, 
-                borderRadius: 18, 
-                background: 'linear-gradient(135deg, rgba(13,27,56,0.92), rgba(6,13,31,0.96))',
-                border: '1px solid rgba(56,189,248,0.3)',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.4)'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, marginBottom: 20 }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>
-                      PACKAGE TRACKING OVERVIEW
-                    </span>
-                    <span className="badge badge-navy" style={{ fontSize: 10 }}>
-                      Konteks Tanggal: {formatDateDisplay(selectedDate)}
-                    </span>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                    <div className="font-mono" style={{ fontSize: 26, fontWeight: 900, color: '#fff', letterSpacing: '0.04em' }}>
-                      {result.connote}
-                    </div>
-                    <button
-                      onClick={handleCopyCode}
-                      className="btn-ghost"
-                      style={{ padding: '4px 10px', fontSize: 11.5, borderRadius: 8, borderColor: 'rgba(56,189,248,0.3)', color: '#38bdf8' }}
-                    >
-                      {copied ? <Check size={13} color="#10b981" /> : <Copy size={13} />}
-                      {copied ? 'Tercopy' : 'Copy Resi'}
-                    </button>
-                    <span className="font-mono" style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.06)', padding: '4px 10px', borderRadius: 6 }}>
-                      Booking: {result.bookingCode}
-                    </span>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span className={`badge ${result.badgeClass}`} style={{ fontSize: 13, padding: '8px 20px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    {result.stateStr}
+                  <span className={mapStateToBadge(result.state).class} style={{ fontSize: 11, padding: '4px 10px' }}>
+                    {mapStateToBadge(result.state).label}
                   </span>
+                </div>
+                <div style={{ display: 'flex', gap: 16, marginTop: 8, fontSize: 12, color: 'rgba(255,255,255,0.6)', flexWrap: 'wrap' }}>
+                  <span>Booking Code: <strong style={{ color: '#fff' }}>{result.bookingCode}</strong></span>
+                  <span>Layanan: <strong style={{ color: '#38bdf8' }}>{result.service}</strong></span>
+                  <span>Berat Paket: <strong style={{ color: '#fff' }}>{result.weightKg} kg</strong></span>
+                  <span>Tgl Dibuat: <strong style={{ color: '#fff' }}>{formatDateDisplay(result.createdAt)}</strong></span>
                 </div>
               </div>
 
@@ -969,7 +962,7 @@ export default function Checker() {
                 })}
               </div>
             </div>
-          )}
+          </div>
 
           {/* 3. SECTION: TRACKING EVENT TIMELINE STEPPER (DATABASE EVENT HISTORY) */}
           <div className="glass-card-solid" style={{ padding: 22, borderRadius: 18, border: '1px solid rgba(255,255,255,0.08)' }}>
@@ -979,7 +972,7 @@ export default function Checker() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span className="font-mono" style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>
-                  {result.timeline.length} Event Tercatat
+                  {(result.timeline || []).length} Event Tercatat
                 </span>
                 <button
                   onClick={() => window.print()}
@@ -994,8 +987,8 @@ export default function Checker() {
 
             {/* Stepper Grid / List */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {result.timeline.map((event, idx) => {
-                const isLast = idx === result.timeline.length - 1;
+              {(result.timeline || []).map((event, idx) => {
+                const isLast = idx === (result.timeline || []).length - 1;
                 const eventStageUp = String(event.stage || '').toUpperCase();
                 const dotColor = isLast ? '#10b981'
                   : eventStageUp.includes('DELIVERED') ? '#10b981'
@@ -1017,29 +1010,15 @@ export default function Checker() {
                       >
                         {idx + 1}
                       </div>
-                      {idx < result.timeline.length - 1 && (
+                      {idx < (result.timeline || []).length - 1 && (
                         <div style={{ width: 2, height: 28, background: `${dotColor}33`, margin: '4px 0' }} />
                       )}
                     </div>
-
-                    <div style={{ flex: 1, background: isLast ? `${dotColor}0d` : 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: 10, border: `1px solid ${isLast ? dotColor + '33' : 'rgba(255,255,255,0.05)'}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span style={{ fontSize: 13, fontWeight: 800, color: isLast ? dotColor : '#fff' }}>
-                            {event.stage}
-                          </span>
-                          <span className="badge badge-navy" style={{ fontSize: 9.5 }}>
-                            {event.location}
-                          </span>
-                        </div>
-                        <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>
-                          {event.note}
-                        </div>
-                      </div>
-
-                      <div className="font-mono" style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', whiteSpace: 'nowrap' }}>
-                        {event.time}
-                      </div>
+                    <div style={{ fontSize: 12.5, fontWeight: 800, color: '#fff', marginTop: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {stop.officeName}
+                    </div>
+                    <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.4)', marginTop: 4 }}>
+                      ⏱️ {stop.estimasi_menit}m | 📏 {stop.jarak_km}km
                     </div>
                   </div>
                 );
@@ -1047,92 +1026,143 @@ export default function Checker() {
             </div>
           </div>
 
-          {/* 4 & 5. SECTIONS: CURRENT JOURNEY & VEHICLE CAPACITY GAUGE */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
-            
-            {/* CURRENT JOURNEY CARD */}
-            <div className="glass-card-solid" style={{ padding: 22, borderRadius: 18, border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', justifyBetween: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                <div style={{ fontSize: 12, fontWeight: 800, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Truck size={16} color="#38bdf8" /> CURRENT VEHICLE JOURNEY
-                </div>
-                <span className="badge badge-orange" style={{ fontSize: 10, padding: '3px 8px' }}>
-                  IN_PROGRESS
-                </span>
-              </div>
+          {/* Tracking Event Timeline (From DB tracking_events sorted ASC) */}
+          <div className="glass-card-solid" style={{ padding: 20, borderRadius: 16 }}>
+            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <History size={16} color="#38bdf8" />
+              RIWAYAT TRACKING LOG EVENT (CHRONOLOGICAL EVENT LOG)
+            </h3>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
-                <div style={{
-                  width: 46,
-                  height: 46,
-                  borderRadius: 12,
-                  background: 'linear-gradient(135deg, rgba(232,67,31,0.25), rgba(245,158,11,0.15))',
-                  border: '1.5px solid rgba(232,67,31,0.4)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <Truck size={24} color="#ff7b59" />
-                </div>
-                <div>
-                  <div style={{ fontSize: 18, fontWeight: 900, color: '#fff' }}>
-                    {result.vehicleNopol}
+            <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {result.timeline?.map((evt, idx) => (
+                <div key={idx} style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(56,189,248,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#38bdf8', fontWeight: 800, fontSize: 12, flexShrink: 0 }}>
+                    {idx + 1}
                   </div>
-                  <div style={{ fontSize: 11.5, color: '#6ba3f0', marginTop: 2 }} className="font-mono">
-                    Rute: {result.routeId}
+                  <div style={{ flex: 1, background: 'rgba(255,255,255,0.03)', padding: 12, borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span className={mapStateToBadge(evt.stage).class} style={{ fontSize: 10, padding: '2px 8px' }}>
+                        {evt.stage}
+                      </span>
+                      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{evt.time}</span>
+                    </div>
+                    <div style={{ fontSize: 12.5, fontWeight: 700, color: '#fff', marginTop: 6 }}>{evt.note}</div>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>📍 Lokasi: {evt.location}</div>
                   </div>
                 </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+      )}
+
+      {/* ─── MODE C: VEHICLE SEARCH RESULT ────────────────────────────────────── */}
+      {activeTab === 'VEHICLE' && result && result.data && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          
+          {/* Vehicle Profile Card */}
+          <div className="glass-card-solid" style={{ padding: 20, borderRadius: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14 }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <h2 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: '#fff', fontFamily: 'monospace' }}>
+                    {result.data.vehicle?.nopol}
+                  </h2>
+                  <span className={getCapacityBadge(result.data.capacity?.status).class || 'badge-navy'} style={{ fontSize: 11, padding: '4px 10px' }}>
+                    {result.data.capacity?.status}
+                  </span>
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.7)', marginTop: 4 }}>
+                  {result.data.vehicle?.nama_kendaraan}
+                </div>
+                <div style={{ display: 'flex', gap: 16, marginTop: 8, fontSize: 12, color: 'rgba(255,255,255,0.5)', flexWrap: 'wrap' }}>
+                  <span>Driver: <strong style={{ color: '#fff' }}>{result.data.vehicle?.driver}</strong></span>
+                  <span>Jenis: <strong style={{ color: '#38bdf8' }}>{result.data.vehicle?.jenis_kendaraan}</strong></span>
+                  <span>Home Base: <strong style={{ color: '#fff' }}>{result.data.vehicle?.home_base}</strong></span>
+                </div>
               </div>
 
-              {(() => {
-                const activeSeq = isSimulating || simStopSeq !== null ? (simStopSeq || 1) : result.currentStopSeq;
-                const activeStopObj = result.routeStops?.[activeSeq - 1] || {};
-                const nextStopObj = result.routeStops?.[activeSeq] || null;
-                const etaCountdown = getEtaCountdown(activeStopObj.etaTime);
+              {/* Capacity Progress Bar */}
+              <div style={{ minWidth: 240 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 700, color: '#fff', marginBottom: 6 }}>
+                  <span>UTILISASI BEBAN</span>
+                  <span>{result.data.capacity?.utilization_pct}%</span>
+                </div>
+                <div style={{ width: '100%', height: 10, background: 'rgba(255,255,255,0.1)', borderRadius: 5, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${Math.min(100, result.data.capacity?.utilization_pct || 0)}%`, background: getCapacityBadge(result.data.capacity?.status).color, borderRadius: 5 }} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 6 }}>
+                  <span>Terpakai: {result.data.capacity?.current_load_kg} kg</span>
+                  <span>Batas: {result.data.capacity?.max_capacity_kg} kg</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Cargo Manifest Grouped by Destination Office */}
+          <div className="glass-card-solid" style={{ padding: 20, borderRadius: 16 }}>
+            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Package size={16} color="#38bdf8" />
+              CARGO MANIFEST DIKELOMPOKKAN BERDASARKAN KANTOR TUJUAN ({result.data.totalCargoCount || 0} PAKET)
+            </h3>
+
+            <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {result.data.cargoGroupedByDestination?.map((grp, i) => {
+                const isExpanded = !!expandedDestGroups[grp.destination_nopen];
 
                 return (
-                  <div style={{ background: 'rgba(6,13,31,0.5)', padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                      <span style={{ color: 'rgba(255,255,255,0.5)' }}>Stop Sequence Aktif:</span>
-                      <strong style={{ color: '#fff' }}>Stop #{activeSeq} dari {(result.routeStops || []).length || 6}</strong>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                      <span style={{ color: 'rgba(255,255,255,0.5)' }}>Stop Saat Ini:</span>
-                      <strong style={{ color: '#10b981' }}>{activeStopObj.officeName || 'KCU Cimahi'}</strong>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, alignItems: 'center' }}>
-                      <span style={{ color: 'rgba(255,255,255,0.5)' }}>Estimasi Tiba (ETA):</span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <strong style={{ color: '#38bdf8' }}>{activeStopObj.etaTime || '10:00 WIB'}</strong>
-                        {etaCountdown && (
-                          <span style={{ fontSize: 10, background: 'rgba(56,189,248,0.15)', color: '#38bdf8', padding: '2px 7px', borderRadius: 6, fontWeight: 700, fontFamily: 'monospace', border: '1px solid rgba(56,189,248,0.3)' }}>
-                            ⏱ {etaCountdown}
-                          </span>
-                        )}
+                  <div key={i} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, border: '1px solid rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+                    <div 
+                      onClick={() => toggleDestGroup(grp.destination_nopen)}
+                      style={{ padding: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', background: 'rgba(255,255,255,0.02)' }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        {isExpanded ? <ChevronDown size={16} color="#38bdf8" /> : <ChevronRight size={16} color="rgba(255,255,255,0.4)" />}
+                        <span style={{ fontWeight: 800, fontSize: 13.5, color: '#fff' }}>{grp.destination_office_name} ({grp.destination_nopen})</span>
+                      </div>
+                      <div style={{ display: 'flex', gap: 14, fontSize: 12 }}>
+                        <span className="badge-navy">{grp.package_count} Paket</span>
+                        <span style={{ color: '#38bdf8', fontWeight: 800 }}>{grp.total_weight_kg} kg</span>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                      <span style={{ color: 'rgba(255,255,255,0.5)' }}>Stop Berikutnya:</span>
-                      <strong style={{ color: nextStopObj ? '#f59e0b' : '#10b981' }}>
-                        {nextStopObj ? nextStopObj.officeName : 'SPP Bandung (Terminal Akhir)'}
-                      </strong>
-                    </div>
-                    {nextStopObj && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                        <span style={{ color: 'rgba(255,255,255,0.5)' }}>ETA Stop Berikutnya:</span>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <strong style={{ color: '#f59e0b' }}>{nextStopObj.etaTime || '-'}</strong>
-                          {getEtaCountdown(nextStopObj.etaTime) && (
-                            <span style={{ fontSize: 10, background: 'rgba(245,158,11,0.15)', color: '#f59e0b', padding: '2px 7px', borderRadius: 6, fontWeight: 700, fontFamily: 'monospace', border: '1px solid rgba(245,158,11,0.3)' }}>
-                              ⏱ {getEtaCountdown(nextStopObj.etaTime)}
-                            </span>
-                          )}
-                        </div>
+
+                    {isExpanded && (
+                      <div style={{ padding: 14, borderTop: '1px solid rgba(255,255,255,0.06)', background: 'rgba(0,0,0,0.2)' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, textAlign: 'left' }}>
+                          <thead>
+                            <tr style={{ color: 'rgba(255,255,255,0.5)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                              <th style={{ padding: 8 }}>No. Resi</th>
+                              <th style={{ padding: 8 }}>Berat</th>
+                              <th style={{ padding: 8 }}>Pengirim</th>
+                              <th style={{ padding: 8 }}>Penerima</th>
+                              <th style={{ padding: 8 }}>Aksi</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {grp.packages?.map((pkg, pIdx) => (
+                              <tr key={pIdx} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                                <td style={{ padding: 8, fontFamily: 'monospace', fontWeight: 700, color: '#38bdf8' }}>{pkg.connote_code}</td>
+                                <td style={{ padding: 8, color: '#fff' }}>{pkg.weight_kg} kg</td>
+                                <td style={{ padding: 8, color: 'rgba(255,255,255,0.7)' }}>{pkg.sender_name || '-'}</td>
+                                <td style={{ padding: 8, color: 'rgba(255,255,255,0.7)' }}>{pkg.receiver_name || '-'}</td>
+                                <td style={{ padding: 8 }}>
+                                  <button
+                                    onClick={() => handleSearch(pkg.connote_code, selectedDate)}
+                                    style={{ background: 'transparent', border: 'none', color: '#38bdf8', fontWeight: 800, cursor: 'pointer', fontSize: 11 }}
+                                  >
+                                    Lacak Paket <ArrowUpRight size={12} />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                     )}
                   </div>
                 );
-              })()}
+              })}
 
               <button
                 className="btn-primary"
@@ -1217,6 +1247,8 @@ export default function Checker() {
             })()}
 
           </div>
+        </div>
+      )}
 
           {/* 6. SECTION: ROUTE JOURNEY (MULTI-STOP WAYPOINTS & DEMO SIMULATION) */}
           {result.hasRoute !== false && (result.routeStops || []).length > 0 && (
@@ -1236,7 +1268,7 @@ export default function Checker() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 14 }}>
               <div>
                 <div style={{ fontSize: 13, fontWeight: 900, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Navigation size={17} color="#38bdf8" /> MULTI-STOP ROUTE JOURNEY ({result.routeStops.length} WAYPOINTS DATABASE)
+                  <Navigation size={17} color="#38bdf8" /> MULTI-STOP ROUTE JOURNEY ({(result.routeStops || []).length} WAYPOINTS DATABASE)
                 </div>
                 <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 3 }}>
                   Lintasan armada {result.vehicleNopol} — Klik waypoint untuk memfilter muatan paket
@@ -1268,7 +1300,7 @@ export default function Checker() {
                 ) : (
                   <button
                     onClick={() => {
-                      if ((simStopSeq || result.currentStopSeq) >= result.routeStops.length) {
+                      if ((simStopSeq || result.currentStopSeq) >= (result.routeStops || []).length) {
                         setSimStopSeq(1);
                       }
                       setIsSimulating(true);
@@ -1281,7 +1313,7 @@ export default function Checker() {
                 )}
 
                 <button
-                  onClick={() => setSimStopSeq(prev => Math.min(result.routeStops.length, (prev ?? result.currentStopSeq ?? 1) + 1))}
+                  onClick={() => setSimStopSeq(prev => Math.min((result.routeStops || []).length, (prev ?? result.currentStopSeq ?? 1) + 1))}
                   className="btn-ghost"
                   style={{ padding: '4px 8px', fontSize: 11, borderRadius: 8, gap: 4 }}
                   title="Maju 1 Stop"
@@ -1700,11 +1732,10 @@ export default function Checker() {
               </div>
             )}
           </div>
-          )}
+      )}
 
-        </div>
-      ) : !loading && (
-        /* EMPTY STATE — shown before first search or when result is cleared */
+      {/* ─── EMPTY STATE ──────────────────────────────────────────────────────── */}
+      {!result && !loading && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 24px', gap: 28, textAlign: 'center' }}>
           {/* Animated truck illustration */}
           <div style={{ position: 'relative', width: 160, height: 100 }}>
@@ -1719,58 +1750,14 @@ export default function Checker() {
               Masukkan <strong style={{ color: '#38bdf8' }}>nomor resi / connote</strong> atau <strong style={{ color: '#f59e0b' }}>plat kendaraan</strong> untuk melihat posisi real-time armada, muatan Milk Run, dan estimasi waktu tiba ke setiap kantor cabang.
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-            {SAMPLE_RESIS.map(s => (
-              <button
-                key={s.code}
-                onClick={() => handleSearch(s.code, selectedDate)}
-                style={{ padding: '10px 18px', borderRadius: 12, border: '1px solid rgba(56,189,248,0.3)', background: 'rgba(56,189,248,0.08)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, transition: 'all 0.2s' }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(56,189,248,0.18)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'rgba(56,189,248,0.08)'}
-              >
-                <span className="font-mono" style={{ fontSize: 12, color: '#6ba3f0', fontWeight: 700 }}>{s.code}</span>
-                <span className={`badge ${s.badgeClass}`} style={{ fontSize: 9.5 }}>{s.badge}</span>
-              </button>
-            ))}
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14, maxWidth: 580, width: '100%' }}>
-            {[
-              { emoji: '📦', title: 'Real-time Load', desc: 'Muatan di tiap stop berubah sesuai DB' },
-              { emoji: '🗺️', title: 'Multi-Stop Route', desc: 'Visualisasi 6-stop Milk Run interaktif' },
-              { emoji: '⏱️', title: 'ETA Countdown', desc: 'Countdown live ke stop berikutnya' },
-              { emoji: '🎬', title: 'Simulasi Demo', desc: 'Play/Pause pergerakan armada untuk presentasi' },
-            ].map((f, i) => (
-              <div key={i} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, padding: '14px 16px', textAlign: 'left' }}>
-                <div style={{ fontSize: 22, marginBottom: 6 }}>{f.emoji}</div>
-                <div style={{ fontWeight: 800, fontSize: 12, color: '#fff', marginBottom: 4 }}>{f.title}</div>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', lineHeight: 1.5 }}>{f.desc}</div>
-              </div>
-            ))}
-          </div>
+
         </div>
       )}
 
-      {/* MODAL TESTING IMPORT CSV */}
-      <CsvImportModal
-        isOpen={isCsvModalOpen}
-        onClose={() => setIsCsvModalOpen(false)}
-        onSuccess={(dateStr) => {
-          setSelectedDate(dateStr);
-          handleSearch();
-        }}
-      />
-
-      {/* MODAL GPS TELEMETRY MAP */}
-      <LiveGpsMapModal
-        isOpen={isMapModalOpen}
-        onClose={() => setIsMapModalOpen(false)}
-        connoteCode={result?.connote || 'P2607150025574'}
-        vehicleNopol={result?.vehicleNopol || 'B 9910 PCX'}
-        routeId={result?.routeId || 'RT-MALAM-B9910-PCX'}
-        stops={result?.routeStops || []}
-        loadKg={result?.currentLoadKg || 750}
-        maxCapKg={result?.maxCapacityKg || 1500}
-      />
+      {/* ─── MODALS ───────────────────────────────────────────────────────────── */}
+      {isCsvModalOpen && (
+        <CsvImportModal isOpen={isCsvModalOpen} onClose={() => setIsCsvModalOpen(false)} />
+      )}
     </div>
   );
 }

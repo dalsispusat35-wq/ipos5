@@ -240,6 +240,13 @@ body {
   width: 100%;
 }
 
+select.input-navy option,
+.input-navy option {
+  background-color: #0b132b;
+  color: #ffffff;
+  padding: 8px 12px;
+}
+
 .input-navy::placeholder {
   color: rgba(255, 255, 255, 0.3);
 }
