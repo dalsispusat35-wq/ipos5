@@ -130,9 +130,8 @@ export default function Checker() {
         const tx = res.data.transaction || {};
         const milk = res.data.milk_run || {};
 
-      if (res && res.success && res.data) {
         setResult(res.data);
-        if (res.isVehicleQuery || res.data.found && res.data.vehicle) {
+        if (res.isVehicleQuery || (res.data.found && res.data.vehicle)) {
           setActiveTab('VEHICLE');
         } else {
           setActiveTab('PACKAGE');
