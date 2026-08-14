@@ -652,7 +652,8 @@ export default function Checker() {
     )}
 
       {/* MAIN VIEW CONTENT AREA */}
-      {result && (selectedDate > '2026-08-14' || result.isFutureDate || result.hasData === false) ? (
+      {result ? (
+        (selectedDate > '2026-08-14' || result.isFutureDate || result.hasData === false) ? (
         <div style={{
           background: 'rgba(15, 23, 42, 0.75)',
           border: '1.5px solid rgba(245, 158, 11, 0.4)',
@@ -1055,57 +1056,70 @@ export default function Checker() {
           </div>
 
         </div>
-      )}
+      ) : null}
 
       {/* ─── MODE C: VEHICLE SEARCH RESULT ────────────────────────────────────── */}
-      {activeTab === 'VEHICLE' && result && result.data && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          
-          {/* Vehicle Profile Card */}
-          <div className="glass-card-solid" style={{ padding: 20, borderRadius: 16 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14 }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <h2 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: '#fff', fontFamily: 'monospace' }}>
-                    {result.data.vehicle?.nopol}
-                  </h2>
-                  <span className={getCapacityBadge(result.data.capacity?.status).class || 'badge-navy'} style={{ fontSize: 11, padding: '4px 10px' }}>
-                    {result.data.capacity?.status}
-                  </span>
-                </div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.7)', marginTop: 4 }}>
-                  {result.data.vehicle?.nama_kendaraan}
-                </div>
-                <div style={{ display: 'flex', gap: 16, marginTop: 8, fontSize: 12, color: 'rgba(255,255,255,0.5)', flexWrap: 'wrap' }}>
-                  <span>Driver: <strong style={{ color: '#fff' }}>{result.data.vehicle?.driver}</strong></span>
-                  <span>Jenis: <strong style={{ color: '#38bdf8' }}>{result.data.vehicle?.jenis_kendaraan}</strong></span>
-                  <span>Home Base: <strong style={{ color: '#fff' }}>{result.data.vehicle?.home_base}</strong></span>
-                </div>
-              </div>
+      {activeTab === 'VEHICLE' && result && (result.data || result.isVehicleQuery) && (() => {
+        const vData = result.data || result;
+        const vehicle = vData.vehicle || result.vehicleInfo || { nopol: result.vehicleNopol };
+        const capacity = vData.capacity || {
+          status: result.capacityStatus || 'NORMAL',
+          utilization_pct: result.utilizationPct || 0,
+          current_load_kg: result.currentLoadKg || 0,
+          max_capacity_kg: result.maxCapacityKg || 1500
+        };
+        const cargoGrouped = vData.cargoGroupedByDestination || result.cargoGroupedByDestination || [];
+        const totalCargoCount = vData.totalCargoCount || result.cargoItems?.length || 0;
+        const capBadge = getCapacityBadge(capacity.status);
 
-              {/* Capacity Progress Bar */}
-              <div style={{ minWidth: 240 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 700, color: '#fff', marginBottom: 6 }}>
-                  <span>UTILISASI BEBAN</span>
-                  <span>{result.data.capacity?.utilization_pct}%</span>
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            
+            {/* Vehicle Profile Card */}
+            <div className="glass-card-solid" style={{ padding: 20, borderRadius: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14 }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <h2 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: '#fff', fontFamily: 'monospace' }}>
+                      {vehicle.nopol || result.vehicleNopol}
+                    </h2>
+                    <span className={capBadge.class || 'badge-navy'} style={{ fontSize: 11, padding: '4px 10px' }}>
+                      {capacity.status}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: 'rgba(255,255,255,0.7)', marginTop: 4 }}>
+                    {vehicle.nama_kendaraan || `Armada ${vehicle.nopol || result.vehicleNopol}`}
+                  </div>
+                  <div style={{ display: 'flex', gap: 16, marginTop: 8, fontSize: 12, color: 'rgba(255,255,255,0.5)', flexWrap: 'wrap' }}>
+                    <span>Driver: <strong style={{ color: '#fff' }}>{vehicle.driver || '-'}</strong></span>
+                    <span>Jenis: <strong style={{ color: '#38bdf8' }}>{vehicle.jenis_kendaraan || 'Truk Box'}</strong></span>
+                    <span>Home Base: <strong style={{ color: '#fff' }}>{vehicle.home_base || '-'}</strong></span>
+                  </div>
                 </div>
-                <div style={{ width: '100%', height: 10, background: 'rgba(255,255,255,0.1)', borderRadius: 5, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${Math.min(100, result.data.capacity?.utilization_pct || 0)}%`, background: getCapacityBadge(result.data.capacity?.status).color, borderRadius: 5 }} />
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 6 }}>
-                  <span>Terpakai: {result.data.capacity?.current_load_kg} kg</span>
-                  <span>Batas: {result.data.capacity?.max_capacity_kg} kg</span>
+
+                {/* Capacity Progress Bar */}
+                <div style={{ minWidth: 240 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 700, color: '#fff', marginBottom: 6 }}>
+                    <span>UTILISASI BEBAN</span>
+                    <span>{capacity.utilization_pct}%</span>
+                  </div>
+                  <div style={{ width: '100%', height: 10, background: 'rgba(255,255,255,0.1)', borderRadius: 5, overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${Math.min(100, capacity.utilization_pct || 0)}%`, background: capBadge.color, borderRadius: 5 }} />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 6 }}>
+                    <span>Terpakai: {capacity.current_load_kg} kg</span>
+                    <span>Batas: {capacity.max_capacity_kg} kg</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Cargo Manifest Grouped by Destination Office */}
-          <div className="glass-card-solid" style={{ padding: 20, borderRadius: 16 }}>
-            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Package size={16} color="#38bdf8" />
-              CARGO MANIFEST DIKELOMPOKKAN BERDASARKAN KANTOR TUJUAN ({result.data.totalCargoCount || 0} PAKET)
-            </h3>
+            {/* Cargo Manifest Grouped by Destination Office */}
+            <div className="glass-card-solid" style={{ padding: 20, borderRadius: 16 }}>
+              <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Package size={16} color="#38bdf8" />
+                CARGO MANIFEST DIKELOMPOKKAN BERDASARKAN KANTOR TUJUAN ({totalCargoCount} PAKET)
+              </h3>
 
             <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
               {result.data.cargoGroupedByDestination?.map((grp, i) => {
