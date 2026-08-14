@@ -1592,7 +1592,6 @@ export default function Checker() {
               </div>
             )}
           </div>
-          )}
 
         </div>
       ) : !loading && (
