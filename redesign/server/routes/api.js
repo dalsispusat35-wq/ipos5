@@ -11,6 +11,7 @@ import CompassController from '../controllers/CompassController.js';
 import ManifestController from '../controllers/ManifestController.js';
 import PickupScheduleController from '../controllers/PickupScheduleController.js';
 import RouteJourneyController from '../controllers/RouteJourneyController.js';
+import PackageTrackingController from '../controllers/PackageTrackingController.js';
 import DailyOperationController from '../controllers/DailyOperationController.js';
 import UserController from '../controllers/UserController.js';
 import AnalyticsController from '../controllers/AnalyticsController.js';
@@ -132,9 +133,10 @@ router.post('/jadwal/generate', requireDb, (req, res) => JadwalController.genera
 // Slide 2 PPT - jadwal pickup malam yang divalidasi terhadap master_kantor
 router.get('/pickup-schedules/slide-2/night', requireDb, (req, res) => PickupScheduleController.getSlide2Night(req, res));
 
-// ─── Routing Checker Route ────────────────────────────────────────────────────
-router.get('/checker/vehicle/:nopol', requireDb, (req, res) => TransactionController.checkRoutingByVehicle(req, res));
-router.get('/checker/:connoteCode', requireDb, (req, res) => TransactionController.checkRouting(req, res));
+// ─── Routing Checker / Package Tracking Routes ──────────────────────────────
+router.get('/checker/control-tower', requireDb, (req, res) => PackageTrackingController.getControlTowerData(req, res));
+router.get('/checker/vehicle/:nopol', requireDb, (req, res) => PackageTrackingController.getVehicleDetails(req, res));
+router.get('/checker/:connoteCode', requireDb, (req, res) => PackageTrackingController.getPackageDetails(req, res));
 
 // ─── Transaction / Connotes Routing ──────────────────────────────────────────
 router.get('/transaksi', requireDb, (req, res) => TransactionController.getAll(req, res));
