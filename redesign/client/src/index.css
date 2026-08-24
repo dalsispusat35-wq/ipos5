@@ -1421,10 +1421,7 @@ select option {
    GLOBAL DEEP DARK THEME REINFORCEMENTS (MENYELURUH & MERATA)
    ============================================================ */
 
-/* Force all white/light inline backgrounds to dark in dark mode */
-=======
 /* Force any legacy inline white or light backgrounds to adapt cleanly */
->>>>>>> 6d2600d (feat: complete UI/UX overhaul, dark mode harmonization, responsive layout, adaptive logos, and modern login design)
 [data-theme="dark"] [style*="background: #ffffff"],
 [data-theme="dark"] [style*="background:#ffffff"],
 [data-theme="dark"] [style*="background: #fff"],
