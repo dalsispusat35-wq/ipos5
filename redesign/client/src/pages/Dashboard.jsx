@@ -26,18 +26,18 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
   const [hoveredBarIndex, setHoveredBarIndex] = useState(null);
   const [hoveredSalesIndex, setHoveredSalesIndex] = useState(null);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-  const [selectedDateRange, setSelectedDateRange] = useState('Semua Data (YTD 2026)');
-  const [datePreset, setDatePreset] = useState('All');
+  const [selectedDateRange, setSelectedDateRange] = useState('Hari Ini');
+  const [datePreset, setDatePreset] = useState('today');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
 
   const datePresetsList = [
-    { label: 'Semua Data (YTD 2026)', preset: 'ytd2026', sub: 'Seluruh Database' },
+    { label: 'Hari Ini', preset: 'today', sub: 'Real-Time Hari Ini' },
     { label: 'Agustus 2026 (Live Database)', preset: 'aug2026', sub: 'Bulan Ini' },
-    { label: 'Juli 2026 (Historis)', preset: 'jul2026', sub: 'Bulan Sebelumnya' },
-    { label: '30 Hari Terakhir', preset: '30d', sub: 'Data 1 Bulan Terakhir' },
     { label: '7 Hari Terakhir', preset: '7d', sub: 'Minggu Ini' },
-    { label: 'Hari Ini', preset: 'today', sub: 'Real-Time Hari Ini' }
+    { label: '30 Hari Terakhir', preset: '30d', sub: 'Data 1 Bulan Terakhir' },
+    { label: 'Juli 2026 (Historis)', preset: 'jul2026', sub: 'Bulan Sebelumnya' },
+    { label: 'Semua Data (YTD 2026)', preset: 'ytd2026', sub: 'Seluruh Database' }
   ];
 
   const fetchStatsAndTop20 = async (overrideParams = {}) => {

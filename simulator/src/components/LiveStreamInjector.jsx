@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, Square, Activity, Radio, Volume2, VolumeX, Sparkles, Clock, CheckCircle2, Zap, ArrowRight } from 'lucide-react';
 import { sounds } from '../utils/sound.js';
 

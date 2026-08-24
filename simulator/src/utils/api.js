@@ -2,7 +2,7 @@
  * Simulator API Client
  */
 
-const API_BASE = '/api/simulator';
+const API_BASE = 'http://localhost:5002/api/simulator';
 
 export const api = {
   async getStats(date) {

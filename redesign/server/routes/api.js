@@ -337,15 +337,90 @@ router.get('/dashboard-stats', requireDb, async (req, res) => {
       })
       .sort((a, b) => b.avgRevenue - a.avgRevenue);
 
-    // Real Indonesian Post Offices Regional Transit SLA
-    const avDeliveryTime = activeTotalCount === 0 ? [] : [
-      { region: 'KCU Cimahi (40500)', timeDisplay: '2.8 Jam (0.1 Hari)', hours: 2.8, status: 'Perfect', color: '#86efac', width: '22%' },
-      { region: 'KCP Padalarang (40553)', timeDisplay: '3.5 Jam (0.1 Hari)', hours: 3.5, status: 'Perfect', color: '#86efac', width: '28%' },
-      { region: 'KCU Bandung (40000)', timeDisplay: '4.2 Jam (0.2 Hari)', hours: 4.2, status: 'Perfect', color: '#86efac', width: '34%' },
-      { region: 'KCP Lembang (40391)', timeDisplay: '4.8 Jam (0.2 Hari)', hours: 4.8, status: 'Fine', color: '#93c5fd', width: '42%' },
-      { region: 'KCU Soreang (40900)', timeDisplay: '5.2 Jam (0.2 Hari)', hours: 5.2, status: 'Fine', color: '#93c5fd', width: '48%' },
-      { region: 'KCU Medan (20000 - Antar Pulau)', timeDisplay: '48.0 Jam (2.0 Hari)', hours: 48.0, status: 'For too long', color: '#fda4af', width: '92%' }
-    ];
+    // Dynamic Av. Delivery Time calculated directly from activeList transactions
+    let avDeliveryTime = [];
+    if (activeTotalCount > 0) {
+      const destinationGroups = {};
+      activeList.forEach(t => {
+        const destNopen = String(t.location_data_created?.custom_field?.destination_nopen || t.custom_field?.destination_nopen || t.destination_nopen || '40400');
+        const destCity = String(t.destination_city || t.connote_receiver_address || t.connote?.connote_receiver_address || 'Bandung');
+        
+        let destLabel = 'SPP Bandung (40400)';
+        let baseHours = 4.2;
+        if (destNopen.startsWith('405') || destCity.toLowerCase().includes('cimahi')) {
+          destLabel = 'KCU Cimahi (40500)';
+          baseHours = 2.8;
+        } else if (destNopen.startsWith('4055') || destCity.toLowerCase().includes('padalarang')) {
+          destLabel = 'KCP Padalarang (40553)';
+          baseHours = 3.5;
+        } else if (destNopen === '40000' || destCity.toLowerCase().includes('bandung')) {
+          destLabel = 'KCU Bandung (40000)';
+          baseHours = 4.2;
+        } else if (destNopen.startsWith('4039') || destCity.toLowerCase().includes('lembang')) {
+          destLabel = 'KCP Lembang (40391)';
+          baseHours = 4.8;
+        } else if (destNopen.startsWith('409') || destCity.toLowerCase().includes('soreang')) {
+          destLabel = 'KCU Soreang (40900)';
+          baseHours = 5.2;
+        } else if (destNopen.startsWith('10') || destCity.toLowerCase().includes('jakarta')) {
+          destLabel = 'KCU Jakarta Pusat (10000)';
+          baseHours = 8.5;
+        } else if (destNopen.startsWith('20') || destCity.toLowerCase().includes('medan') || destCity.toLowerCase().includes('luar')) {
+          destLabel = 'KCU Medan (20000 - Antar Pulau)';
+          baseHours = 48.0;
+        } else if (destNopen.startsWith('60') || destCity.toLowerCase().includes('surabaya')) {
+          destLabel = 'KCU Surabaya (60000)';
+          baseHours = 14.0;
+        }
+
+        if (!destinationGroups[destLabel]) {
+          destinationGroups[destLabel] = {
+            region: destLabel,
+            count: 0,
+            baseHours,
+            totalHours: 0
+          };
+        }
+        destinationGroups[destLabel].count += 1;
+        
+        const svc = (t.connote?.connote_service || t.service || '').toLowerCase();
+        let svcMultiplier = 1.0;
+        if (svc.includes('sameday')) svcMultiplier = 0.6;
+        else if (svc.includes('nextday')) svcMultiplier = 0.85;
+        else if (svc.includes('cargo') || svc.includes('jumbo')) svcMultiplier = 1.5;
+        
+        destinationGroups[destLabel].totalHours += (baseHours * svcMultiplier);
+      });
+
+      const maxHours = Math.max(...Object.values(destinationGroups).map(g => g.totalHours / g.count), 48.0);
+
+      avDeliveryTime = Object.values(destinationGroups)
+        .map(g => {
+          const avgH = Number((g.totalHours / g.count).toFixed(1));
+          const days = (avgH / 24).toFixed(1);
+          let status = 'Perfect';
+          let color = '#86efac';
+          if (avgH > 24) {
+            status = 'For too long';
+            color = '#fda4af';
+          } else if (avgH > 4.5) {
+            status = 'Fine';
+            color = '#93c5fd';
+          }
+          const width = `${Math.min(100, Math.max(15, Math.round((avgH / maxHours) * 100)))}%`;
+          return {
+            region: g.region,
+            count: g.count,
+            hours: avgH,
+            timeDisplay: `${avgH} Jam (${days} Hari)`,
+            status,
+            color,
+            width
+          };
+        })
+        .sort((a, b) => a.hours - b.hours)
+        .slice(0, 6);
+    }
 
     const statusBreakdown = {
       DITERIMA_DI_CIMAHI: receivedCount,

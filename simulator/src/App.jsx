@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Zap, Radio, Scan, Database, Truck, RefreshCw, ExternalLink, Sparkles, 
   Layers, Package, CheckCircle2, ArrowUpRight, Globe, Info, Activity,

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Zap, Send, Sparkles, CheckCircle, Truck, Building2, Weight, Box, Check, Flame, ArrowRight, FileText, Package, Shuffle, MapPin } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { sounds } from '../utils/sound.js';

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { QrCode, Scan, Camera, CameraOff, Send, CheckCircle, AlertCircle, Building2, Weight, Box, Sparkles, RefreshCw, Barcode, Info } from 'lucide-react';
 import { sounds } from '../utils/sound.js';
 
