@@ -92,88 +92,96 @@ router.get('/dashboard-stats', requireDb, async (req, res) => {
     const thisMonth = new Date().toISOString().slice(0, 7);
     const totalJadwalBulanIni = await JadwalModel.count({ bulan_generate: thisMonth });
 
-    const col = await TransactionModel.getCollection();
-    const allDbTransactions = await col.find({}).sort({ createdAt: -1, _id: -1 }).toArray();
-    const globalTotalPackages = allDbTransactions.length;
-
-    // Helper to match service flexibly
-    const matchServiceFilter = (rawSvc, filterSvc) => {
-      if (!filterSvc || filterSvc === 'All' || filterSvc === 'Semua') return true;
-      const s = String(rawSvc || '').toLowerCase();
-      const f = String(filterSvc).toLowerCase();
-      if (f.includes('nextday')) return s.includes('nextday') || s.includes('nd');
-      if (f.includes('reguler')) return s.includes('reguler') || s.includes('pkh') || s.includes('kilat');
-      if (f.includes('sameday')) return s.includes('sameday') || s.includes('q9');
-      if (f.includes('shopee')) return s.includes('shopee') || s.includes('ec3');
-      if (f.includes('jumbo')) return s.includes('jumbo') || s.includes('pjb');
-      return s.includes(f);
-    };
-
     // Determine Date Filter Bounds
-    let filterStart = null;
-    let filterEnd = null;
+    const match = {};
     let isFilterActive = false;
+    let fromStr = null;
+    let toStr = null;
 
-    const now = new Date();
-    if (startDate) {
-      filterStart = new Date(startDate);
-      if (!isNaN(filterStart.getTime())) {
-        filterStart.setHours(0, 0, 0, 0);
-        isFilterActive = true;
-      } else {
-        filterStart = null;
-      }
-    }
-    if (endDate) {
-      filterEnd = new Date(endDate);
-      if (!isNaN(filterEnd.getTime())) {
-        filterEnd.setHours(23, 59, 59, 999);
-        isFilterActive = true;
-      } else {
-        filterEnd = null;
-      }
-    }
+    const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Jakarta' }); // e.g. 2026-08-24
 
-    if (datePreset && datePreset !== 'All' && datePreset !== 'ytd2026') {
+    if (startDate || endDate) {
+      fromStr = startDate ? startDate.substring(0, 10) : '1970-01-01';
+      toStr = endDate ? endDate.substring(0, 10) : '2099-12-31';
+      isFilterActive = true;
+    } else if (datePreset && datePreset !== 'All' && datePreset !== 'ytd2026') {
       const p = String(datePreset).toLowerCase();
       isFilterActive = true;
       if (p === 'today' || p === 'hari ini') {
-        filterStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-        filterEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        fromStr = todayStr;
+        toStr = todayStr;
       } else if (p === '7d' || p === '7 hari') {
-        filterStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6, 0, 0, 0, 0);
-        filterEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        const d7 = new Date();
+        d7.setDate(d7.getDate() - 6);
+        fromStr = d7.toLocaleDateString('sv-SE', { timeZone: 'Asia/Jakarta' });
+        toStr = todayStr;
       } else if (p === '30d' || p === '30 hari') {
-        filterStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29, 0, 0, 0, 0);
-        filterEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        const d30 = new Date();
+        d30.setDate(d30.getDate() - 29);
+        fromStr = d30.toLocaleDateString('sv-SE', { timeZone: 'Asia/Jakarta' });
+        toStr = todayStr;
       } else if (p.includes('aug') || p.includes('agustus') || p.includes('live')) {
-        filterStart = new Date(now.getFullYear(), 7, 1, 0, 0, 0, 0);
-        filterEnd = new Date(now.getFullYear(), 7, 31, 23, 59, 59, 999);
+        fromStr = '2026-08-01';
+        toStr = '2026-08-31';
       } else if (p.includes('jul') || p.includes('juli')) {
-        filterStart = new Date(now.getFullYear(), 6, 1, 0, 0, 0, 0);
-        filterEnd = new Date(now.getFullYear(), 6, 31, 23, 59, 59, 999);
+        fromStr = '2026-07-01';
+        toStr = '2026-07-31';
       }
+    }
+
+    if (fromStr && toStr) {
+      const dateFromObj = new Date(fromStr + 'T00:00:00.000Z');
+      const dateToObj = new Date(toStr + 'T23:59:59.999Z');
+      const dateClauses = [
+        { createdAt: { $gte: dateFromObj, $lte: dateToObj } },
+        { created_at: { $gte: dateFromObj, $lte: dateToObj } },
+        { 'connote.created_at': { $gte: dateFromObj, $lte: dateToObj } },
+        { createdAt: { $gte: fromStr + 'T00:00:00.000Z', $lte: toStr + 'T23:59:59.999Z' } },
+        { 'connote.created_at': { $gte: fromStr + ' 00:00:00', $lte: toStr + ' 23:59:59' } },
+        { 'connote.created_at': { $gte: fromStr, $lte: toStr + '\uffff' } }
+      ];
+
+      if (fromStr === toStr) {
+        const [y, m, d] = fromStr.split('-');
+        const ddMMyyyy = `${d}/${m}/${y}`;
+        const yyMMdd = `${y.slice(2)}${m}${d}`;
+        dateClauses.push({ 'connote.created_at': { $regex: `^${fromStr}` } });
+        dateClauses.push({ 'connote.created_at': { $regex: `^${ddMMyyyy}` } });
+        dateClauses.push({ 'connote.connote_code': { $regex: `^P${yyMMdd}`, $options: 'i' } });
+        dateClauses.push({ connote_code: { $regex: `^P${yyMMdd}`, $options: 'i' } });
+      }
+
+      match.$or = dateClauses;
     }
 
     if (service && service !== 'All' && service !== 'Semua') {
       isFilterActive = true;
+      const s = String(service).trim();
+      const svcRegex = new RegExp(s, 'i');
+      if (match.$or) {
+        match.$and = [
+          { $or: match.$or },
+          {
+            $or: [
+              { 'connote.connote_service': svcRegex },
+              { service: svcRegex },
+              { service_code: svcRegex }
+            ]
+          }
+        ];
+        delete match.$or;
+      } else {
+        match.$or = [
+          { 'connote.connote_service': svcRegex },
+          { service: svcRegex },
+          { service_code: svcRegex }
+        ];
+      }
     }
 
-    // Apply Filter to Transactions
-    const filteredTransactions = allDbTransactions.filter((t) => {
-      const tDate = parseTransactionDate(t);
-      if (filterStart && tDate < filterStart) return false;
-      if (filterEnd && tDate > filterEnd) return false;
-
-      if (service && service !== 'All' && service !== 'Semua') {
-        const rawSvc = t.connote?.connote_service || t.service || t.service_code || '';
-        if (!matchServiceFilter(rawSvc, service)) return false;
-      }
-
-      return true;
-    });
-
-    const activeList = isFilterActive ? filteredTransactions : allDbTransactions;
+    const col = await TransactionModel.getCollection();
+    const activeList = await col.find(match).sort({ createdAt: -1, _id: -1 }).toArray();
+    const globalTotalPackages = await col.countDocuments({});
 
     const rawStates = {};
     const serviceStats = {};
