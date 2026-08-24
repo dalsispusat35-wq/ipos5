@@ -276,23 +276,22 @@ function AppContent() {
           {/* Module Selector Dropdown */}
           {isCategoryMenuOpen && (
             <div
+              className="spatial-card"
               style={{
                 position: 'absolute',
                 top: 'calc(100% + 10px)',
                 left: 0,
                 width: 260,
-                background: '#ffffff',
-                border: '1px solid #e2e8f0',
                 borderRadius: 14,
                 padding: '8px',
-                boxShadow: '0 12px 30px rgba(15, 23, 42, 0.12)',
+                boxShadow: '0 12px 30px rgba(0, 0, 0, 0.25)',
                 zIndex: 9999,
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 3
               }}
             >
-              <div style={{ fontSize: 10.5, fontWeight: 800, color: '#94a3b8', padding: '4px 8px', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+              <div style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--text-muted)', padding: '4px 8px', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
                 Modul Operasional
               </div>
 
@@ -324,15 +323,13 @@ function AppContent() {
                       borderRadius: 8,
                       fontSize: 12,
                       fontWeight: active ? 700 : 600,
-                      color: active ? '#0b2e8a' : '#334155',
-                      background: active ? '#e0f2fe' : 'transparent',
+                      color: active ? 'var(--primary-blue)' : 'var(--text-primary)',
+                      background: active ? 'rgba(2, 132, 199, 0.15)' : 'transparent',
                       textDecoration: 'none',
                       transition: 'all 0.15s ease'
                     }}
-                    onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = '#f1f5f9'; }}
-                    onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent'; }}
                   >
-                    <IconComponent size={15} color={active ? '#0b2e8a' : '#64748b'} />
+                    <IconComponent size={15} color={active ? 'var(--primary-blue)' : 'var(--text-muted)'} />
                     <span>{item.label}</span>
                   </Link>
                 );
@@ -342,7 +339,7 @@ function AppContent() {
         </div>
 
         {/* Center: Clean Floating Pill Navigation Bar */}
-        <nav className="pill-nav-container" style={{ background: '#f1f5f9', padding: '3px 4px', borderRadius: 9999 }}>
+        <nav className="pill-nav-container">
           <Link 
             to="/produk" 
             className={`pill-nav-item ${location.pathname.startsWith('/produk') ? 'active' : ''}`}
