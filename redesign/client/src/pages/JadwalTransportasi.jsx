@@ -58,7 +58,7 @@ export default function JadwalTransportasi() {
           <button className="btn-ghost" style={{ padding: '6px 10px' }} onClick={() => setWeekOffset((w) => w - 1)}>
             <ChevronLeft size={14} />
           </button>
-          <span style={{ fontSize: 13.5, fontWeight: 800, color: '#0f172a', minWidth: 170, textAlign: 'center' }}>
+          <span style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--text-primary)', minWidth: 170, textAlign: 'center' }}>
             17 Agt – 23 Agt 2026
           </span>
           <button className="btn-ghost" style={{ padding: '6px 10px' }} onClick={() => setWeekOffset((w) => w + 1)}>
@@ -69,10 +69,10 @@ export default function JadwalTransportasi() {
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 10, alignItems: 'center' }}>
           {generating && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 140, height: 6, borderRadius: 3, background: '#e2e8f0', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${progress}%`, background: '#0284c7', borderRadius: 3, transition: 'width 0.2s' }} />
+              <div style={{ width: 140, height: 6, borderRadius: 3, background: 'var(--bg-surface-soft)', border: '1px solid var(--border-light)', overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${progress}%`, background: 'var(--primary-blue)', borderRadius: 3, transition: 'width 0.2s' }} />
               </div>
-              <span style={{ fontSize: 12, color: '#0284c7', fontWeight: 800 }}>{progress}%</span>
+              <span style={{ fontSize: 12, color: 'var(--primary-blue)', fontWeight: 800 }}>{progress}%</span>
             </div>
           )}
           <button className="btn-ghost"><Plus size={14} /> Tambah Jadwal Trip</button>
@@ -89,7 +89,7 @@ export default function JadwalTransportasi() {
           {days.map((d, i) => (
             <div key={d} style={{ padding: '10px 0', textAlign: 'center', borderRight: i < 6 ? '1px solid var(--border-light)' : 'none' }}>
               <div style={{ fontSize: 11, fontWeight: 800, color: i === 3 ? 'var(--accent-cyan)' : 'var(--text-secondary)', textTransform: 'uppercase' }}>{d}</div>
-              <div style={{ fontSize: 17, fontWeight: 900, color: i === 3 ? 'var(--primary-navy)' : 'var(--text-primary)', marginTop: 2 }}>{17 + i}</div>
+              <div style={{ fontSize: 17, fontWeight: 900, color: i === 3 ? 'var(--primary-blue)' : 'var(--text-primary)', marginTop: 2 }}>{17 + i}</div>
             </div>
           ))}
         </div>
@@ -120,16 +120,16 @@ export default function JadwalTransportasi() {
                       height,
                       borderRadius: 8,
                       background: 'var(--accent-cyan-bg)',
-                      border: '1px solid rgba(2, 132, 199, 0.3)',
+                      border: '1px solid var(--border-light)',
                       padding: '6px 8px',
                       cursor: 'pointer',
                       overflow: 'hidden',
                       boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
                     }}
                   >
-                    <div style={{ fontSize: 11, fontWeight: 800, color: '#0b2e8a', fontFamily: 'monospace' }}>{trip.startHour.toString().padStart(2, '0')}:00</div>
-                    <div style={{ fontSize: 11, color: '#0f172a', fontWeight: 700, lineHeight: 1.2 }}>{trip.route}</div>
-                    <div style={{ fontSize: 10, color: '#64748b', marginTop: 2, fontFamily: 'monospace' }}>{trip.vehicle}</div>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--primary-blue)', fontFamily: 'monospace' }}>{trip.startHour.toString().padStart(2, '0')}:00</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-primary)', fontWeight: 700, lineHeight: 1.2 }}>{trip.route}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 2, fontFamily: 'monospace' }}>{trip.vehicle}</div>
                   </div>
                 );
               })}

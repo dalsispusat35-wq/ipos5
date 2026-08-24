@@ -56,9 +56,9 @@ export default function AnalyticsReport() {
 
   if (loading) {
     return (
-      <div style={{ padding: 40, textAlign: 'center', color: '#0284c7', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+      <div style={{ padding: 40, textAlign: 'center', color: 'var(--primary-blue)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
         <RefreshCw size={32} className="spin" />
-        <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>Mengkalkulasi Performa SLA & Throughput Logistik dari MongoDB...</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)' }}>Mengkalkulasi Performa SLA & Throughput Logistik dari MongoDB...</div>
       </div>
     );
   }
@@ -73,17 +73,17 @@ export default function AnalyticsReport() {
       <div className="spatial-card" style={{ padding: '22px 26px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-            <div style={{ background: '#e0f2fe', border: '1px solid #bae6fd', padding: 8, borderRadius: 10, display: 'flex' }}>
-              <BarChart3 size={22} color="#0284c7" />
+            <div style={{ background: 'var(--accent-cyan-bg)', border: '1px solid var(--border-light)', padding: 8, borderRadius: 10, display: 'flex' }}>
+              <BarChart3 size={22} color="var(--primary-blue)" />
             </div>
-            <h2 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: '#0f172a' }}>
+            <h2 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: 'var(--text-primary)' }}>
               Analitik SLA & Pusat Laporan Logistik
             </h2>
             <span className="badge badge-emerald" style={{ fontSize: 11, padding: '3px 8px' }}>
               ● Live DB: {slaData?.dataSource?.collection || 'transaksi'}
             </span>
           </div>
-          <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--text-secondary)' }}>
             Kalkulasi real-time perputaran status paket, performa Service Level Agreement (SLA), dan generator laporan operasional KCU Cimahi & SPP Bandung.
           </p>
         </div>

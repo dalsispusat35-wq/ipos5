@@ -1285,7 +1285,7 @@ export default function Checker() {
                         <div style={{
                           fontSize: 11,
                           fontWeight: isCurrent || isSelected ? 900 : 700,
-                          color: isSelected ? '#0284c7' : isCurrent ? '#0b2e8a' : '#334155',
+                          color: isSelected ? 'var(--primary-blue)' : isCurrent ? 'var(--primary-blue)' : 'var(--text-primary)',
                           lineHeight: 1.25,
                           marginBottom: 2,
                           wordBreak: 'break-word'
@@ -1466,14 +1466,14 @@ export default function Checker() {
                           <span style={{ fontSize: 13, fontWeight: 900, color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                             <Building2 size={14} color="var(--primary-blue)" /> {grp.destination_office_name || `Kantor Tujuan ${grp.destination_nopen}`}
                           </span>
-                          <span style={{ fontSize: 11, color: '#64748b', fontFamily: 'monospace' }}>
+                          <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>
                             (Nopen: {grp.destination_nopen})
                           </span>
                           <span className="badge badge-navy" style={{ fontSize: 10, padding: '2px 8px' }}>
                             {grp.package_count || (grp.packages || []).length} PAKET • {(grp.total_weight_kg || 0).toFixed(1)} KG
                           </span>
                         </div>
-                        <span style={{ fontSize: 11, color: '#0284c7', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <span style={{ fontSize: 11, color: 'var(--accent-cyan)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
                           {isExpanded ? <>Tutup <ChevronDown size={12} style={{ transform: 'rotate(180deg)' }} /></> : <>Buka Rincian <ChevronDown size={12} /></>}
                         </span>
                       </div>
@@ -1482,7 +1482,7 @@ export default function Checker() {
                         <div style={{ padding: '8px 16px 16px', overflowX: 'auto' }}>
                           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11.5 }}>
                             <thead>
-                              <tr style={{ borderBottom: '1px solid #e2e8f0', textAlign: 'left', color: '#64748b' }}>
+                              <tr style={{ borderBottom: '1px solid var(--border-light)', textAlign: 'left', color: 'var(--text-secondary)' }}>
                                 <th style={{ padding: '8px 6px' }}>NO RESI</th>
                                 <th style={{ padding: '8px 6px' }}>LAYANAN</th>
                                 <th style={{ padding: '8px 6px' }}>BERAT</th>
@@ -1492,18 +1492,18 @@ export default function Checker() {
                             </thead>
                             <tbody>
                               {(grp.packages || []).map((pkg) => (
-                                <tr key={pkg.connote_code} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                  <td style={{ padding: '8px 6px', fontWeight: 800, fontFamily: 'monospace', color: '#0b2e8a' }}>
+                                <tr key={pkg.connote_code} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                                  <td style={{ padding: '8px 6px', fontWeight: 800, fontFamily: 'monospace', color: 'var(--primary-blue)' }}>
                                     {pkg.connote_code}
                                   </td>
-                                  <td style={{ padding: '8px 6px', color: '#475569' }}>
+                                  <td style={{ padding: '8px 6px', color: 'var(--text-secondary)' }}>
                                     {pkg.service}
                                   </td>
-                                  <td style={{ padding: '8px 6px', fontWeight: 700, color: '#0f172a' }}>
+                                  <td style={{ padding: '8px 6px', fontWeight: 700, color: 'var(--text-primary)' }}>
                                     {formatWeight(pkg.weight_kg)}
                                   </td>
-                                  <td style={{ padding: '8px 6px', color: '#334155' }}>
-                                    {pkg.sender_name || 'Pengirim'} <ArrowRight size={11} style={{ display: 'inline', margin: '0 3px', color: '#64748b' }} /> <strong>{pkg.receiver_name || 'Penerima'}</strong>
+                                  <td style={{ padding: '8px 6px', color: 'var(--text-primary)' }}>
+                                    <span style={{ color: 'var(--text-secondary)' }}>{pkg.sender_name || 'Pengirim'}</span> <ArrowRight size={11} style={{ display: 'inline', margin: '0 3px', color: 'var(--text-muted)' }} /> <strong style={{ color: 'var(--text-primary)' }}>{pkg.receiver_name || 'Penerima'}</strong>
                                   </td>
                                   <td style={{ padding: '8px 6px' }}>
                                     <span className={mapStateToBadge(pkg.state).class} style={{ fontSize: 9.5, padding: '2px 7px' }}>
@@ -1527,7 +1527,7 @@ export default function Checker() {
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                   <thead>
-                    <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', textAlign: 'left', color: '#64748b' }}>
+                    <tr style={{ background: 'var(--bg-surface-soft)', borderBottom: '1px solid var(--border-light)', textAlign: 'left', color: 'var(--text-secondary)' }}>
                       <th style={{ padding: '10px 12px' }}>NO RESI CONNOTE</th>
                       <th style={{ padding: '10px 12px' }}>LAYANAN</th>
                       <th style={{ padding: '10px 12px' }}>BERAT</th>
@@ -1538,20 +1538,20 @@ export default function Checker() {
                   </thead>
                   <tbody>
                     {filteredCargoItems.map((item) => (
-                      <tr key={item.connote_code} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                        <td style={{ padding: '10px 12px', fontWeight: 800, fontFamily: 'monospace', color: '#0b2e8a' }}>
+                      <tr key={item.connote_code} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                        <td style={{ padding: '10px 12px', fontWeight: 800, fontFamily: 'monospace', color: 'var(--primary-blue)' }}>
                           {item.connote_code}
                         </td>
-                        <td style={{ padding: '10px 12px', color: '#475569' }}>
+                        <td style={{ padding: '10px 12px', color: 'var(--text-secondary)' }}>
                           {item.service}
                         </td>
-                        <td style={{ padding: '10px 12px', fontWeight: 700, color: '#0f172a' }}>
+                        <td style={{ padding: '10px 12px', fontWeight: 700, color: 'var(--text-primary)' }}>
                           {formatWeight(item.weight_kg)}
                         </td>
-                        <td style={{ padding: '10px 12px', color: '#334155' }}>
+                        <td style={{ padding: '10px 12px', color: 'var(--text-primary)' }}>
                           {item.origin_office_name || `Nopen ${item.origin_nopen}`}
                         </td>
-                        <td style={{ padding: '10px 12px', color: '#334155' }}>
+                        <td style={{ padding: '10px 12px', color: 'var(--text-primary)' }}>
                           {item.destination_office_name || `Nopen ${item.destination_nopen}`}
                         </td>
                         <td style={{ padding: '10px 12px' }}>

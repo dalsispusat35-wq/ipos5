@@ -72,10 +72,10 @@ export default function GateMonitoring() {
           { label: 'Jam Keberangkatan', value: '08:30 WIB' },
         ].map((f) => (
           <div key={f.label} style={{ flex: 1, minWidth: 120 }}>
-            <div style={{ fontSize: 10.5, color: '#64748b', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 2 }}>
+            <div style={{ fontSize: 10.5, color: 'var(--text-secondary)', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 2 }}>
               {f.label}
             </div>
-            <div className={f.mono ? 'font-mono' : ''} style={{ fontSize: 13, fontWeight: 800, color: '#0f172a' }}>
+            <div className={f.mono ? 'font-mono' : ''} style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>
               {f.value}
             </div>
           </div>
@@ -101,51 +101,51 @@ export default function GateMonitoring() {
                 width: 28,
                 height: 28,
                 borderRadius: '50%',
-                background: manifested ? '#f1f5f9' : '#e0f2fe',
-                border: `2px solid ${manifested ? '#cbd5e1' : '#bae6fd'}`,
+                background: manifested ? 'var(--bg-surface-soft)' : 'var(--accent-cyan-bg)',
+                border: `2px solid ${manifested ? 'var(--border-light)' : 'var(--primary-blue)'}`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: 12,
                 fontWeight: 800,
-                color: manifested ? '#94a3b8' : '#0284c7',
+                color: manifested ? 'var(--text-muted)' : 'var(--primary-blue)',
               }}
             >
               1
             </div>
             <div>
-              <div style={{ fontSize: 13.5, fontWeight: 800, color: '#0f172a' }}>Manifest Creation</div>
-              <div style={{ fontSize: 11, color: '#64748b' }}>Bagging & Consolidation</div>
+              <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--text-primary)' }}>Manifest Creation</div>
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Bagging & Consolidation</div>
             </div>
             <div style={{ marginLeft: 'auto' }}>
-              <div style={{ fontSize: 24, fontWeight: 900, color: '#0f172a', lineHeight: 1 }}>{s1Items.length}</div>
-              <div style={{ fontSize: 10.5, color: '#94a3b8', textAlign: 'right' }}>paket</div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1 }}>{s1Items.length}</div>
+              <div style={{ fontSize: 10.5, color: 'var(--text-muted)', textAlign: 'right' }}>paket</div>
             </div>
           </div>
 
           {!manifested && (
-            <div style={{ padding: '10px 14px', borderRadius: 8, background: '#f0f9ff', border: '1px solid #bae6fd', marginBottom: 12, display: 'flex', gap: 8, alignItems: 'center' }}>
-              <FileText size={14} color="#0284c7" />
+            <div style={{ padding: '10px 14px', borderRadius: 8, background: 'var(--accent-cyan-bg)', border: '1px solid var(--border-light)', marginBottom: 12, display: 'flex', gap: 8, alignItems: 'center' }}>
+              <FileText size={14} color="var(--primary-blue)" />
               <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#0284c7' }}>Manifest ID</div>
-                <div style={{ fontSize: 12, color: '#0f172a', fontWeight: 800, fontFamily: 'monospace' }}>MNFST-240724-015</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--primary-blue)' }}>Manifest ID</div>
+                <div style={{ fontSize: 12, color: 'var(--text-primary)', fontWeight: 800, fontFamily: 'monospace' }}>MNFST-240724-015</div>
               </div>
             </div>
           )}
 
           <div style={{ flex: 1, overflow: 'auto', marginBottom: 14 }}>
             {s1Items.map((item) => (
-              <div key={item.connote} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <Package size={13} color="#94a3b8" />
-                <span style={{ fontSize: 11.5, color: '#0b2e8a', fontWeight: 700, fontFamily: 'monospace', flex: 1 }}>{item.connote.slice(-6)}</span>
-                <span style={{ fontSize: 12, color: '#0f172a', fontWeight: 600, flex: 1 }}>{item.dest}</span>
-                <span style={{ fontSize: 11.5, color: '#64748b', fontFamily: 'monospace' }}>{item.weight}</span>
+              <div key={item.connote} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid var(--border-light)' }}>
+                <Package size={13} color="var(--text-muted)" />
+                <span style={{ fontSize: 11.5, color: 'var(--primary-blue)', fontWeight: 700, fontFamily: 'monospace', flex: 1 }}>{item.connote.slice(-6)}</span>
+                <span style={{ fontSize: 12, color: 'var(--text-primary)', fontWeight: 600, flex: 1 }}>{item.dest}</span>
+                <span style={{ fontSize: 11.5, color: 'var(--text-muted)', fontFamily: 'monospace' }}>{item.weight}</span>
               </div>
             ))}
           </div>
 
           <button className="btn-primary" onClick={handleManifest} disabled={manifested || s1Items.length === 0} style={{ width: '100%', justifyContent: 'center' }}>
-            <FileText size={14} /> {manifested ? 'Manifest Selesai' : 'Buat Manifest & Bagging'}
+            <FileCheck size={14} /> {manifested ? 'Manifest Siap Diberangkatkan' : 'Cetak & Finalisasi Manifest'}
           </button>
         </div>
 
@@ -156,7 +156,7 @@ export default function GateMonitoring() {
             padding: 22,
             display: 'flex',
             flexDirection: 'column',
-            opacity: !manifested ? 0.5 : 1,
+            opacity: !manifested ? 0.5 : (inTransit ? 0.65 : 1),
             transition: 'opacity 0.4s',
           }}
         >
@@ -166,35 +166,35 @@ export default function GateMonitoring() {
                 width: 28,
                 height: 28,
                 borderRadius: '50%',
-                background: inTransit ? '#f1f5f9' : '#e0f2fe',
-                border: `2px solid ${inTransit ? '#cbd5e1' : '#bae6fd'}`,
+                background: inTransit ? 'var(--bg-surface-soft)' : 'var(--accent-amber-bg)',
+                border: `2px solid ${inTransit ? 'var(--border-light)' : 'var(--accent-amber)'}`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: 12,
                 fontWeight: 800,
-                color: inTransit ? '#94a3b8' : '#0284c7',
+                color: inTransit ? 'var(--text-muted)' : 'var(--accent-amber)',
               }}
             >
               2
             </div>
             <div>
-              <div style={{ fontSize: 13.5, fontWeight: 800, color: '#0f172a' }}>Inbound Transit</div>
-              <div style={{ fontSize: 11, color: '#64748b' }}>Bandung Sorting Center</div>
+              <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--text-primary)' }}>Inbound Transit</div>
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Bandung Sorting Center</div>
             </div>
             <div style={{ marginLeft: 'auto' }}>
-              <div style={{ fontSize: 24, fontWeight: 900, color: '#0f172a', lineHeight: 1 }}>{s2Items.length}</div>
-              <div style={{ fontSize: 10.5, color: '#94a3b8', textAlign: 'right' }}>paket</div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--text-primary)', lineHeight: 1 }}>{s2Items.length}</div>
+              <div style={{ fontSize: 10.5, color: 'var(--text-muted)', textAlign: 'right' }}>paket</div>
             </div>
           </div>
 
           <div style={{ flex: 1, overflow: 'auto', marginBottom: 14 }}>
             {s2Items.map((item) => (
-              <div key={item.connote} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <Package size={13} color="#94a3b8" />
-                <span style={{ fontSize: 11.5, color: '#0b2e8a', fontWeight: 700, fontFamily: 'monospace', flex: 1 }}>{item.connote.slice(-6)}</span>
-                <span style={{ fontSize: 12, color: '#0f172a', fontWeight: 600, flex: 1 }}>{item.dest}</span>
-                <span style={{ fontSize: 11.5, color: '#64748b', fontFamily: 'monospace' }}>{item.weight}</span>
+              <div key={item.connote} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid var(--border-light)' }}>
+                <Package size={13} color="var(--text-muted)" />
+                <span style={{ fontSize: 11.5, color: 'var(--primary-blue)', fontWeight: 700, fontFamily: 'monospace', flex: 1 }}>{item.connote.slice(-6)}</span>
+                <span style={{ fontSize: 12, color: 'var(--text-primary)', fontWeight: 600, flex: 1 }}>{item.dest}</span>
+                <span style={{ fontSize: 11.5, color: 'var(--text-muted)', fontFamily: 'monospace' }}>{item.weight}</span>
               </div>
             ))}
           </div>
@@ -212,7 +212,7 @@ export default function GateMonitoring() {
             display: 'flex',
             flexDirection: 'column',
             opacity: !inTransit ? 0.5 : 1,
-            border: arrived ? '1px solid #16a34a' : '1px solid #e2e8f0',
+            border: arrived ? '1px solid var(--accent-emerald)' : '1px solid var(--border-light)',
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
@@ -221,40 +221,40 @@ export default function GateMonitoring() {
                 width: 28,
                 height: 28,
                 borderRadius: '50%',
-                background: arrived ? '#dcfce7' : '#f0fdf4',
-                border: `2px solid ${arrived ? '#16a34a' : '#bbf7d0'}`,
+                background: arrived ? 'var(--accent-emerald-bg)' : 'var(--bg-surface-soft)',
+                border: `2px solid ${arrived ? 'var(--accent-emerald)' : 'var(--border-light)'}`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: 12,
                 fontWeight: 800,
-                color: arrived ? '#16a34a' : '#22c55e',
+                color: arrived ? 'var(--accent-emerald)' : 'var(--accent-emerald)',
               }}
             >
               3
             </div>
             <div>
-              <div style={{ fontSize: 13.5, fontWeight: 800, color: arrived ? '#16a34a' : '#0f172a' }}>Final Arrival</div>
-              <div style={{ fontSize: 11, color: '#64748b' }}>Tiba di Kantor Tujuan</div>
+              <div style={{ fontSize: 13.5, fontWeight: 800, color: arrived ? 'var(--accent-emerald)' : 'var(--text-primary)' }}>Final Arrival</div>
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Tiba di Kantor Tujuan</div>
             </div>
             <div style={{ marginLeft: 'auto' }}>
-              <div style={{ fontSize: 24, fontWeight: 900, color: arrived ? '#16a34a' : '#0f172a', lineHeight: 1 }}>{arrived ? 0 : s3Items.length}</div>
-              <div style={{ fontSize: 10.5, color: '#94a3b8', textAlign: 'right' }}>tersisa</div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: arrived ? 'var(--accent-emerald)' : 'var(--text-primary)', lineHeight: 1 }}>{arrived ? 0 : s3Items.length}</div>
+              <div style={{ fontSize: 10.5, color: 'var(--text-muted)', textAlign: 'right' }}>tersisa</div>
             </div>
           </div>
 
           <div style={{ flex: 1, overflow: 'auto', marginBottom: 14 }}>
             {arrived ? (
-              <div style={{ padding: '20px 0', textAlign: 'center', color: '#16a34a', fontSize: 12, fontWeight: 700 }}>
+              <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--accent-emerald)', fontSize: 12, fontWeight: 700 }}>
                 Semua paket telah terkonfirmasi tiba
               </div>
             ) : (
               s3Items.map((item) => (
-                <div key={item.connote} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
-                  <Package size={13} color="#94a3b8" />
-                  <span style={{ fontSize: 11.5, color: '#0b2e8a', fontWeight: 700, fontFamily: 'monospace', flex: 1 }}>{item.connote.slice(-6)}</span>
-                  <span style={{ fontSize: 12, color: '#0f172a', fontWeight: 600, flex: 1 }}>{item.dest}</span>
-                  <span style={{ fontSize: 11.5, color: '#64748b', fontFamily: 'monospace' }}>{item.weight}</span>
+                <div key={item.connote} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid var(--border-light)' }}>
+                  <Package size={13} color="var(--text-muted)" />
+                  <span style={{ fontSize: 11.5, color: 'var(--primary-blue)', fontWeight: 700, fontFamily: 'monospace', flex: 1 }}>{item.connote.slice(-6)}</span>
+                  <span style={{ fontSize: 12, color: 'var(--text-primary)', fontWeight: 600, flex: 1 }}>{item.dest}</span>
+                  <span style={{ fontSize: 11.5, color: 'var(--text-muted)', fontFamily: 'monospace' }}>{item.weight}</span>
                 </div>
               ))
             )}

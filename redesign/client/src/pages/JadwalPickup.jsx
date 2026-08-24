@@ -233,23 +233,26 @@ function Group({ group, onShowDetails }) {
 }
 
 export default function JadwalPickup() {
-  const navigate = useNavigate();
   const [routes, setRoutes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [selectedOffice, setSelectedOffice] = useState(null);
+  const [error, setError] = useState(null);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
+  const [selectedOffice, setSelectedOffice] = useState(null);
 
   const load = async () => {
     try {
-      setLoading(true); 
-      setError('');
-      const result = await api.getSlide2NightPickup();
-      setRoutes(result.data.routes);
-    } catch (err) { 
-      setError(err.message); 
-    } finally { 
-      setLoading(false); 
+      setLoading(true);
+      setError(null);
+      const res = await api.getPickupSchedule();
+      if (res.success && res.data) {
+        setRoutes(res.data);
+      } else {
+        throw new Error(res.message || 'Gagal memuat jadwal pickup');
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -261,11 +264,11 @@ export default function JadwalPickup() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 style={{ fontSize: 20, fontWeight: 900, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Truck size={22} color="#0284c7" />
+          <h1 style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Truck size={22} color="var(--primary-blue)" />
             Jadwal Pickup SPP Bandung
           </h1>
-          <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>Rute malam tervalidasi terhadap database master_kantor</p>
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '4px 0 0' }}>Rute malam tervalidasi terhadap database master_kantor</p>
         </div>
         <button className="btn-ghost" onClick={load} disabled={loading} style={{ gap: 6 }}>
           <RefreshCw size={14} className={loading ? 'spin' : ''} /> Refresh
@@ -273,34 +276,34 @@ export default function JadwalPickup() {
       </div>
 
       {/* Blueprint Info Banner */}
-      <div style={{ padding: '12px 16px', borderRadius: 8, fontSize: 13, background: '#f0f9ff', border: '1px solid #bae6fd', color: '#0369a1' }}>
+      <div style={{ padding: '12px 16px', borderRadius: 8, fontSize: 13, background: 'var(--accent-cyan-bg)', border: '1px solid var(--border-light)', color: 'var(--text-primary)' }}>
         Rute didasarkan pada <strong>PPT Slide 2 (Blueprint Urutan)</strong>. 
         Kandidat yang tidak terdaftar di <strong>master_kantor</strong> disaring otomatis demi akurasi operasional.
       </div>
 
       {error && (
-        <div style={{ padding: 16, background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', borderRadius: 8, display: 'flex', gap: 10, alignItems: 'center' }}>
+        <div style={{ padding: 16, background: 'var(--accent-pink-bg)', border: '1px solid rgba(244, 63, 94, 0.3)', color: 'var(--accent-pink)', borderRadius: 8, display: 'flex', gap: 10, alignItems: 'center' }}>
           <AlertTriangle size={18} />
           {error}
         </div>
       )}
 
       {loading ? (
-        <div className="spatial-card" style={{ padding: 40, textAlign: 'center', color: '#64748b' }}>
-          <RefreshCw size={24} className="spin" style={{ marginBottom: 12, color: '#0284c7' }} />
+        <div className="spatial-card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-secondary)' }}>
+          <RefreshCw size={24} className="spin" style={{ marginBottom: 12, color: 'var(--primary-blue)' }} />
           <div>Sinkronisasi data master kantor pos...</div>
         </div>
       ) : (
         <div style={{ display: 'grid', gap: 20 }}>
           {routes.map(route => (
-            <article key={route.vehicle} className="spatial-card" style={{ padding: '20px 24px', borderLeft: '4px solid #0284c7' }}>
+            <article key={route.vehicle} className="spatial-card" style={{ padding: '20px 24px', borderLeft: '4px solid var(--primary-blue)' }}>
               {/* Vehicle Title Section */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, borderBottom: '1px solid #f1f5f9', paddingBottom: 12 }}>
-                <h2 style={{ margin: 0, fontSize: 18, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Truck size={18} color="#0284c7" />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, borderBottom: '1px solid var(--border-light)', paddingBottom: 12 }}>
+                <h2 style={{ margin: 0, fontSize: 18, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Truck size={18} color="var(--primary-blue)" />
                   <button 
                     onClick={() => setSelectedVehicle(route.vehicle)}
-                    style={{ background: 'none', border: 'none', color: '#0b2e8a', fontWeight: 900, fontSize: '18px', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+                    style={{ background: 'none', border: 'none', color: 'var(--primary-blue)', fontWeight: 900, fontSize: '18px', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
                     title="Klik untuk detail kendaraan"
                   >
                     {route.vehicle}

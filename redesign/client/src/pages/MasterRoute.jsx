@@ -185,40 +185,40 @@ export default function MasterRoute() {
                   style={{
                     padding: '4px 10px',
                     borderRadius: 6,
-                    background: '#e0f2fe',
-                    border: '1px solid #bae6fd',
+                    background: 'var(--accent-cyan-bg)',
+                    border: '1px solid var(--border-light)',
                   }}
                 >
-                  <span style={{ fontSize: 11.5, color: '#0b2e8a', fontWeight: 800, fontFamily: 'monospace' }}>
+                  <span style={{ fontSize: 11.5, color: 'var(--primary-blue)', fontWeight: 800, fontFamily: 'monospace' }}>
                     {route.routeId}
                   </span>
                 </div>
 
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a', marginBottom: 3 }}>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 3 }}>
                     {route.name}
                   </div>
-                  <div style={{ fontSize: 12, color: '#64748b', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span>{route.origin}</span>
-                    <span style={{ color: '#cbd5e1' }}>→</span>
+                    <span style={{ color: 'var(--border-light)' }}>→</span>
                     <span>{route.destination}</span>
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
                   <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>{route.totalDistance}</div>
-                    <div style={{ fontSize: 10, color: '#94a3b8' }}>Jarak</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)' }}>{route.totalDistance}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Jarak</div>
                   </div>
                   <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>{route.estDuration}</div>
-                    <div style={{ fontSize: 10, color: '#94a3b8' }}>Est. Waktu</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)' }}>{route.estDuration}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Est. Waktu</div>
                   </div>
                   <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: '#0284c7' }}>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--accent-cyan)' }}>
                       {route.checkpoints.length}
                     </div>
-                    <div style={{ fontSize: 10, color: '#94a3b8' }}>Stops</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Stops</div>
                   </div>
 
                   {route.expanded ? (

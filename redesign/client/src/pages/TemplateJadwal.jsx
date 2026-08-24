@@ -138,16 +138,16 @@ export default function TemplateJadwal() {
 
                 <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
                   <div>
-                    <span style={{ fontSize: 11, color: '#94a3b8' }}>Armada: </span>
-                    <span style={{ fontSize: 12, color: '#0f172a', fontWeight: 700, fontFamily: 'monospace' }}>{t.vehicle}</span>
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Armada: </span>
+                    <span style={{ fontSize: 12, color: 'var(--text-primary)', fontWeight: 700, fontFamily: 'monospace' }}>{t.vehicle}</span>
                   </div>
                   <div>
-                    <span style={{ fontSize: 11, color: '#94a3b8' }}>Rute: </span>
-                    <span style={{ fontSize: 12, color: '#0f172a', fontWeight: 600 }}>{t.route}</span>
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Rute: </span>
+                    <span style={{ fontSize: 12, color: 'var(--text-primary)', fontWeight: 600 }}>{t.route}</span>
                   </div>
                   <div>
-                    <span style={{ fontSize: 11, color: '#94a3b8' }}>Trip/minggu: </span>
-                    <span style={{ fontSize: 12, color: '#0284c7', fontWeight: 800 }}>
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Trip/minggu: </span>
+                    <span style={{ fontSize: 12, color: 'var(--accent-cyan)', fontWeight: 800 }}>
                       {t.days.length * t.times.length} Trip
                     </span>
                   </div>

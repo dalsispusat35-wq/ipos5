@@ -231,15 +231,15 @@ export default function MasterKendaraan() {
                           onClick={() => setSelectedNopol(v.plate)}
                           style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}
                         >
-                          <span style={{ fontSize: 13, fontWeight: 800, color: '#0b2e8a', fontFamily: 'monospace' }}>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--primary-blue)', fontFamily: 'monospace' }}>
                             {v.plate}
                           </span>
-                          <div style={{ fontSize: 11, color: '#64748b' }}>{v.brand}</div>
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{v.brand}</div>
                         </button>
                       </td>
 
-                      <td style={{ padding: '12px 14px', color: '#0f172a', fontWeight: 600 }}>{v.type}</td>
-                      <td style={{ padding: '12px 14px', color: '#0f172a', fontWeight: 600 }}>{v.driver}</td>
+                      <td style={{ padding: '12px 14px', color: 'var(--text-primary)', fontWeight: 600 }}>{v.type}</td>
+                      <td style={{ padding: '12px 14px', color: 'var(--text-primary)', fontWeight: 600 }}>{v.driver}</td>
                       <td style={{ padding: '12px 14px' }}>
                         <span className="badge badge-blue" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11 }}>
                           <Route size={12} /> {v.assignedRoute}
@@ -247,12 +247,12 @@ export default function MasterKendaraan() {
                       </td>
                       <td style={{ padding: '12px 14px', minWidth: 180 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, marginBottom: 4 }}>
-                          <span style={{ color: '#0f172a', fontWeight: 800, fontFamily: 'monospace' }}>
+                          <span style={{ color: 'var(--text-primary)', fontWeight: 800, fontFamily: 'monospace' }}>
                             {v.usedCapacityKg.toLocaleString()} kg / {v.maxCapacityKg.toLocaleString()} kg
                           </span>
                           <span style={{ fontWeight: 800, color: barColor }}>{pct}%</span>
                         </div>
-                        <div style={{ width: '100%', height: 6, borderRadius: 3, background: '#e2e8f0', overflow: 'hidden' }}>
+                        <div style={{ width: '100%', height: 6, borderRadius: 3, background: 'var(--bg-surface-soft)', border: '1px solid var(--border-light)', overflow: 'hidden' }}>
                           <div style={{ width: `${Math.min(100, pct)}%`, height: '100%', background: barColor, borderRadius: 3, transition: 'width 0.4s' }} />
                         </div>
                       </td>

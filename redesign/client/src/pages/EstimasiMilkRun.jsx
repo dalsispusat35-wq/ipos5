@@ -504,16 +504,16 @@ export default function EstimasiMilkRun() {
               >
                 <Truck size={20} color="#0284c7" />
               </div>
-              <h2 style={{ fontSize: 20, fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: '-0.02em' }}>
+              <h2 style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em' }}>
                 Simulasi Milk Run & Telemetri Truk (4 Rute)
               </h2>
             </div>
-            <div style={{ fontSize: 13, color: '#64748b', display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 4 }}>
-              <span>Total Armada: <strong style={{ color: '#0b2e8a' }}>4 Mobil Box</strong></span>
-              <span style={{ color: '#cbd5e1' }}>|</span>
-              <span>Total Beban: <strong style={{ color: '#16a34a' }}>{grandTotalWeight} Kg</strong></span>
-              <span style={{ color: '#cbd5e1' }}>|</span>
-              <span>Total Muatan: <strong style={{ color: '#d97706' }}>{grandTotalPackages} Paket</strong></span>
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)', display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 4 }}>
+              <span>Total Armada: <strong style={{ color: 'var(--primary-blue)' }}>4 Mobil Box</strong></span>
+              <span style={{ color: 'var(--border-light)' }}>|</span>
+              <span>Total Beban: <strong style={{ color: 'var(--accent-emerald)' }}>{grandTotalWeight} Kg</strong></span>
+              <span style={{ color: 'var(--border-light)' }}>|</span>
+              <span>Total Muatan: <strong style={{ color: 'var(--accent-amber)' }}>{grandTotalPackages} Paket</strong></span>
             </div>
           </div>
 
@@ -559,7 +559,6 @@ export default function EstimasiMilkRun() {
                   background: 'transparent',
                   border: 'none',
                   color: 'var(--text-primary)',
-                  color: '#0f172a',
                   fontSize: 12.5,
                   fontWeight: 700,
                   cursor: 'pointer',
@@ -840,20 +839,20 @@ export default function EstimasiMilkRun() {
                             <span style={{ 
                               fontSize: 12.5, 
                               fontWeight: isActiveNode ? 800 : 600, 
-                              color: isActiveNode ? '#0b2e8a' : isPassedNode ? '#0f172a' : '#64748b',
+                              color: isActiveNode ? 'var(--primary-blue)' : isPassedNode ? 'var(--text-primary)' : 'var(--text-secondary)',
                               transition: 'color 0.3s'
                             }}>
                               {stop.name}
                             </span>
-                            <span style={{ fontSize: 10.5, color: '#94a3b8' }}>
+                            <span style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>
                               {stop.time}
                             </span>
                             <span style={{ 
                               fontSize: 10, 
                               fontWeight: 700, 
-                              color: stop.weight > 0 ? '#0b2e8a' : '#94a3b8',
-                              background: stop.weight > 0 ? '#f0f9ff' : 'transparent',
-                              border: stop.weight > 0 ? '1px solid #bae6fd' : 'none',
+                              color: stop.weight > 0 ? 'var(--primary-blue)' : 'var(--text-muted)',
+                              background: stop.weight > 0 ? 'var(--accent-cyan-bg)' : 'transparent',
+                              border: stop.weight > 0 ? '1px solid var(--border-light)' : 'none',
                               padding: '1px 6px',
                               borderRadius: 8,
                               marginTop: 2
@@ -916,7 +915,7 @@ export default function EstimasiMilkRun() {
               
               {/* Section 1: Informasi Dasar & Resi */}
               <div>
-                <h4 style={{ fontSize: 13, color: '#0b2e8a', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 800 }}>
+                <h4 style={{ fontSize: 13, color: 'var(--primary-navy)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 800 }}>
                   <FileText size={15} /> 1. Informasi Identifikasi Kiriman
                 </h4>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
@@ -968,7 +967,7 @@ export default function EstimasiMilkRun() {
 
               {/* Section 3: Destinasi & Keuangan */}
               <div>
-                <h4 style={{ fontSize: 13, color: '#0b2e8a', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 800 }}>
+                <h4 style={{ fontSize: 13, color: 'var(--primary-navy)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 800 }}>
                   <Building size={15} /> 3. Destinasi Regional & Keuangan
                 </h4>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
@@ -984,7 +983,7 @@ export default function EstimasiMilkRun() {
 
               {/* Section 4: SLA, Tanggal & Keterangan */}
               <div>
-                <h4 style={{ fontSize: 13, color: '#0b2e8a', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 800 }}>
+                <h4 style={{ fontSize: 13, color: 'var(--primary-navy)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 800 }}>
                   <Clock size={15} /> 4. SLA, Log Tanggal & Keterangan Serah Terima
                 </h4>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
@@ -1001,16 +1000,16 @@ export default function EstimasiMilkRun() {
 
               {/* Section 5: Bukti Foto & Tanda Tangan */}
               <div>
-                <h4 style={{ fontSize: 13, color: '#0b2e8a', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 800 }}>
+                <h4 style={{ fontSize: 13, color: 'var(--primary-navy)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 800 }}>
                   <Camera size={15} /> 5. Bukti Lampiran Visual (Photo1, Photo2, TTD)
                 </h4>
                 <div className="responsive-modal-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
-                  <div style={{ background: '#f8fafc', padding: 10, borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                    <div style={{ fontSize: 11, color: '#64748b', marginBottom: 6, fontWeight: 600 }}>37. Photo1 (Paket FISIK)</div>
+                  <div className="surface-soft" style={{ padding: 10, borderRadius: 8, border: '1px solid var(--border-light)' }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 600 }}>37. Photo1 (Paket FISIK)</div>
                     <img src={selectedManifest.photo1} alt="Photo 1" style={{ width: '100%', height: 110, objectFit: 'cover', borderRadius: 6 }} />
                   </div>
-                  <div style={{ background: '#f8fafc', padding: 10, borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                    <div style={{ fontSize: 11, color: '#64748b', marginBottom: 6, fontWeight: 600 }}>38. Photo2 (Manifest Barcode)</div>
+                  <div className="surface-soft" style={{ padding: 10, borderRadius: 8, border: '1px solid var(--border-light)' }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 600 }}>38. Photo2 (Manifest Barcode)</div>
                     <img src={selectedManifest.photo2} alt="Photo 2" style={{ width: '100%', height: 110, objectFit: 'cover', borderRadius: 6 }} />
                   </div>
                   <div className="surface-soft" style={{ padding: 10, borderRadius: 8, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>

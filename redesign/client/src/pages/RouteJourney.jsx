@@ -71,16 +71,16 @@ export default function RouteJourney() {
               >
                 <MapPin size={18} color="#0284c7" />
               </div>
-              <h2 style={{ fontSize: 18, fontWeight: 800, color: '#0f172a', margin: 0, letterSpacing: '-0.01em' }}>
+              <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.01em' }}>
                 Visualisasi Rute Milk Run Logistics (Telemetri Armada B 9910 PCX)
               </h2>
             </div>
-            <div style={{ fontSize: 12.5, color: '#64748b', display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 4 }}>
-              <span>Armada: <strong style={{ color: '#0f172a' }}>B 9910 PCX (Mobil Box 1.5 Ton)</strong></span>
-              <span style={{ color: '#cbd5e1' }}>|</span>
-              <span>Shift: <strong style={{ color: '#0f172a' }}>MALAM (16.00 – 21.00 WIB)</strong></span>
-              <span style={{ color: '#cbd5e1' }}>|</span>
-              <span>Tujuan Akhir: <strong style={{ color: '#0b2e8a' }}>SPP BANDUNG 40400</strong></span>
+            <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 4 }}>
+              <span>Armada: <strong style={{ color: 'var(--text-primary)' }}>B 9910 PCX (Mobil Box 1.5 Ton)</strong></span>
+              <span style={{ color: 'var(--border-light)' }}>|</span>
+              <span>Shift: <strong style={{ color: 'var(--text-primary)' }}>MALAM (16.00 – 21.00 WIB)</strong></span>
+              <span style={{ color: 'var(--border-light)' }}>|</span>
+              <span>Tujuan Akhir: <strong style={{ color: 'var(--primary-blue)' }}>SPP BANDUNG 40400</strong></span>
             </div>
           </div>
 
@@ -130,8 +130,8 @@ export default function RouteJourney() {
                         background: i < currentStopIndex 
                           ? '#16a34a' 
                           : i === currentStopIndex 
-                          ? '#0284c7' 
-                          : '#e2e8f0',
+                          ? 'var(--primary-blue)' 
+                          : 'var(--border-light)',
                         zIndex: 1,
                         transition: 'all 0.3s ease'
                       }}
@@ -144,13 +144,13 @@ export default function RouteJourney() {
                       style={{
                         position: 'absolute',
                         top: -38,
-                        background: '#0b2e8a',
+                        background: 'var(--primary-navy)',
                         borderRadius: 8,
                         padding: '4px 10px',
                         display: 'flex',
                         alignItems: 'center',
                         gap: 6,
-                        boxShadow: '0 4px 12px rgba(11, 46, 138, 0.25)',
+                        boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
                         zIndex: 5
                       }}
                     >
@@ -185,10 +185,10 @@ export default function RouteJourney() {
 
                   {/* Stop Label */}
                   <div style={{ marginTop: 10, textAlign: 'center' }}>
-                    <div style={{ fontSize: 11, fontWeight: isCurrent ? 800 : 600, color: isCurrent ? '#0b2e8a' : isPassed ? '#0f172a' : '#64748b' }}>
+                    <div style={{ fontSize: 11, fontWeight: isCurrent ? 800 : 600, color: isCurrent ? 'var(--primary-blue)' : isPassed ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
                       {stop.name}
                     </div>
-                    <div style={{ fontSize: 10, color: isSkipped ? '#ef4444' : '#94a3b8', fontFamily: 'monospace', marginTop: 2 }}>
+                    <div style={{ fontSize: 10, color: isSkipped ? 'var(--accent-pink)' : 'var(--text-muted)', fontFamily: 'monospace', marginTop: 2 }}>
                       {isSkipped ? 'SKIPPED' : `(${stop.code})`}
                     </div>
                   </div>
@@ -204,7 +204,7 @@ export default function RouteJourney() {
         {/* Capacity Utilization Card */}
         <div className="spatial-card" style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <h3 style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
               <ShieldCheck size={16} color={capacityData?.status_kapasitas?.includes('OVERLOAD') ? '#ef4444' : '#16a34a'} /> Utilisasi Kapasitas Armada B 9910 PCX (Trip 1)
             </h3>
             <span className={`badge ${capacityData?.status_kapasitas?.includes('OVERLOAD') ? 'badge-pink' : 'badge-emerald'}`}>
@@ -214,14 +214,14 @@ export default function RouteJourney() {
 
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-              <span style={{ fontSize: 12, color: '#64748b' }}>Muatan Aktif Trip 1</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Muatan Aktif Trip 1</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
                 {currentLoad.toLocaleString()} kg / {maxCapacity.toLocaleString()} kg ({loadPercentage}%)
               </span>
             </div>
 
             {/* Gauge Bar */}
-            <div style={{ width: '100%', height: 10, borderRadius: 5, background: '#e2e8f0', overflow: 'hidden' }}>
+            <div style={{ width: '100%', height: 10, borderRadius: 5, background: 'var(--bg-surface-soft)', border: '1px solid var(--border-light)', overflow: 'hidden' }}>
               <div 
                 style={{ 
                   height: '100%', 
@@ -234,9 +234,9 @@ export default function RouteJourney() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#64748b', borderTop: '1px solid #f1f5f9', paddingTop: 10 }}>
-            <span>Aktivitas Stop: <strong style={{ color: '#0f172a' }}>{currentStopObj?.name || 'Start'}</strong></span>
-            <span>Sisa Daya Angkut: <strong style={{ color: '#16a34a' }}>{remainingCapacity.toLocaleString()} kg</strong></span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-secondary)', borderTop: '1px solid var(--border-light)', paddingTop: 10 }}>
+            <span>Aktivitas Stop: <strong style={{ color: 'var(--text-primary)' }}>{currentStopObj?.name || 'Start'}</strong></span>
+            <span>Sisa Daya Angkut: <strong style={{ color: 'var(--accent-emerald)' }}>{remainingCapacity.toLocaleString()} kg</strong></span>
           </div>
 
           {capacityData?.has_overflow && (
