@@ -769,6 +769,18 @@ body {
   border: 1px solid rgba(244, 63, 94, 0.3);
 }
 
+.badge-purple {
+  background: var(--accent-purple-bg);
+  color: var(--accent-purple);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.badge-cyan {
+  background: var(--accent-cyan-bg);
+  color: var(--accent-cyan);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
 /* ============================================================
    INPUTS, SELECTS, FORMS & TABLES
    ============================================================ */
@@ -1288,6 +1300,20 @@ select option {
   border-color: rgba(251, 113, 133, 0.3);
 }
 
+[data-theme="dark"] .badge-purple,
+.dark-theme .badge-purple {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+  border-color: rgba(192, 132, 252, 0.3);
+}
+
+[data-theme="dark"] .badge-cyan,
+.dark-theme .badge-cyan {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
 [data-theme="dark"] .input-navy,
 [data-theme="dark"] .input-light,
 [data-theme="dark"] input,
@@ -1453,7 +1479,14 @@ select option {
 [data-theme="dark"] [style*="color: #1e293b"],
 [data-theme="dark"] [style*="color:#1e293b"],
 [data-theme="dark"] [style*="color: #334155"],
-[data-theme="dark"] [style*="color:#334155"] {
+[data-theme="dark"] [style*="color:#334155"],
+[data-theme="dark"] [style*="color: #0b2e8a"],
+[data-theme="dark"] [style*="color:#0b2e8a"],
+[data-theme="dark"] [style*="color: #000"],
+[data-theme="dark"] [style*="color:#000"],
+[data-theme="dark"] [style*="color: black"],
+[data-theme="dark"] [style*="color: #111827"],
+[data-theme="dark"] [style*="color:#111827"] {
   color: var(--text-primary) !important;
 }
 

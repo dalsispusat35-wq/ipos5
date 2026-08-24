@@ -1033,12 +1033,12 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
         {/* Table Title Bar */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: '#0b2e8a', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', boxShadow: '0 4px 12px rgba(11, 46, 138, 0.2)' }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--primary-navy)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.2)' }}>
               <Package size={18} />
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <h3 style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
                   Live Connotes Telemetry Stream
                 </h3>
                 <span className="badge badge-emerald">
@@ -1120,7 +1120,7 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
             <tbody>
               {filteredConnotes.length === 0 ? (
                 <tr>
-                  <td colSpan={9} style={{ textAlign: 'center', padding: '28px 0', color: '#94a3b8', fontSize: 12 }}>
+                  <td colSpan={9} style={{ textAlign: 'center', padding: '28px 0', color: 'var(--text-muted)', fontSize: 12 }}>
                     {searchFilter ? 'Tidak ada connote yang sesuai dengan filter pencarian.' : (isFiltered ? 'Tidak ada connote yang tercatat pada filter tanggal ini.' : 'Tidak ada data connotes di database.')}
                   </td>
                 </tr>
@@ -1136,9 +1136,16 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
                   const receiver = c.connote_receiver_name || rawConnote.connote_receiver_name || 'Penerima';
                   const status = c.connote_state || rawConnote.connote_state || 'IN_TRANSIT';
 
+                  const getServiceBadge = (srv) => {
+                    if (srv.includes('Nextday')) return 'badge-cyan';
+                    if (srv.includes('Cargo') || srv.includes('Jumbo')) return 'badge-purple';
+                    if (srv.includes('Sameday')) return 'badge-amber';
+                    return 'badge-blue';
+                  };
+
                   return (
                     <tr key={c.connote_code || c._id || idx}>
-                      <td className="font-mono" style={{ color: '#94a3b8' }}>
+                      <td className="font-mono" style={{ color: 'var(--text-muted)' }}>
                         {String(idx + 1).padStart(2, '0')}
                       </td>
                       <td>
@@ -1146,14 +1153,14 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
                           <Link 
                             to={`/checker?code=${c.connote_code}`} 
                             className="font-mono"
-                            style={{ textDecoration: 'none', color: '#0b2e8a', fontWeight: 800 }}
+                            style={{ textDecoration: 'none', color: 'var(--primary-blue)', fontWeight: 800 }}
                           >
                             {c.connote_code}
                           </Link>
                           <button
                             type="button"
                             onClick={() => handleCopy(c.connote_code)}
-                            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: copiedResi === c.connote_code ? '#15803d' : '#94a3b8' }}
+                            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: copiedResi === c.connote_code ? 'var(--accent-emerald)' : 'var(--text-muted)' }}
                             title="Salin Resi"
                           >
                             {copiedResi === c.connote_code ? <Check size={12} /> : <Copy size={12} />}
@@ -1161,39 +1168,31 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
                         </div>
                       </td>
                       <td>
-                        <span style={{
-                          background: service.includes('Nextday') ? '#e0f2fe' : service.includes('Cargo') ? '#eae8fc' : '#ffedd5',
-                          color: service.includes('Nextday') ? '#0284c7' : service.includes('Cargo') ? '#7e22ce' : '#c2410c',
-                          padding: '2px 8px',
-                          borderRadius: 6,
-                          fontSize: 10.5,
-                          fontWeight: 700,
-                          whiteSpace: 'nowrap'
-                        }}>
+                        <span className={`badge ${getServiceBadge(service)}`} style={{ fontSize: 10.5, padding: '2px 8px' }}>
                           {service}
                         </span>
                       </td>
                       <td style={{ maxWidth: 180, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        <span style={{ color: '#0f172a', fontWeight: 600 }}>{origin.split(' ')[0]}</span>
-                        <ArrowRight size={11} style={{ display: 'inline', margin: '0 4px', color: '#0284c7' }} />
-                        <span style={{ color: '#64748b' }}>{dest}</span>
+                        <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{origin.split(' ')[0]}</span>
+                        <ArrowRight size={11} style={{ display: 'inline', margin: '0 4px', color: 'var(--accent-cyan)' }} />
+                        <span style={{ color: 'var(--text-secondary)' }}>{dest}</span>
                       </td>
                       <td style={{ maxWidth: 190, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        <span style={{ color: '#475569' }}>{sender.split(' ')[0]}</span>
-                        <ArrowRight size={11} style={{ display: 'inline', margin: '0 4px', color: '#94a3b8' }} />
-                        <span style={{ color: '#0f172a', fontWeight: 600 }}>{receiver.split(' ')[0]}</span>
+                        <span style={{ color: 'var(--text-secondary)' }}>{sender.split(' ')[0]}</span>
+                        <ArrowRight size={11} style={{ display: 'inline', margin: '0 4px', color: 'var(--text-muted)' }} />
+                        <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{receiver.split(' ')[0]}</span>
                       </td>
-                      <td className="font-mono" style={{ textAlign: 'right', fontWeight: 800, color: '#0f172a' }}>
+                      <td className="font-mono" style={{ textAlign: 'right', fontWeight: 800, color: 'var(--text-primary)' }}>
                         {Number(weight).toFixed(1)} kg
                       </td>
                       <td>
                         {nopol && nopol !== '-' ? (
                           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                            <Truck size={12} color="#0284c7" />
-                            <span className="font-mono" style={{ fontSize: 11, fontWeight: 700, color: '#0284c7' }}>{nopol}</span>
+                            <Truck size={12} color="var(--accent-cyan)" />
+                            <span className="font-mono" style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-cyan)' }}>{nopol}</span>
                           </div>
                         ) : (
-                          <span style={{ color: '#94a3b8', fontSize: 11 }}>Belum Dialokasi</span>
+                          <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>Belum Dialokasi</span>
                         )}
                       </td>
                       <td>
@@ -1204,18 +1203,16 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
                       <td style={{ textAlign: 'center' }}>
                         <Link
                           to={`/checker?code=${c.connote_code}`}
+                          className="btn-ghost"
                           style={{
-                            background: '#e0f2fe',
-                            border: '1px solid #bae6fd',
-                            color: '#0369a1',
                             padding: '3px 8px',
-                            borderRadius: 6,
                             fontSize: 10.5,
                             fontWeight: 700,
                             textDecoration: 'none',
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: 3
+                            gap: 3,
+                            color: 'var(--accent-cyan)'
                           }}
                         >
                           <span>Track</span>
