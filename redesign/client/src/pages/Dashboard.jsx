@@ -226,23 +226,22 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
 
           {isDatePickerOpen && (
             <div
+              className="surface-card"
               style={{
                 position: 'absolute',
                 top: 'calc(100% + 8px)',
                 right: 0,
                 width: 290,
-                background: '#ffffff',
-                border: '1px solid #e2e8f0',
                 borderRadius: 16,
                 padding: '12px',
-                boxShadow: '0 16px 36px rgba(15, 23, 42, 0.15)',
+                boxShadow: 'var(--spatial-shadow)',
                 zIndex: 999,
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 8
               }}
             >
-              <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '0 4px' }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '0 4px' }}>
                 PILIH PERIODE DATA MONGODB
               </div>
 
@@ -256,8 +255,8 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
-                      background: datePreset === p.preset ? '#e0f2fe' : 'transparent',
-                      color: datePreset === p.preset ? '#0b2e8a' : '#334155',
+                      background: datePreset === p.preset ? 'var(--accent-cyan-bg)' : 'transparent',
+                      color: datePreset === p.preset ? 'var(--primary-navy)' : 'var(--text-primary)',
                       fontWeight: datePreset === p.preset ? 800 : 500,
                       border: 'none',
                       borderRadius: 8,
@@ -267,35 +266,35 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
                       cursor: 'pointer',
                       transition: 'all 0.15s'
                     }}
-                    onMouseEnter={(e) => { if (datePreset !== p.preset) e.currentTarget.style.background = '#f8fafc'; }}
+                    onMouseEnter={(e) => { if (datePreset !== p.preset) e.currentTarget.style.background = 'var(--bg-surface-soft)'; }}
                     onMouseLeave={(e) => { if (datePreset !== p.preset) e.currentTarget.style.background = 'transparent'; }}
                   >
                     <span>{p.label}</span>
-                    <span style={{ fontSize: 10, color: '#64748b' }}>{p.sub}</span>
+                    <span style={{ fontSize: 10, color: 'var(--text-secondary)' }}>{p.sub}</span>
                   </button>
                 ))}
               </div>
 
               {/* Custom Date Inputs Form */}
-              <form onSubmit={handleApplyCustomDate} style={{ borderTop: '1px solid #f1f5f9', paddingTop: 10, marginTop: 4, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: '#475569' }}>Atur Rentang Tanggal Manual:</span>
+              <form onSubmit={handleApplyCustomDate} style={{ borderTop: '1px solid var(--border-light)', paddingTop: 10, marginTop: 4, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)' }}>Atur Rentang Tanggal Manual:</span>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                   <div>
-                    <span style={{ fontSize: 10, color: '#94a3b8', display: 'block', marginBottom: 2 }}>Mulai:</span>
+                    <span style={{ fontSize: 10, color: 'var(--text-muted)', display: 'block', marginBottom: 2 }}>Mulai:</span>
                     <input
                       type="date"
                       value={customStart}
                       onChange={(e) => setCustomStart(e.target.value)}
-                      style={{ width: '100%', fontSize: 11, padding: '4px 6px', border: '1px solid #e2e8f0', borderRadius: 6, background: '#f8fafc', boxSizing: 'border-box' }}
+                      style={{ width: '100%', fontSize: 11, padding: '4px 6px', boxSizing: 'border-box' }}
                     />
                   </div>
                   <div>
-                    <span style={{ fontSize: 10, color: '#94a3b8', display: 'block', marginBottom: 2 }}>Selesai:</span>
+                    <span style={{ fontSize: 10, color: 'var(--text-muted)', display: 'block', marginBottom: 2 }}>Selesai:</span>
                     <input
                       type="date"
                       value={customEnd}
                       onChange={(e) => setCustomEnd(e.target.value)}
-                      style={{ width: '100%', fontSize: 11, padding: '4px 6px', border: '1px solid #e2e8f0', borderRadius: 6, background: '#f8fafc', boxSizing: 'border-box' }}
+                      style={{ width: '100%', fontSize: 11, padding: '4px 6px', boxSizing: 'border-box' }}
                     />
                   </div>
                 </div>
@@ -1043,11 +1042,11 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
                   Live Connotes Telemetry Stream
                 </h3>
                 <span className="badge badge-emerald">
-                  <span className="pulse" style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#15803d' }} />
+                  <span className="pulse" style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: 'var(--accent-emerald)' }} />
                   REAL-TIME SYNC
                 </span>
               </div>
-              <p style={{ fontSize: 12, color: '#64748b', margin: '2px 0 0' }}>
+              <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '2px 0 0' }}>
                 Manifest data pengiriman terkini dari basis data MongoDB IPOS5 ({totalPackages.toLocaleString('id-ID')} Resi)
               </p>
             </div>
@@ -1058,14 +1057,14 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              background: '#f8fafc',
-              border: '1px solid #e2e8f0',
+              background: 'var(--bg-surface-soft)',
+              border: '1px solid var(--border-light)',
               borderRadius: 9999,
               padding: '6px 14px',
               gap: 8,
               width: 260
             }}>
-              <Search size={14} color="#94a3b8" />
+              <Search size={14} color="var(--text-muted)" />
               <input
                 type="text"
                 placeholder="Cari resi, pengirim, kota..."
@@ -1075,8 +1074,8 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
                   background: 'transparent',
                   border: 'none',
                   outline: 'none',
-                  color: '#0f172a',
-                  fontSize: 12,
+                  color: 'var(--text-primary)',
+                  fontSize: 12.5,
                   width: '100%'
                 }}
               />
@@ -1084,7 +1083,7 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
                 <button
                   type="button"
                   onClick={() => setSearchFilter('')}
-                  style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}
                   title="Hapus pencarian"
                 >
                   <X size={13} />
@@ -1232,12 +1231,12 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
         </div>
 
         {/* Footer Summary */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11.5, color: '#64748b', borderTop: '1px solid #f1f5f9', paddingTop: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11.5, color: 'var(--text-secondary)', borderTop: '1px solid var(--border-light)', paddingTop: 12 }}>
           <div>
-            Menampilkan <strong style={{ color: '#0f172a' }}>{Math.min(20, filteredConnotes.length)}</strong> connote resi teratas dari total <strong style={{ color: '#0b2e8a' }}>{totalPackages.toLocaleString('id-ID')}</strong> resi aktif.
+            Menampilkan <strong style={{ color: 'var(--text-primary)' }}>{Math.min(20, filteredConnotes.length)}</strong> connote resi teratas dari total <strong style={{ color: 'var(--primary-navy)' }}>{totalPackages.toLocaleString('id-ID')}</strong> resi aktif.
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span className="pulse" style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#10b981' }} />
+            <span className="pulse" style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: 'var(--accent-emerald)' }} />
             <span>Database Status: Connected & Live Synced (MongoDB ipos5_reporting)</span>
           </div>
         </div>

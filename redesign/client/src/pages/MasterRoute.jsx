@@ -233,23 +233,23 @@ export default function MasterRoute() {
               {route.expanded && (
                 <div style={{ padding: '16px 18px', borderTop: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', gap: 14, background: '#f8fafc' }}>
                   {/* Capacity Filter Configuration Bar */}
-                  <div style={{ padding: '12px 14px', borderRadius: 8, background: '#f0f9ff', border: '1px solid #bae6fd', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <div style={{ fontSize: 11.5, fontWeight: 800, color: '#0284c7', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div className="surface-soft" style={{ padding: '12px 14px', borderRadius: 8, background: 'var(--accent-cyan-bg)', border: '1px solid rgba(2, 132, 199, 0.25)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div style={{ fontSize: 11.5, fontWeight: 800, color: 'var(--accent-cyan)', display: 'flex', alignItems: 'center', gap: 6 }}>
                       <Filter size={13} /> Filter Kalkulasi Muatan Terkonfigurasi:
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 12 }}>
                       <div>
-                        <span style={{ color: '#64748b', marginRight: 6 }}>Nopend Asal (Origin List):</span>
+                        <span style={{ color: 'var(--text-secondary)', marginRight: 6 }}>Nopend Asal (Origin List):</span>
                         {route.originNopenList && route.originNopenList.map(n => (
-                          <span key={n} style={{ background: '#ffffff', border: '1px solid #e2e8f0', padding: '2px 6px', borderRadius: 4, marginRight: 4, fontSize: 11, color: '#0f172a', fontFamily: 'monospace', fontWeight: 600 }}>
+                          <span key={n} className="badge badge-navy" style={{ marginRight: 4, fontSize: 11, fontFamily: 'var(--font-mono)' }}>
                             {n}
                           </span>
                         ))}
                       </div>
                       <div>
-                        <span style={{ color: '#64748b', marginRight: 6 }}>Prefix Wilayah Tujuan:</span>
+                        <span style={{ color: 'var(--text-secondary)', marginRight: 6 }}>Prefix Wilayah Tujuan:</span>
                         {route.destinationPrefixFilter && route.destinationPrefixFilter.map(p => (
-                          <span key={p} style={{ background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', padding: '2px 6px', borderRadius: 4, marginRight: 4, fontSize: 11, fontWeight: 700, fontFamily: 'monospace' }}>
+                          <span key={p} className="badge badge-emerald" style={{ marginRight: 4, fontSize: 11, fontFamily: 'var(--font-mono)' }}>
                             Digit `{p}`
                           </span>
                         ))}
@@ -261,9 +261,9 @@ export default function MasterRoute() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
                     {route.checkpoints.map((cp, i) => (
                       <div key={cp.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 0' }}>
-                        <div style={{ width: 10, height: 10, borderRadius: '50%', background: i === 0 ? '#0b2e8a' : i === route.checkpoints.length - 1 ? '#16a34a' : '#0284c7' }} />
-                        <span style={{ fontSize: 11, color: '#0b2e8a', width: 50, fontFamily: 'monospace', fontWeight: 700 }}>{cp.code}</span>
-                        <span style={{ fontSize: 12.5, color: '#0f172a', fontWeight: 600 }}>{cp.name}</span>
+                        <div style={{ width: 10, height: 10, borderRadius: '50%', background: i === 0 ? 'var(--primary-navy)' : i === route.checkpoints.length - 1 ? 'var(--accent-emerald)' : 'var(--accent-cyan)' }} />
+                        <span style={{ fontSize: 11, color: 'var(--primary-navy)', width: 50, fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{cp.code}</span>
+                        <span style={{ fontSize: 12.5, color: 'var(--text-primary)', fontWeight: 600 }}>{cp.name}</span>
                       </div>
                     ))}
                   </div>
@@ -275,81 +275,82 @@ export default function MasterRoute() {
 
         {/* Add/Edit Route Form */}
         {showForm && (
-          <div className="spatial-card" style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 14, height: 'fit-content' }}>
+          <div className="surface-card" style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 14, height: 'fit-content' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>Konfigurasi Rute Baru</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)' }}>Konfigurasi Rute Baru</div>
               <button
                 onClick={() => setShowForm(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: 4 }}
+                className="capsule-btn-circle"
+                style={{ width: 28, height: 28 }}
               >
-                <X size={16} />
+                <X size={14} />
               </button>
             </div>
 
             <div>
-              <label style={{ fontSize: 11.5, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 5 }}>Kode Rute (ID)</label>
+              <label style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 5 }}>Kode Rute (ID)</label>
               <input
                 placeholder="misal: RTE-6 / RTE-7"
                 value={form.routeId}
                 onChange={(e) => setForm((prev) => ({ ...prev, routeId: e.target.value }))}
-                style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }}
+                style={{ width: '100%', height: 38 }}
               />
             </div>
 
             <div>
-              <label style={{ fontSize: 11.5, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 5 }}>Nama Rute</label>
+              <label style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 5 }}>Nama Rute</label>
               <input
                 placeholder="misal: SPP Bandung ke SPP Jakarta"
                 value={form.name}
                 onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
-                style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }}
+                style={{ width: '100%', height: 38 }}
               />
             </div>
 
             <div>
-              <label style={{ fontSize: 11.5, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 5 }}>Nama Hub Asal</label>
+              <label style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 5 }}>Nama Hub Asal</label>
               <input
                 placeholder="misal: SPP Bandung (40000)"
                 value={form.origin}
                 onChange={(e) => setForm((prev) => ({ ...prev, origin: e.target.value }))}
-                style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }}
+                style={{ width: '100%', height: 38 }}
               />
             </div>
 
             <div>
-              <label style={{ fontSize: 11.5, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 5 }}>Nama Hub Tujuan</label>
+              <label style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 5 }}>Nama Hub Tujuan</label>
               <input
                 placeholder="misal: SPP Jakarta Timur (10000)"
                 value={form.destination}
                 onChange={(e) => setForm((prev) => ({ ...prev, destination: e.target.value }))}
-                style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }}
+                style={{ width: '100%', height: 38 }}
               />
             </div>
 
-            <div style={{ background: '#f0f9ff', padding: 12, borderRadius: 8, border: '1px solid #bae6fd', display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div style={{ fontSize: 11.5, fontWeight: 800, color: '#0284c7' }}>Filter Kalkulasi Kapasitas</div>
+            <div className="surface-soft" style={{ background: 'var(--accent-cyan-bg)', padding: 12, borderRadius: 8, border: '1px solid rgba(2, 132, 199, 0.3)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ fontSize: 11.5, fontWeight: 800, color: 'var(--accent-cyan)' }}>Filter Kalkulasi Kapasitas</div>
 
               <div>
-                <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>
+                <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>
                   Daftar Nopend Asal (Pisahkan koma)
                 </label>
                 <input
                   placeholder="misal: 40000, 40500, 40253A"
                   value={form.originNopenList}
                   onChange={(e) => setForm((prev) => ({ ...prev, originNopenList: e.target.value }))}
-                  style={{ width: '100%', height: 36, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#ffffff', color: '#0f172a', fontSize: 12, boxSizing: 'border-box' }}
+                  style={{ width: '100%', height: 36, fontSize: 12 }}
                 />
               </div>
 
               <div>
-                <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>
+                <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>
                   Prefix Digit Tujuan (Pisahkan koma)
                 </label>
                 <input
                   placeholder="misal: 1, 2, 3, 7, 9"
                   value={form.destinationPrefixFilter}
                   onChange={(e) => setForm((prev) => ({ ...prev, destinationPrefixFilter: e.target.value }))}
-                  style={{ width: '100%', height: 36, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#ffffff', color: '#0f172a', fontSize: 12, boxSizing: 'border-box' }}
+                  style={{ width: '100%', height: 36, fontSize: 12 }}
                 />
               </div>
             </div>

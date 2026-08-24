@@ -84,28 +84,28 @@ export default function JadwalTransportasi() {
 
       {/* Transport Calendar Grid */}
       <div className="spatial-card" style={{ overflow: 'hidden', padding: 0 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '60px repeat(7, 1fr)', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
-          <div style={{ padding: '10px', borderRight: '1px solid #e2e8f0' }} />
+        <div style={{ display: 'grid', gridTemplateColumns: '60px repeat(7, 1fr)', borderBottom: '1px solid var(--border-light)', background: 'var(--bg-surface-soft)' }}>
+          <div style={{ padding: '10px', borderRight: '1px solid var(--border-light)' }} />
           {days.map((d, i) => (
-            <div key={d} style={{ padding: '10px 0', textAlign: 'center', borderRight: i < 6 ? '1px solid #e2e8f0' : 'none' }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: i === 3 ? '#0284c7' : '#64748b', textTransform: 'uppercase' }}>{d}</div>
-              <div style={{ fontSize: 17, fontWeight: 900, color: i === 3 ? '#0b2e8a' : '#0f172a', marginTop: 2 }}>{17 + i}</div>
+            <div key={d} style={{ padding: '10px 0', textAlign: 'center', borderRight: i < 6 ? '1px solid var(--border-light)' : 'none' }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: i === 3 ? 'var(--accent-cyan)' : 'var(--text-secondary)', textTransform: 'uppercase' }}>{d}</div>
+              <div style={{ fontSize: 17, fontWeight: 900, color: i === 3 ? 'var(--primary-navy)' : 'var(--text-primary)', marginTop: 2 }}>{17 + i}</div>
             </div>
           ))}
         </div>
 
         <div style={{ overflowY: 'auto', maxHeight: 440, display: 'grid', gridTemplateColumns: '60px repeat(7, 1fr)' }}>
-          <div style={{ background: '#f8fafc' }}>
+          <div style={{ background: 'var(--bg-surface-soft)' }}>
             {hours.map((h) => (
-              <div key={h} style={{ height: CELL_H, borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #f1f5f9', padding: '6px 8px' }}>
-                <span style={{ fontSize: 11, color: '#94a3b8', fontFamily: 'monospace', fontWeight: 600 }}>{h.toString().padStart(2, '0')}:00</span>
+              <div key={h} style={{ height: CELL_H, borderRight: '1px solid var(--border-light)', borderBottom: '1px solid var(--border-light)', padding: '6px 8px' }}>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{h.toString().padStart(2, '0')}:00</span>
               </div>
             ))}
           </div>
 
           {days.map((_, dayIdx) => (
-            <div key={dayIdx} style={{ borderRight: dayIdx < 6 ? '1px solid #f1f5f9' : 'none', position: 'relative' }}>
-              {hours.map((h) => <div key={h} style={{ height: CELL_H, borderBottom: '1px solid #f1f5f9' }} />)}
+            <div key={dayIdx} style={{ borderRight: dayIdx < 6 ? '1px solid var(--border-light)' : 'none', position: 'relative' }}>
+              {hours.map((h) => <div key={h} style={{ height: CELL_H, borderBottom: '1px solid var(--border-light)' }} />)}
               {trips.filter((t) => t.day === dayIdx).map((trip) => {
                 const top = (trip.startHour - 6) * CELL_H;
                 const height = trip.duration * CELL_H - 4;
@@ -119,8 +119,8 @@ export default function JadwalTransportasi() {
                       right: 4,
                       height,
                       borderRadius: 8,
-                      background: '#f0f9ff',
-                      border: '1px solid #bae6fd',
+                      background: 'var(--accent-cyan-bg)',
+                      border: '1px solid rgba(2, 132, 199, 0.3)',
                       padding: '6px 8px',
                       cursor: 'pointer',
                       overflow: 'hidden',

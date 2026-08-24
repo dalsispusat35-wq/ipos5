@@ -115,52 +115,52 @@ export default function AnalyticsReport() {
       {/* KPI Cards Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
         {/* SLA Compliance */}
-        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 16, padding: 18, display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 12, background: '#ffffff', border: '1px solid #bbf7d0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <ShieldCheck size={22} color="#16a34a" />
+        <div className="kpi-card-emerald" style={{ borderRadius: 16, padding: 18, display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--bg-card)', border: '1px solid rgba(16, 185, 129, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <ShieldCheck size={22} color="var(--accent-emerald)" />
           </div>
           <div>
-            <div style={{ fontSize: 10.5, fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Tingkat SLA On-Time</div>
-            <div style={{ fontSize: 24, fontWeight: 900, color: '#16a34a' }}>{metrics.slaComplianceRate || 98.5}%</div>
-            <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{metrics.onTimeCount || 0} paket sesuai SLA</div>
+            <div style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Tingkat SLA On-Time</div>
+            <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--accent-emerald)' }}>{metrics.slaComplianceRate || 98.5}%</div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>{metrics.onTimeCount || 0} paket sesuai SLA</div>
           </div>
         </div>
 
         {/* Total Packages */}
-        <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 16, padding: 18, display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 12, background: '#ffffff', border: '1px solid #bae6fd', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <TrendingUp size={22} color="#0284c7" />
+        <div className="kpi-card-cyan" style={{ borderRadius: 16, padding: 18, display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--bg-card)', border: '1px solid rgba(2, 132, 199, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <TrendingUp size={22} color="var(--accent-cyan)" />
           </div>
           <div>
-            <div style={{ fontSize: 10.5, fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Total Paket Terolah</div>
-            <div style={{ fontSize: 24, fontWeight: 900, color: '#0f172a' }}>{(metrics.totalTransactions || 922).toLocaleString('id-ID')}</div>
-            <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{metrics.deliveredCount || 137} delivered</div>
+            <div style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Total Paket Terolah</div>
+            <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--text-primary)' }}>{(metrics.totalTransactions || 922).toLocaleString('id-ID')}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>{metrics.deliveredCount || 137} delivered</div>
           </div>
         </div>
 
         {/* Avg Handling Lead Time */}
-        <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 16, padding: 18, display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 12, background: '#ffffff', border: '1px solid #fde68a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Clock size={22} color="#d97706" />
+        <div className="kpi-card-amber" style={{ borderRadius: 16, padding: 18, display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--bg-card)', border: '1px solid rgba(245, 158, 11, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Clock size={22} color="var(--accent-amber)" />
           </div>
           <div>
-            <div style={{ fontSize: 10.5, fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Rata-rata Lead Time</div>
-            <div style={{ fontSize: 24, fontWeight: 900, color: '#d97706' }}>{metrics.avgHandlingTimeHours || 4.2} Jam</div>
-            <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Cimahi → SPP Tujuan</div>
+            <div style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Rata-rata Lead Time</div>
+            <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--accent-amber)' }}>{metrics.avgHandlingTimeHours || 4.2} Jam</div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>Cimahi → SPP Tujuan</div>
           </div>
         </div>
 
         {/* Total Weight Capacity */}
-        <div style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 16, padding: 18, display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 12, background: '#ffffff', border: '1px solid #e9d5ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Truck size={22} color="#9333ea" />
+        <div className="kpi-card-purple" style={{ borderRadius: 16, padding: 18, display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--bg-card)', border: '1px solid rgba(168, 85, 247, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Truck size={22} color="var(--accent-purple)" />
           </div>
           <div>
-            <div style={{ fontSize: 10.5, fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Throughput Muatan</div>
-            <div style={{ fontSize: 24, fontWeight: 900, color: '#9333ea' }}>
+            <div style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Throughput Muatan</div>
+            <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--accent-purple)' }}>
               {((throughputData?.totalWeightKg || 43518) / 1000).toFixed(1)} Ton
             </div>
-            <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{throughputData?.totalWeightKg || 43518} kg terdistribusi</div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>{throughputData?.totalWeightKg || 43518} kg terdistribusi</div>
           </div>
         </div>
       </div>
@@ -172,17 +172,17 @@ export default function AnalyticsReport() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 20 }}>
         {/* SLA Performance by Service */}
         <div className="spatial-card" style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: 12 }}>
-            <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <ShieldCheck size={16} color="#0284c7" />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-light)', paddingBottom: 12 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <ShieldCheck size={16} color="var(--accent-cyan)" />
               <span>Performa SLA Per Jenis Layanan</span>
             </div>
-            <span style={{ fontSize: 11, color: '#94a3b8' }}>Target Standard</span>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Target Standard</span>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {Object.keys(serviceBreakdown).length === 0 ? (
-              <div style={{ fontSize: 12, color: '#64748b', padding: 12, textAlign: 'center' }}>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', padding: 12, textAlign: 'center' }}>
                 Belum ada rincian data layanan.
               </div>
             ) : (
@@ -191,17 +191,17 @@ export default function AnalyticsReport() {
                 const displayName = item.name || serviceKey;
 
                 return (
-                  <div key={serviceKey} style={{ background: '#f8fafc', padding: 12, borderRadius: 10, border: '1px solid #e2e8f0' }}>
+                  <div key={serviceKey} className="surface-soft" style={{ padding: 12, borderRadius: 10 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                      <span style={{ fontSize: 12.5, fontWeight: 800, color: '#0f172a' }}>{displayName}</span>
-                      <span style={{ fontSize: 12, fontWeight: 800, color: pct >= 95 ? '#16a34a' : '#d97706' }}>
+                      <span style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--text-primary)' }}>{displayName}</span>
+                      <span style={{ fontSize: 12, fontWeight: 800, color: pct >= 95 ? 'var(--accent-emerald)' : 'var(--accent-amber)' }}>
                         {pct}% On-Time ({item.onTime}/{item.total})
                       </span>
                     </div>
-                    <div style={{ height: 6, background: '#e2e8f0', borderRadius: 3, overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${pct}%`, background: pct >= 95 ? '#16a34a' : '#d97706', borderRadius: 3 }} />
+                    <div style={{ height: 6, background: 'var(--border-light)', borderRadius: 3, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${pct}%`, background: pct >= 95 ? 'var(--accent-emerald)' : 'var(--accent-amber)', borderRadius: 3 }} />
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#64748b', marginTop: 6 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-secondary)', marginTop: 6 }}>
                       <span>Target SLA: &le; {item.targetHours} Jam</span>
                       <span>{item.delayed} Keterlambatan ({item.total} Paket)</span>
                     </div>
@@ -214,24 +214,24 @@ export default function AnalyticsReport() {
 
         {/* Volume & Weight Throughput per State */}
         <div className="spatial-card" style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: 12 }}>
-            <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Layers size={16} color="#0284c7" />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-light)', paddingBottom: 12 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Layers size={16} color="var(--accent-cyan)" />
               <span>Throughput Status Kiriman</span>
             </div>
-            <span style={{ fontSize: 11, color: '#94a3b8' }}>Volume & Berat</span>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Volume & Berat</span>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {Object.entries(stateThroughput).map(([stateKey, data]) => (
-              <div key={stateKey} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10 }}>
+              <div key={stateKey} className="surface-soft" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 10 }}>
                 <div>
-                  <div style={{ fontSize: 12.5, fontWeight: 800, color: '#0b2e8a' }}>{stateKey}</div>
-                  <div style={{ fontSize: 11, color: '#64748b' }}>Estimasi Total Berat</div>
+                  <div style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--primary-navy)' }}>{stateKey}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Estimasi Total Berat</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 14, fontWeight: 900, color: '#0f172a' }}>{data.count} Paket</div>
-                  <div style={{ fontSize: 11.5, fontWeight: 700, color: '#9333ea' }}>{data.weightKg.toFixed(1)} kg</div>
+                  <div style={{ fontSize: 14, fontWeight: 900, color: 'var(--text-primary)' }}>{data.count} Paket</div>
+                  <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--accent-purple)' }}>{data.weightKg.toFixed(1)} kg</div>
                 </div>
               </div>
             ))}
@@ -242,12 +242,12 @@ export default function AnalyticsReport() {
       {/* Export Hub Section */}
       <div className="spatial-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', padding: 8, borderRadius: 10 }}>
-            <FileSpreadsheet size={22} color="#059669" />
+          <div style={{ background: 'var(--accent-emerald-bg)', border: '1px solid rgba(16, 185, 129, 0.3)', padding: 8, borderRadius: 10 }}>
+            <FileSpreadsheet size={22} color="var(--accent-emerald)" />
           </div>
           <div>
-            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900, color: '#0f172a' }}>Pusat Ekspor Laporan Operasional</h3>
-            <p style={{ margin: '2px 0 0', fontSize: 12, color: '#64748b' }}>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900, color: 'var(--text-primary)' }}>Pusat Ekspor Laporan Operasional</h3>
+            <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-secondary)' }}>
               Filter data transaksi kiriman dan unduh laporan resmi format CSV / Spreadsheet.
             </p>
           </div>
@@ -256,11 +256,11 @@ export default function AnalyticsReport() {
         {/* Filter Controls */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginTop: 8 }}>
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#475569', marginBottom: 4 }}>Filter Status Paket</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 4 }}>Filter Status Paket</label>
             <select
               value={exportFilters.status}
               onChange={(e) => setExportFilters({ ...exportFilters, status: e.target.value })}
-              style={{ width: '100%', height: 38, fontSize: 12, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '0 10px', color: '#0f172a', outline: 'none' }}
+              style={{ width: '100%', height: 38, fontSize: 12 }}
             >
               <option value="">Semua Status</option>
               <option value="DITERIMA_DI_CIMAHI">DITERIMA_DI_CIMAHI</option>
@@ -272,11 +272,11 @@ export default function AnalyticsReport() {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#475569', marginBottom: 4 }}>Filter Jenis Layanan</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 4 }}>Filter Jenis Layanan</label>
             <select
               value={exportFilters.service}
               onChange={(e) => setExportFilters({ ...exportFilters, service: e.target.value })}
-              style={{ width: '100%', height: 38, fontSize: 12, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '0 10px', color: '#0f172a', outline: 'none' }}
+              style={{ width: '100%', height: 38, fontSize: 12 }}
             >
               <option value="">Semua Layanan (4 Layanan)</option>
               <option value="Q9">Q9 (Pos Sameday)</option>
@@ -287,12 +287,12 @@ export default function AnalyticsReport() {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#475569', marginBottom: 4 }}>Filter Nopend Tujuan</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 4 }}>Filter Nopend Tujuan</label>
             <input
               placeholder="Contoh: 40000 (Bandung)"
               value={exportFilters.nopend}
               onChange={(e) => setExportFilters({ ...exportFilters, nopend: e.target.value })}
-              style={{ width: '100%', height: 38, fontSize: 12, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '0 10px', color: '#0f172a', outline: 'none', boxSizing: 'border-box' }}
+              style={{ width: '100%', height: 38, fontSize: 12, boxSizing: 'border-box' }}
             />
           </div>
         </div>

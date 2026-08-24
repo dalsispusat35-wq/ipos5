@@ -1,99 +1,69 @@
 import { useState, useEffect } from 'react';
-import { api } from '../utils/api.js';
 import { 
-  X, Truck, ShieldAlert, Clock, MapPin, ClipboardList, Info, 
-  ChevronLeft, ChevronRight, RefreshCw, BarChart2, Package, Route,
-  Copy, Check, Eye, User, Phone, CheckCircle2, ArrowRight, ShieldCheck,
-  Activity, ExternalLink
+  X, Truck, Package, Clock, RefreshCw, BarChart2, ShieldAlert, 
+  MapPin, CheckCircle2, ChevronRight, ChevronLeft, ArrowRight, Route,
+  Copy, Check, FileText, ClipboardList
 } from 'lucide-react';
+import { api } from '../utils/api.js';
 import RouteDetailModal from './RouteDetailModal.jsx';
 
-export default function VehicleDetailModal({ nopol, onClose, onViewTransaction }) {
-  const [activeTab, setActiveTab] = useState('summary'); // summary, route, shipments
+export default function VehicleDetailModal({ nopol, onClose }) {
   const [data, setData] = useState(null);
-  const [capacityData, setCapacityData] = useState(null);
-  const [inspectRouteTx, setInspectRouteTx] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [copiedResi, setCopiedResi] = useState(null);
+  const [activeTab, setActiveTab] = useState('summary'); // 'summary' | 'route' | 'shipments'
   
-  // Shipments filters/pagination states
+  // Tab shipments state
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(15);
   const [stateFilter, setStateFilter] = useState('');
   const [serviceFilter, setServiceFilter] = useState('');
+  const [copiedResi, setCopiedResi] = useState(null);
+
+  // Sub-modal for route visualization
+  const [inspectRouteTx, setInspectRouteTx] = useState(null);
 
   const loadVehicleDetail = async () => {
+    if (!nopol) return;
     try {
       setLoading(true);
       setError('');
-      const params = new URLSearchParams({
-        page,
-        limit: 10,
-        transaction_state: stateFilter,
-        service: serviceFilter
-      }).toString();
-      
-      const [res, capRes] = await Promise.all([
-        api.getVehicleDetail(nopol, params),
-        api.getVehicleCapacity(nopol).catch(() => null)
-      ]);
-
-      if (res.success) {
+      const params = `page=${page}&limit=${limit}${stateFilter ? `&state=${stateFilter}` : ''}${serviceFilter ? `&service=${serviceFilter}` : ''}`;
+      const res = await api.getVehicleDetail(nopol, params);
+      if (res.success && res.data) {
         setData(res.data);
       } else {
-        setError(res.message || 'Gagal memuat detail kendaraan.');
-      }
-      if (capRes && capRes.success) {
-        setCapacityData(capRes.data);
+        setError(res.message || 'Gagal memuat rincian armada');
       }
     } catch (err) {
-      setError(err.message || 'Koneksi ke server gagal.');
+      setError(err.message || 'Terjadi kesalahan saat memuat data');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (nopol) {
-      loadVehicleDetail();
-    }
-  }, [nopol, page, stateFilter, serviceFilter]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [stateFilter, serviceFilter]);
-
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && !inspectRouteTx) {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose, inspectRouteTx]);
-
-  if (!nopol) return null;
+    loadVehicleDetail();
+  }, [nopol, page, limit, stateFilter, serviceFilter]);
 
   const handleCopy = (code) => {
     if (!code) return;
     navigator.clipboard.writeText(code);
     setCopiedResi(code);
-    setTimeout(() => setCopiedResi(null), 1800);
+    setTimeout(() => setCopiedResi(null), 1500);
+  };
+
+  // Helper capacity calculation
+  const capacityData = data?.vehicleCapacity;
+
+  const formatWeight = (kg) => {
+    if (!kg && kg !== 0) return '0 kg';
+    return Number(kg).toLocaleString('id-ID', { maximumFractionDigits: 1 }) + ' kg';
   };
 
   const formatIDR = (val) => {
-    if (val === undefined || val === null || val === '-') return '-';
-    const num = parseFloat(val);
-    if (isNaN(num)) return '-';
-    return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num);
-  };
-
-  const formatWeight = (val) => {
-    if (val === undefined || val === null || val === '-') return '-';
-    const num = parseFloat(val);
-    if (isNaN(num)) return '-';
-    return `${num.toFixed(1)} kg`;
+    if (!val && val !== 0) return 'Rp 0';
+    return 'Rp ' + Number(val).toLocaleString('id-ID');
   };
 
   const getBadgeClass = (status) => {
@@ -123,29 +93,30 @@ export default function VehicleDetailModal({ nopol, onClose, onViewTransaction }
           display: 'flex', 
           flexDirection: 'column', 
           padding: 0,
-          background: '#ffffff',
-          color: '#0f172a',
+          background: 'var(--bg-card)',
+          color: 'var(--text-primary)',
           overflow: 'hidden'
         }}
       >
         {/* ── MODAL HEADER ── */}
         <div 
+          className="modal-header"
           style={{ 
             padding: '16px 22px', 
-            borderBottom: '1px solid #e2e8f0',
+            borderBottom: '1px solid var(--border-light)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            background: '#f8fafc'
+            background: 'var(--bg-surface-soft)'
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 10, background: '#e0f2fe', border: '1px solid #bae6fd', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0284c7' }}>
+            <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--accent-cyan-bg)', border: '1px solid rgba(2, 132, 199, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-cyan)' }}>
               <Truck size={20} />
             </div>
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <h3 style={{ color: '#0f172a', fontWeight: 900, margin: 0, fontSize: 17, fontFamily: 'monospace' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <h3 style={{ color: 'var(--text-primary)', fontWeight: 900, margin: 0, fontSize: 17, fontFamily: 'var(--font-mono)' }}>
                   {nopol}
                 </h3>
                 {data?.vehicle?.nama_kendaraan && (
@@ -159,8 +130,8 @@ export default function VehicleDetailModal({ nopol, onClose, onViewTransaction }
                   </span>
                 )}
               </div>
-              <p style={{ color: '#64748b', fontSize: 11.5, margin: '2px 0 0' }}>
-                Driver: <strong style={{ color: '#0f172a' }}>{data?.vehicle?.driver || 'Driver Pos'}</strong> • Home Base: <strong style={{ color: '#0f172a' }}>{data?.vehicle?.home_base || 'KC Bandung'}</strong>
+              <p style={{ color: 'var(--text-secondary)', fontSize: 11.5, margin: '2px 0 0' }}>
+                Driver: <strong style={{ color: 'var(--text-primary)' }}>{data?.vehicle?.driver || 'Driver Pos'}</strong> • Home Base: <strong style={{ color: 'var(--text-primary)' }}>{data?.vehicle?.home_base || 'KC Bandung'}</strong>
               </p>
             </div>
           </div>
@@ -168,24 +139,15 @@ export default function VehicleDetailModal({ nopol, onClose, onViewTransaction }
           <button 
             type="button"
             onClick={onClose} 
-            style={{ 
-              background: 'none', 
-              border: 'none', 
-              color: '#64748b', 
-              cursor: 'pointer', 
-              width: 32, 
-              height: 32, 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center' 
-            }}
+            className="capsule-btn-circle"
+            style={{ width: 32, height: 32 }}
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
 
         {/* ── COCKPIT TAB SELECTOR ── */}
-        <div style={{ display: 'flex', background: '#f1f5f9', borderBottom: '1px solid #e2e8f0', padding: '0 20px', gap: 6 }}>
+        <div style={{ display: 'flex', background: 'var(--bg-surface-soft)', borderBottom: '1px solid var(--border-light)', padding: '0 20px', gap: 6, overflowX: 'auto' }}>
           {[
             { id: 'summary', label: 'Ringkasan Armada', icon: BarChart2 },
             { id: 'route', label: 'Rute & Stop Points', icon: Route },
@@ -202,17 +164,18 @@ export default function VehicleDetailModal({ nopol, onClose, onViewTransaction }
                   padding: '12px 16px', 
                   background: 'none', 
                   border: 'none', 
-                  borderBottom: isActive ? '3px solid #0b2e8a' : '3px solid transparent', 
-                  color: isActive ? '#0b2e8a' : '#64748b', 
+                  borderBottom: isActive ? '3px solid var(--primary-navy)' : '3px solid transparent', 
+                  color: isActive ? 'var(--primary-navy)' : 'var(--text-secondary)', 
                   fontWeight: isActive ? 800 : 600, 
                   fontSize: 12.5,
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   gap: 6,
+                  whiteSpace: 'nowrap'
                 }}
               >
-                <Icon size={14} color={isActive ? '#0b2e8a' : '#64748b'} />
+                <Icon size={14} color={isActive ? 'var(--primary-navy)' : 'var(--text-muted)'} />
                 <span>{tab.label}</span>
               </button>
             );
@@ -223,11 +186,11 @@ export default function VehicleDetailModal({ nopol, onClose, onViewTransaction }
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
           {loading && !data ? (
             <div style={{ padding: '60px 0', textAlign: 'center' }}>
-              <RefreshCw size={28} className="spin" style={{ margin: '0 auto 12px', color: '#0284c7' }} />
-              <div style={{ color: '#64748b', fontSize: 12.5 }}>Memuat detail data armada {nopol}...</div>
+              <RefreshCw size={28} className="spin" style={{ margin: '0 auto 12px', color: 'var(--primary-blue)' }} />
+              <div style={{ color: 'var(--text-secondary)', fontSize: 12.5 }}>Memuat detail data armada {nopol}...</div>
             </div>
           ) : error ? (
-            <div style={{ padding: 16, background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, color: '#b91c1c', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ padding: 16, background: 'var(--accent-pink-bg)', border: '1px solid rgba(244, 63, 94, 0.3)', borderRadius: 12, color: 'var(--accent-pink)', display: 'flex', alignItems: 'center', gap: 10 }}>
               <ShieldAlert size={18} />
               <div style={{ fontSize: 12.5 }}>{error}</div>
             </div>
@@ -240,22 +203,23 @@ export default function VehicleDetailModal({ nopol, onClose, onViewTransaction }
                   {/* Load Capacity Gauge */}
                   {capacityData && (
                     <div 
+                      className="surface-card"
                       style={{ 
                         padding: '16px 18px', 
-                        background: '#f0f9ff', 
-                        border: '1px solid #bae6fd', 
+                        background: 'var(--accent-cyan-bg)', 
+                        border: '1px solid rgba(2, 132, 199, 0.25)', 
                         borderRadius: 14 
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, flexWrap: 'wrap', gap: 10 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <div style={{ padding: 8, borderRadius: 8, background: '#e0f2fe', color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <div style={{ padding: 8, borderRadius: 8, background: 'var(--bg-card)', color: 'var(--accent-cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <BarChart2 size={16} />
                           </div>
                           <div>
-                            <h4 style={{ color: '#0f172a', margin: 0, fontSize: 13.5, fontWeight: 800 }}>Kapasitas Muatan Kendaraan (Load Gauge)</h4>
-                            <span style={{ fontSize: 11, color: '#64748b' }}>
-                              Rute Penugasan: <strong style={{ color: '#0b2e8a' }}>{capacityData.rute?.nama_rute || 'Rute Logistik Feeder'}</strong>
+                            <h4 style={{ color: 'var(--text-primary)', margin: 0, fontSize: 13.5, fontWeight: 800 }}>Kapasitas Muatan Kendaraan (Load Gauge)</h4>
+                            <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                              Rute Penugasan: <strong style={{ color: 'var(--primary-navy)' }}>{capacityData.rute?.nama_rute || 'Rute Logistik Feeder'}</strong>
                             </span>
                           </div>
                         </div>
@@ -268,7 +232,7 @@ export default function VehicleDetailModal({ nopol, onClose, onViewTransaction }
                       </div>
 
                       {/* Progress Bar Gauge */}
-                      <div style={{ background: '#e2e8f0', height: 10, borderRadius: 5, overflow: 'hidden', margin: '10px 0 8px' }}>
+                      <div style={{ background: 'var(--border-light)', height: 10, borderRadius: 5, overflow: 'hidden', margin: '10px 0 8px' }}>
                         <div 
                           style={{
                             width: `${Math.min(100, capacityData.persentase_terpakai)}%`,
@@ -285,10 +249,10 @@ export default function VehicleDetailModal({ nopol, onClose, onViewTransaction }
                       </div>
 
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11.5 }}>
-                        <div style={{ color: '#64748b' }}>
-                          Total muatan <strong style={{ color: '#0f172a' }}>{formatWeight(capacityData.total_berat_terpakai_kg)}</strong> dari maks <strong style={{ color: '#0b2e8a' }}>{formatWeight(capacityData.kapasitas_maksimum_kg)}</strong> ({capacityData.total_paket} Paket)
+                        <div style={{ color: 'var(--text-secondary)' }}>
+                          Total muatan <strong style={{ color: 'var(--text-primary)' }}>{formatWeight(capacityData.total_berat_terpakai_kg)}</strong> dari maks <strong style={{ color: 'var(--primary-navy)' }}>{formatWeight(capacityData.kapasitas_maksimum_kg)}</strong> ({capacityData.total_paket} Paket)
                         </div>
-                        <div style={{ fontSize: 14, color: '#0b2e8a', fontWeight: 900, fontFamily: 'monospace' }}>
+                        <div style={{ fontSize: 14, color: 'var(--primary-navy)', fontWeight: 900, fontFamily: 'var(--font-mono)' }}>
                           {capacityData.persentase_terpakai}%
                         </div>
                       </div>
@@ -297,30 +261,30 @@ export default function VehicleDetailModal({ nopol, onClose, onViewTransaction }
 
                   {/* 4 Summary Metric Cards */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
-                    <div style={{ padding: '12px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10 }}>
-                      <span style={{ fontSize: 10, color: '#64748b', fontWeight: 700 }}>TOTAL MUATAN</span>
-                      <h3 style={{ fontSize: 18, color: '#0f172a', fontWeight: 900, margin: '2px 0 0', fontFamily: 'monospace' }}>
-                        {data.summary.totalCount} <span style={{ fontSize: 11, color: '#64748b', fontWeight: 500 }}>Paket</span>
+                    <div className="stat-card" style={{ padding: '12px 14px' }}>
+                      <span style={{ fontSize: 10, color: 'var(--text-secondary)', fontWeight: 700 }}>TOTAL MUATAN</span>
+                      <h3 style={{ fontSize: 18, color: 'var(--text-primary)', fontWeight: 900, margin: '2px 0 0', fontFamily: 'var(--font-mono)' }}>
+                        {data.summary.totalCount} <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 500 }}>Paket</span>
                       </h3>
                     </div>
 
-                    <div style={{ padding: '12px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10 }}>
-                      <span style={{ fontSize: 10, color: '#64748b', fontWeight: 700 }}>TOTAL BERAT</span>
-                      <h3 style={{ fontSize: 18, color: '#16a34a', fontWeight: 900, margin: '2px 0 0', fontFamily: 'monospace' }}>
+                    <div className="stat-card" style={{ padding: '12px 14px' }}>
+                      <span style={{ fontSize: 10, color: 'var(--text-secondary)', fontWeight: 700 }}>TOTAL BERAT</span>
+                      <h3 style={{ fontSize: 18, color: 'var(--accent-emerald)', fontWeight: 900, margin: '2px 0 0', fontFamily: 'var(--font-mono)' }}>
                         {formatWeight(data.summary.totalWeight)}
                       </h3>
                     </div>
 
-                    <div style={{ padding: '12px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10 }}>
-                      <span style={{ fontSize: 10, color: '#64748b', fontWeight: 700 }}>NILAI KIRIMAN</span>
-                      <h3 style={{ fontSize: 16, color: '#0b2e8a', fontWeight: 900, margin: '2px 0 0', fontFamily: 'monospace' }}>
+                    <div className="stat-card" style={{ padding: '12px 14px' }}>
+                      <span style={{ fontSize: 10, color: 'var(--text-secondary)', fontWeight: 700 }}>NILAI KIRIMAN</span>
+                      <h3 style={{ fontSize: 16, color: 'var(--primary-navy)', fontWeight: 900, margin: '2px 0 0', fontFamily: 'var(--font-mono)' }}>
                         {formatIDR(data.summary.totalAmount)}
                       </h3>
                     </div>
 
-                    <div style={{ padding: '12px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10 }}>
-                      <span style={{ fontSize: 10, color: '#64748b', fontWeight: 700 }}>DESTINASI UTAMA</span>
-                      <h3 style={{ fontSize: 15, color: '#0284c7', fontWeight: 900, margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'monospace' }}>
+                    <div className="stat-card" style={{ padding: '12px 14px' }}>
+                      <span style={{ fontSize: 10, color: 'var(--text-secondary)', fontWeight: 700 }}>DESTINASI UTAMA</span>
+                      <h3 style={{ fontSize: 15, color: 'var(--accent-cyan)', fontWeight: 900, margin: '2px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)' }}>
                         {data.summary.mostCommonKprk || 'SPP Bandung'}
                       </h3>
                     </div>
@@ -328,45 +292,45 @@ export default function VehicleDetailModal({ nopol, onClose, onViewTransaction }
 
                   {/* Vehicle Spec Grid */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
-                    <div style={{ padding: 14, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12 }}>
-                      <h4 style={{ color: '#0f172a', margin: '0 0 10px', fontSize: 12.5, fontWeight: 800, borderBottom: '1px solid #e2e8f0', paddingBottom: 6 }}>
+                    <div className="surface-soft" style={{ padding: 14 }}>
+                      <h4 style={{ color: 'var(--text-primary)', margin: '0 0 10px', fontSize: 12.5, fontWeight: 800, borderBottom: '1px solid var(--border-light)', paddingBottom: 6 }}>
                         Profil Armada Kendaraan
                       </h4>
                       <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
                         <tbody>
                           <tr>
-                            <td style={{ color: '#64748b', padding: '5px 0' }}>Nama Kendaraan</td>
-                            <td style={{ color: '#0f172a', fontWeight: 700, textAlign: 'right' }}>{data.vehicle.nama_kendaraan}</td>
+                            <td style={{ color: 'var(--text-secondary)', padding: '5px 0' }}>Nama Kendaraan</td>
+                            <td style={{ color: 'var(--text-primary)', fontWeight: 700, textAlign: 'right' }}>{data.vehicle.nama_kendaraan}</td>
                           </tr>
                           <tr>
-                            <td style={{ color: '#64748b', padding: '5px 0' }}>Jenis / Tipe</td>
-                            <td style={{ color: '#0f172a', fontWeight: 700, textAlign: 'right' }}>{data.vehicle.jenis_kendaraan}</td>
+                            <td style={{ color: 'var(--text-secondary)', padding: '5px 0' }}>Jenis / Tipe</td>
+                            <td style={{ color: 'var(--text-primary)', fontWeight: 700, textAlign: 'right' }}>{data.vehicle.jenis_kendaraan}</td>
                           </tr>
                           <tr>
-                            <td style={{ color: '#64748b', padding: '5px 0' }}>Nomor Polisi</td>
-                            <td style={{ color: '#0b2e8a', fontWeight: 800, textAlign: 'right', fontFamily: 'monospace' }}>{data.vehicle.nopol}</td>
+                            <td style={{ color: 'var(--text-secondary)', padding: '5px 0' }}>Nomor Polisi</td>
+                            <td style={{ color: 'var(--primary-navy)', fontWeight: 800, textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{data.vehicle.nopol}</td>
                           </tr>
                         </tbody>
                       </table>
                     </div>
 
-                    <div style={{ padding: 14, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12 }}>
-                      <h4 style={{ color: '#0f172a', margin: '0 0 10px', fontSize: 12.5, fontWeight: 800, borderBottom: '1px solid #e2e8f0', paddingBottom: 6 }}>
+                    <div className="surface-soft" style={{ padding: 14 }}>
+                      <h4 style={{ color: 'var(--text-primary)', margin: '0 0 10px', fontSize: 12.5, fontWeight: 800, borderBottom: '1px solid var(--border-light)', paddingBottom: 6 }}>
                         Pengemudi & Operasional
                       </h4>
                       <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
                         <tbody>
                           <tr>
-                            <td style={{ color: '#64748b', padding: '5px 0' }}>Nama Pengemudi</td>
-                            <td style={{ color: '#0f172a', fontWeight: 700, textAlign: 'right' }}>{data.vehicle.driver}</td>
+                            <td style={{ color: 'var(--text-secondary)', padding: '5px 0' }}>Nama Pengemudi</td>
+                            <td style={{ color: 'var(--text-primary)', fontWeight: 700, textAlign: 'right' }}>{data.vehicle.driver}</td>
                           </tr>
                           <tr>
-                            <td style={{ color: '#64748b', padding: '5px 0' }}>No. Telepon / Radio</td>
-                            <td style={{ color: '#0f172a', fontWeight: 700, textAlign: 'right', fontFamily: 'monospace' }}>{data.vehicle.driver_phone || '0812-9988-1122'}</td>
+                            <td style={{ color: 'var(--text-secondary)', padding: '5px 0' }}>No. Telepon / Radio</td>
+                            <td style={{ color: 'var(--text-primary)', fontWeight: 700, textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{data.vehicle.driver_phone || '0812-9988-1122'}</td>
                           </tr>
                           <tr>
-                            <td style={{ color: '#64748b', padding: '5px 0' }}>Shift Operasional</td>
-                            <td style={{ color: '#d97706', fontWeight: 800, textAlign: 'right' }}>SHIFT MALAM (20:00 - 05:00)</td>
+                            <td style={{ color: 'var(--text-secondary)', padding: '5px 0' }}>Shift Operasional</td>
+                            <td style={{ color: 'var(--accent-amber)', fontWeight: 800, textAlign: 'right' }}>SHIFT MALAM (20:00 - 05:00)</td>
                           </tr>
                         </tbody>
                       </table>
@@ -382,16 +346,15 @@ export default function VehicleDetailModal({ nopol, onClose, onViewTransaction }
                   {data.routes.map((route, rIdx) => (
                     <div 
                       key={rIdx} 
+                      className="surface-soft"
                       style={{ 
                         padding: 16, 
-                        background: '#f8fafc', 
-                        border: '1px solid #e2e8f0', 
-                        borderLeft: '4px solid #0284c7', 
+                        borderLeft: '4px solid var(--primary-blue)', 
                         borderRadius: 12 
                       }}
                     >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: 8, marginBottom: 12 }}>
-                        <h4 style={{ color: '#0f172a', margin: 0, fontSize: 13.5, fontWeight: 800 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-light)', paddingBottom: 8, marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+                        <h4 style={{ color: 'var(--text-primary)', margin: 0, fontSize: 13.5, fontWeight: 800 }}>
                           {route.pickup_group.replace(/_/g, ' ')}
                         </h4>
                         <span className="badge badge-navy" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -402,15 +365,15 @@ export default function VehicleDetailModal({ nopol, onClose, onViewTransaction }
                       {/* Stops Timeline */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {route.stops.map((stop, sIdx) => (
-                          <div key={sIdx} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: 8 }}>
-                            <div style={{ width: 22, height: 22, borderRadius: '50%', background: '#e0f2fe', border: '1px solid #bae6fd', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10.5, fontWeight: 800, color: '#0284c7' }}>
+                          <div key={sIdx} className="surface-card" style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8 }}>
+                            <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--accent-cyan-bg)', border: '1px solid rgba(2, 132, 199, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10.5, fontWeight: 800, color: 'var(--accent-cyan)' }}>
                               {stop.stop_order}
                             </div>
                             <div style={{ flex: 1 }}>
-                              <div style={{ color: '#0f172a', fontSize: 12, fontWeight: 700 }}>{stop.office_name}</div>
-                              <div style={{ fontSize: 10, color: '#64748b' }}>Nopen: {stop.office_nopen} • {stop.office_type}</div>
+                              <div style={{ color: 'var(--text-primary)', fontSize: 12, fontWeight: 700 }}>{stop.office_name}</div>
+                              <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Nopen: {stop.office_nopen} • {stop.office_type}</div>
                             </div>
-                            <span style={{ fontSize: 10.5, color: '#16a34a', fontWeight: 700 }}>
+                            <span style={{ fontSize: 10.5, color: 'var(--accent-emerald)', fontWeight: 700 }}>
                               ETA {stop.eta}
                             </span>
                           </div>
@@ -431,13 +394,8 @@ export default function VehicleDetailModal({ nopol, onClose, onViewTransaction }
                       value={stateFilter} 
                       onChange={(e) => setStateFilter(e.target.value)} 
                       style={{
-                        background: '#f8fafc',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: 8,
                         padding: '6px 10px',
-                        color: stateFilter ? '#0b2e8a' : '#475569',
                         fontSize: 11.5,
-                        outline: 'none',
                         cursor: 'pointer'
                       }}
                     >
@@ -451,13 +409,8 @@ export default function VehicleDetailModal({ nopol, onClose, onViewTransaction }
                       value={serviceFilter} 
                       onChange={(e) => setServiceFilter(e.target.value)} 
                       style={{
-                        background: '#f8fafc',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: 8,
                         padding: '6px 10px',
-                        color: serviceFilter ? '#0b2e8a' : '#475569',
                         fontSize: 11.5,
-                        outline: 'none',
                         cursor: 'pointer'
                       }}
                     >
@@ -480,43 +433,40 @@ export default function VehicleDetailModal({ nopol, onClose, onViewTransaction }
 
                   {/* Shipments Table */}
                   {data.transactions.length === 0 ? (
-                    <div style={{ padding: '40px 0', textAlign: 'center', color: '#64748b', background: '#f8fafc', borderRadius: 12, border: '1px dashed #e2e8f0' }}>
-                      <ClipboardList size={32} style={{ margin: '0 auto 8px', color: '#cbd5e1' }} />
+                    <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--text-muted)', background: 'var(--bg-surface-soft)', borderRadius: 12, border: '1px dashed var(--border-light)' }}>
+                      <ClipboardList size={32} style={{ margin: '0 auto 8px', color: 'var(--text-muted)' }} />
                       <p style={{ margin: 0, fontSize: 12.5 }}>Tidak ada data kiriman yang cocok untuk kendaraan ini.</p>
                     </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      <div style={{ overflowX: 'auto', maxHeight: 380, overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: 8 }}>
-                        <table style={{ width: '100%', fontSize: 11, borderCollapse: 'collapse' }}>
-                          <thead style={{ position: 'sticky', top: 0, background: '#f8fafc', borderBottom: '1px solid #e2e8f0', zIndex: 10 }}>
-                            <tr style={{ textAlign: 'left', color: '#64748b', fontSize: 10 }}>
-                              <th style={{ padding: '8px 10px' }}>NO. CONNOTE</th>
-                              <th style={{ padding: '8px 10px' }}>PENGIRIM / PENERIMA</th>
-                              <th style={{ padding: '8px 10px' }}>TUJUAN</th>
-                              <th style={{ padding: '8px 10px' }}>LAYANAN</th>
-                              <th style={{ padding: '8px 10px', textAlign: 'right' }}>BERAT</th>
-                              <th style={{ padding: '8px 10px', textAlign: 'right' }}>BEA KIRIM</th>
-                              <th style={{ padding: '8px 10px' }}>STATUS</th>
-                              <th style={{ padding: '8px 10px' }}>TITIK TRANSIT</th>
-                              <th style={{ padding: '8px 10px', textAlign: 'center' }}>AKSI</th>
+                      <div className="table-responsive" style={{ maxHeight: 380, overflowY: 'auto' }}>
+                        <table className="data-table" style={{ width: '100%', fontSize: 11 }}>
+                          <thead>
+                            <tr>
+                              <th>NO. CONNOTE</th>
+                              <th>PENGIRIM / PENERIMA</th>
+                              <th>TUJUAN</th>
+                              <th>LAYANAN</th>
+                              <th style={{ textAlign: 'right' }}>BERAT</th>
+                              <th style={{ textAlign: 'right' }}>BEA KIRIM</th>
+                              <th>STATUS</th>
+                              <th>TITIK TRANSIT</th>
+                              <th style={{ textAlign: 'center' }}>AKSI</th>
                             </tr>
                           </thead>
                           <tbody>
                             {data.transactions.map((tx, idx) => (
-                              <tr 
-                                key={tx._id || tx.connote_code || idx}
-                                style={{ borderBottom: '1px solid #f1f5f9' }}
-                              >
+                              <tr key={tx._id || tx.connote_code || idx}>
                                 {/* Connote */}
-                                <td style={{ padding: '8px 10px' }}>
+                                <td>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                    <span style={{ color: '#0b2e8a', fontWeight: 800, fontFamily: 'monospace' }}>
+                                    <span style={{ color: 'var(--primary-navy)', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>
                                       {tx.connote_code}
                                     </span>
                                     <button
                                       type="button"
                                       onClick={() => handleCopy(tx.connote_code)}
-                                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: copiedResi === tx.connote_code ? '#16a34a' : '#94a3b8' }}
+                                      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: copiedResi === tx.connote_code ? 'var(--accent-emerald)' : 'var(--text-muted)' }}
                                       title="Salin Resi"
                                     >
                                       {copiedResi === tx.connote_code ? <Check size={10} /> : <Copy size={10} />}
@@ -525,50 +475,50 @@ export default function VehicleDetailModal({ nopol, onClose, onViewTransaction }
                                 </td>
 
                                 {/* Shipper / Receiver */}
-                                <td style={{ padding: '8px 10px', maxWidth: 160, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                  <div style={{ color: '#0f172a', fontWeight: 700 }}>{tx.connote_sender_name}</div>
-                                  <div style={{ fontSize: 9.5, color: '#64748b', display: 'flex', alignItems: 'center', gap: 2 }}>
+                                <td style={{ maxWidth: 160, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  <div style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{tx.connote_sender_name}</div>
+                                  <div style={{ fontSize: 9.5, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 2 }}>
                                     <ArrowRight size={9} /> {tx.connote_receiver_address}
                                   </div>
                                 </td>
 
                                 {/* Destination */}
-                                <td style={{ padding: '8px 10px' }}>
-                                  <div style={{ color: '#0f172a', fontWeight: 700, fontFamily: 'monospace' }}>{tx.destination_nopen}</div>
-                                  <div style={{ fontSize: 9.5, color: '#64748b' }}>{tx.destination_kprk || '-'}</div>
+                                <td>
+                                  <div style={{ color: 'var(--text-primary)', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>{tx.destination_nopen}</div>
+                                  <div style={{ fontSize: 9.5, color: 'var(--text-secondary)' }}>{tx.destination_kprk || '-'}</div>
                                 </td>
 
                                 {/* Service */}
-                                <td style={{ padding: '8px 10px' }}>
+                                <td>
                                   <span className="badge badge-navy" style={{ fontSize: 9.5 }}>
                                     {tx.connote_service}
                                   </span>
                                 </td>
 
                                 {/* Weight */}
-                                <td style={{ padding: '8px 10px', textAlign: 'right', color: '#0f172a', fontWeight: 700, fontFamily: 'monospace' }}>
+                                <td style={{ textAlign: 'right', color: 'var(--text-primary)', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
                                   {formatWeight(tx.actual_weight)}
                                 </td>
 
                                 {/* Amount */}
-                                <td style={{ padding: '8px 10px', textAlign: 'right', color: '#0b2e8a', fontWeight: 800, fontFamily: 'monospace' }}>
+                                <td style={{ textAlign: 'right', color: 'var(--primary-navy)', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>
                                   {formatIDR(tx.connote_amount)}
                                 </td>
 
                                 {/* Status */}
-                                <td style={{ padding: '8px 10px' }}>
+                                <td>
                                   <span className={getBadgeClass(tx.connote_state)} style={{ fontSize: 9.5 }}>
                                     {(tx.connote_state || 'TRANSIT').replace(/_/g, ' ')}
                                   </span>
                                 </td>
 
                                 {/* Route Stop */}
-                                <td style={{ padding: '8px 10px', maxWidth: 140, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                  <span style={{ color: '#475569', fontWeight: 600 }}>{tx.route_stop_name || 'SPP Hub'}</span>
+                                <td style={{ maxWidth: 140, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{tx.route_stop_name || 'SPP Hub'}</span>
                                 </td>
 
                                 {/* Action */}
-                                <td style={{ padding: '8px 10px', textAlign: 'center' }}>
+                                <td style={{ textAlign: 'center' }}>
                                   <button 
                                     type="button"
                                     onClick={() => setInspectRouteTx(tx)}
@@ -586,9 +536,9 @@ export default function VehicleDetailModal({ nopol, onClose, onViewTransaction }
                       </div>
 
                       {/* Pagination inside Modal */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f1f5f9', paddingTop: 8 }}>
-                        <span style={{ fontSize: 11, color: '#64748b' }}>
-                          Halaman <strong style={{ color: '#0f172a' }}>{data.transactionPagination.page}</strong> dari <strong style={{ color: '#0f172a' }}>{data.transactionPagination.totalPages}</strong> ({data.transactionPagination.totalRows} data)
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-light)', paddingTop: 8 }}>
+                        <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                          Halaman <strong style={{ color: 'var(--text-primary)' }}>{data.transactionPagination.page}</strong> dari <strong style={{ color: 'var(--text-primary)' }}>{data.transactionPagination.totalPages}</strong> ({data.transactionPagination.totalRows} data)
                         </span>
                         <div style={{ display: 'flex', gap: 6 }}>
                           <button 
@@ -631,12 +581,13 @@ export default function VehicleDetailModal({ nopol, onClose, onViewTransaction }
 
         {/* ── MODAL FOOTER ── */}
         <div 
+          className="modal-footer"
           style={{ 
             padding: '12px 22px', 
-            borderTop: '1px solid #e2e8f0',
+            borderTop: '1px solid var(--border-light)',
             display: 'flex',
             justifyContent: 'flex-end',
-            background: '#f8fafc'
+            background: 'var(--bg-surface-soft)'
           }}
         >
           <button 

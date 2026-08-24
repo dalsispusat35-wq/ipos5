@@ -267,9 +267,9 @@ export default function GateMonitoring() {
             style={{
               width: '100%',
               justifyContent: 'center',
-              background: arrived ? '#dcfce7' : (!inTransit ? '#f1f5f9' : '#16a34a'),
-              color: arrived ? '#16a34a' : (!inTransit ? '#94a3b8' : '#ffffff'),
-              border: arrived ? '1px solid #bbf7d0' : 'none'
+              background: arrived ? 'var(--accent-emerald-bg)' : (!inTransit ? 'var(--bg-surface-soft)' : 'var(--accent-emerald)'),
+              color: arrived ? 'var(--accent-emerald)' : (!inTransit ? 'var(--text-muted)' : '#ffffff'),
+              border: arrived ? '1px solid rgba(16, 185, 129, 0.3)' : 'none'
             }}
           >
             <CheckCircle size={14} /> {arrived ? 'Kedatangan Terkonfirmasi' : 'Konfirmasi Kedatangan'}

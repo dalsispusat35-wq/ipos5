@@ -101,10 +101,10 @@ function Group({ group, onShowDetails }) {
           style={{ 
             width: '100%', 
             padding: '8px 12px 8px 32px', 
-            background: '#f8fafc', 
-            border: '1px solid #e2e8f0', 
+            background: 'var(--input-bg)', 
+            border: '1px solid var(--input-border)', 
             borderRadius: 6, 
-            color: '#0f172a',
+            color: 'var(--input-text)',
             fontSize: 13,
             outline: 'none',
             boxSizing: 'border-box'
@@ -119,12 +119,11 @@ function Group({ group, onShowDetails }) {
           return (
             <div 
               key={office._id || office.nopend} 
+              className="surface-soft"
               style={{ 
                 display: 'flex', 
                 gap: 14, 
                 padding: '12px 14px', 
-                background: '#f8fafc', 
-                border: '1px solid #e2e8f0',
                 borderRadius: 8,
                 position: 'relative',
                 zIndex: 2,
@@ -141,7 +140,7 @@ function Group({ group, onShowDetails }) {
                 display: 'flex', 
                 alignItems: 'center', 
                 justifyContent: 'center', 
-                background: '#ffffff', 
+                background: 'var(--bg-card)', 
                 border: `2px solid ${type.color}`, 
                 color: type.color, 
                 fontWeight: '800', 
@@ -154,7 +153,7 @@ function Group({ group, onShowDetails }) {
               {/* Stop Info */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <strong style={{ color: '#0f172a', fontSize: 13, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                  <strong style={{ color: 'var(--text-primary)', fontSize: 13, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                     {office.nama_nopend}
                   </strong>
                   <span style={{ 
@@ -328,50 +327,48 @@ export default function JadwalPickup() {
       {/* Office Details Modal Dialog */}
       {selectedOffice && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: 420, width: '95%', padding: 24, background: '#ffffff', color: '#0f172a', position: 'relative' }}>
+          <div className="modal-content" style={{ maxWidth: 420, width: '95%', padding: 24, position: 'relative' }}>
             <button 
               onClick={() => setSelectedOffice(null)}
+              className="capsule-btn-circle"
               style={{
                 position: 'absolute',
                 top: 16,
                 right: 16,
-                background: 'none',
-                border: 'none',
-                color: '#64748b',
-                cursor: 'pointer',
-                padding: 4
+                width: 30,
+                height: 30
               }}
             >
-              <X size={18} />
+              <X size={16} />
             </button>
             
-            <h3 style={{ margin: '0 0 16px', fontSize: 16, color: '#0f172a', fontWeight: 800, borderBottom: '1px solid #e2e8f0', paddingBottom: 10 }}>
+            <h3 style={{ margin: '0 0 16px', fontSize: 16, color: 'var(--text-primary)', fontWeight: 800, borderBottom: '1px solid var(--border-light)', paddingBottom: 10 }}>
               Detail Kantor Pos
             </h3>
             
             <div style={{ display: 'grid', gap: 14 }}>
               <div>
-                <label style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Nama Kantor</label>
-                <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a', marginTop: 2 }}>{selectedOffice.nama_nopend}</div>
+                <label style={{ fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 700 }}>Nama Kantor</label>
+                <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)', marginTop: 2 }}>{selectedOffice.nama_nopend}</div>
               </div>
               
               <div>
-                <label style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Nopend / Kode Pos</label>
-                <div style={{ fontSize: 14, fontWeight: 800, color: '#0b2e8a', marginTop: 2, fontFamily: 'monospace' }}>{selectedOffice.nopend}</div>
+                <label style={{ fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 700 }}>Nopend / Kode Pos</label>
+                <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--primary-navy)', marginTop: 2, fontFamily: 'var(--font-mono)' }}>{selectedOffice.nopend}</div>
               </div>
               
               <div>
-                <label style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Kantor KCU Hub</label>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', marginTop: 2 }}>{selectedOffice.nama_kcu_kc || '-'}</div>
+                <label style={{ fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 700 }}>Kantor KCU Hub</label>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginTop: 2 }}>{selectedOffice.nama_kcu_kc || '-'}</div>
               </div>
               
               <div>
-                <label style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Kantor Regional</label>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', marginTop: 2 }}>{selectedOffice.nama_regional || '-'}</div>
+                <label style={{ fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 700 }}>Kantor Regional</label>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', marginTop: 2 }}>{selectedOffice.nama_regional || '-'}</div>
               </div>
 
               <div>
-                <label style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Status Database</label>
+                <label style={{ fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 700 }}>Status Database</label>
                 <div style={{ marginTop: 4 }}>
                   <span className="badge badge-emerald">
                     {selectedOffice.status || 'AKTIF'}

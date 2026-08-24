@@ -67,7 +67,7 @@ export default function MasterProduk() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Toolbar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-        <div style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>
+        <div style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 600 }}>
           {activeCount} produk aktif · {products.length - activeCount} nonaktif
         </div>
         <button className="btn-primary" style={{ gap: 6 }}>
@@ -78,7 +78,7 @@ export default function MasterProduk() {
       {/* Product Cards Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
         {products.map((p) => {
-          const catColor = categoryColor[p.category] || '#0b2e8a';
+          const catColor = categoryColor[p.category] || 'var(--primary-navy)';
           return (
             <div
               key={p.id}
@@ -96,8 +96,8 @@ export default function MasterProduk() {
                       width: 44,
                       height: 44,
                       borderRadius: 11,
-                      background: '#f0f9ff',
-                      border: '1px solid #bae6fd',
+                      background: 'var(--accent-cyan-bg)',
+                      border: '1px solid rgba(2, 132, 199, 0.3)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',

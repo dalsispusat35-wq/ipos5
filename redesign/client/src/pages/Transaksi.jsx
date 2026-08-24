@@ -271,18 +271,18 @@ export default function Transaksi() {
             width: 42, 
             height: 42, 
             borderRadius: 12, 
-            background: 'linear-gradient(135deg, #0b2e8a, #0284c7)', 
+            background: 'linear-gradient(135deg, var(--primary-navy), var(--primary-blue))', 
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'center', 
             color: '#fff', 
-            boxShadow: '0 4px 12px rgba(11, 46, 138, 0.2)' 
+            boxShadow: '0 2px 10px rgba(37, 99, 235, 0.25)' 
           }}>
             <ClipboardList size={22} />
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <h1 style={{ fontSize: 18, fontWeight: 900, margin: 0, letterSpacing: '-0.02em' }}>
+              <h1 style={{ fontSize: 18, fontWeight: 900, margin: 0, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
                 Data Transaksi Resi
               </h1>
               <span className="badge badge-blue" style={{ fontSize: 10.5, padding: '3px 8px' }}>
@@ -300,7 +300,7 @@ export default function Transaksi() {
 
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           {lastUpdated && (
-            <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, fontFamily: 'monospace' }}>
+            <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
               Sync: {lastUpdated.toLocaleTimeString()}
             </span>
           )}
@@ -344,7 +344,7 @@ export default function Transaksi() {
             }}
           >
             <div>
-              <span style={{ fontSize: '10.5px', color: '#0284c7', fontWeight: 800, letterSpacing: '0.5px', display: 'block' }}>TOTAL TRANSAKSI</span>
+              <span style={{ fontSize: '10.5px', color: 'var(--primary-navy)', fontWeight: 800, letterSpacing: '0.5px', display: 'block' }}>TOTAL TRANSAKSI</span>
               <h3 style={{ fontSize: '20px', color: 'var(--text-primary)', fontWeight: 900, marginTop: '3px', margin: 0, fontFamily: 'var(--font-mono)' }}>
                 {new Intl.NumberFormat('id-ID').format(stats.total_transaksi)}
                 <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, marginLeft: 4 }}>Resi</span>
@@ -353,7 +353,7 @@ export default function Transaksi() {
                 {isFilterActive ? 'Filter Aktif' : 'Semua Data'}
               </span>
             </div>
-            <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(2, 132, 199, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0284c7', flexShrink: 0 }}>
+            <div style={{ width: 38, height: 38, borderRadius: 10, background: 'var(--accent-cyan-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary-navy)', flexShrink: 0 }}>
               <ClipboardList size={18} />
             </div>
           </div>
@@ -937,7 +937,7 @@ export default function Transaksi() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, borderTop: '1px solid var(--border-light)', paddingTop: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: 'var(--text-secondary)' }}>
               <span>
-                Halaman <strong style={{ color: '#0f172a' }}>{page}</strong> dari <strong style={{ color: '#0f172a' }}>{totalPages}</strong> ({totalRows.toLocaleString()} baris data)
+                Halaman <strong style={{ color: 'var(--text-primary)' }}>{page}</strong> dari <strong style={{ color: 'var(--text-primary)' }}>{totalPages}</strong> ({totalRows.toLocaleString()} baris data)
               </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ fontSize: 11 }}>Limit:</span>
@@ -945,11 +945,11 @@ export default function Transaksi() {
                   value={limit} 
                   onChange={(e) => { setLimit(parseInt(e.target.value)); setPage(1); }} 
                   style={{
-                    background: '#ffffff',
-                    border: '1px solid #e2e8f0',
+                    background: 'var(--input-bg)',
+                    border: '1px solid var(--input-border)',
                     borderRadius: 6,
                     padding: '2px 6px',
-                    color: '#0f172a',
+                    color: 'var(--input-text)',
                     fontSize: 11,
                     fontWeight: 700,
                     outline: 'none',

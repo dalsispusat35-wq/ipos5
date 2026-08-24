@@ -68,12 +68,12 @@ export default function TemplateJadwal() {
                   width: 42,
                   height: 42,
                   borderRadius: 10,
-                  background: t.active ? '#e0f2fe' : '#f1f5f9',
-                  border: `1px solid ${t.active ? '#bae6fd' : '#e2e8f0'}`,
+                  background: t.active ? 'var(--accent-cyan-bg)' : 'var(--bg-surface-soft)',
+                  border: `1px solid ${t.active ? 'rgba(2, 132, 199, 0.3)' : 'var(--border-light)'}`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: t.active ? '#0284c7' : '#94a3b8',
+                  color: t.active ? 'var(--accent-cyan)' : 'var(--text-muted)',
                   flexShrink: 0,
                 }}
               >
@@ -82,12 +82,12 @@ export default function TemplateJadwal() {
 
               <div style={{ flex: 1, minWidth: 260 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: '#0f172a' }}>{t.name}</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)' }}>{t.name}</div>
                   <span className={t.active ? 'badge badge-emerald' : 'badge badge-navy'} style={{ fontSize: 10 }}>
                     {t.active ? 'Active' : 'Inactive'}
                   </span>
                 </div>
-                <div style={{ fontSize: 12.5, color: '#64748b', marginBottom: 14, lineHeight: 1.5 }}>
+                <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginBottom: 14, lineHeight: 1.5 }}>
                   {t.description}
                 </div>
 
@@ -105,16 +105,16 @@ export default function TemplateJadwal() {
                         justifyContent: 'center',
                         fontSize: 11,
                         fontWeight: 800,
-                        background: t.days.includes(i) ? '#0b2e8a' : '#f1f5f9',
-                        border: t.days.includes(i) ? '1px solid #0284c7' : '1px solid #e2e8f0',
-                        color: t.days.includes(i) ? '#ffffff' : '#94a3b8',
+                        background: t.days.includes(i) ? 'var(--primary-navy)' : 'var(--bg-surface-soft)',
+                        border: t.days.includes(i) ? '1px solid var(--accent-cyan)' : '1px solid var(--border-light)',
+                        color: t.days.includes(i) ? '#ffffff' : 'var(--text-muted)',
                       }}
                     >
                       {d}
                     </div>
                   ))}
 
-                  <div style={{ width: 1, background: '#e2e8f0', margin: '0 6px' }} />
+                  <div style={{ width: 1, background: 'var(--border-light)', margin: '0 6px' }} />
 
                   {/* Times */}
                   {t.times.map((time) => (
@@ -123,12 +123,12 @@ export default function TemplateJadwal() {
                       style={{
                         padding: '4px 10px',
                         borderRadius: 6,
-                        background: '#f0f9ff',
-                        border: '1px solid #bae6fd',
+                        background: 'var(--accent-cyan-bg)',
+                        border: '1px solid rgba(2, 132, 199, 0.3)',
                         fontSize: 11,
                         fontWeight: 700,
-                        color: '#0b2e8a',
-                        fontFamily: 'monospace'
+                        color: 'var(--accent-cyan)',
+                        fontFamily: 'var(--font-mono)'
                       }}
                     >
                       {time}

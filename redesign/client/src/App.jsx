@@ -7,15 +7,16 @@ import {
   Search, Bell, ChevronDown, User, Activity, Menu, ChevronLeft, ChevronRight,
   TrendingUp, LogOut, BarChart3, FileSpreadsheet, Home, Lock, RefreshCw,
   Mic, Copy, Plus, Compass as CompassIcon, Radio, Sparkles, MapPin,
-  Maximize2, Minimize2, ClipboardList, Check, FileText, ExternalLink
+  Maximize2, Minimize2, ClipboardList, Check, FileText, ExternalLink, X
 } from 'lucide-react';
-import logoImg from './assets/logo.png';
+import logoImgDark from './assets/logo.png';
+import logoImgLight from './assets/logo-light.png';
 
 // Import Component & Pages
 import NotificationDrawer from './components/NotificationDrawer.jsx';
 import ThemeToggle from './components/ThemeToggle.jsx';
 import ThemeTransitionOverlay from './components/ThemeTransitionOverlay.jsx';
-import { ThemeProvider } from './context/ThemeContext.jsx';
+import { ThemeProvider, useTheme } from './context/ThemeContext.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Checker from './pages/Checker.jsx';
 import MasterKantor from './pages/MasterKantor.jsx';
@@ -55,12 +56,15 @@ function RequireAuth({ children, currentUser, requiredRole }) {
 }
 
 function AppContent() {
+  const { isDark } = useTheme();
+  const currentLogo = isDark ? logoImgDark : logoImgLight;
   const [activeConnection, setActiveConnection] = useState(null);
   const [refreshStatsTrigger, setRefreshStatsTrigger] = useState(0);
   const [searchVal, setSearchVal] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const categoryMenuRef = useRef(null);
   const userMenuRef = useRef(null);
   const location = useLocation();
@@ -100,6 +104,7 @@ function AppContent() {
   useEffect(() => {
     setIsCategoryMenuOpen(false);
     setIsUserMenuOpen(false);
+    setIsMobileDrawerOpen(false);
   }, [location.pathname]);
 
   const [currentUser, setCurrentUser] = useState(() => {
@@ -188,27 +193,28 @@ function AppContent() {
     }
   };
 
-  const isLinkActive = (path) => {
-    if (path === '/') return location.pathname === '/';
-    return location.pathname === path || location.pathname.startsWith(path + '/');
-  };
-
-  const getPageCategory = () => {
-    const p = location.pathname;
-    if (p === '/') return 'Analytics';
-    if (p.startsWith('/checker')) return 'Tracking';
-    if (p.startsWith('/estimasi') || p.startsWith('/route-journey')) return 'Routing';
-    if (p.startsWith('/kendaraan')) return 'Fleet';
-    if (p.startsWith('/kantor')) return 'Offices';
-    if (p.startsWith('/route')) return 'Routes';
-    if (p.startsWith('/transit-monitoring')) return 'Monitoring';
-    if (p.startsWith('/analytics')) return 'Analytics';
-    if (p.startsWith('/compass')) return 'Database';
-    if (p.startsWith('/settings')) return 'Settings';
-    return 'Analytics';
-  };
-
   const isSuperAdmin = DISABLE_AUTH || currentUser?.role === 'SUPER_ADMIN';
+
+  const navMenuItems = [
+    { to: '/', label: 'Overview & Analytics', icon: LayoutDashboard },
+    { to: '/checker', label: 'Tracking & Connote', icon: Package },
+    { to: '/transaksi', label: 'Invoices & Transaksi', icon: ClipboardList },
+    { to: '/kendaraan', label: 'Armada & Fleet', icon: Truck },
+    { to: '/estimasi', label: 'Routing Journey', icon: TrendingUp },
+    { to: '/kantor', label: 'Master Kantor Pos', icon: Building2 },
+    { to: '/route', label: 'Master Rute & Nopen', icon: MapPin },
+    { to: '/transit-monitoring', label: 'Gate & Transit Inbound', icon: ShieldCheck },
+    { to: '/jadwal-pickup', label: 'Jadwal Pickup Loket', icon: CalendarClock },
+    { to: '/jadwal', label: 'Jadwal Transportasi', icon: Calendar },
+    { to: '/template', label: 'Template Jadwal', icon: CalendarDaysIcon(Calendar) },
+    { to: '/analytics', label: 'Laporan Analitik', icon: BarChart3 },
+    { to: '/compass', label: 'MongoDB Compass', icon: Database, adminOnly: true },
+    { to: '/settings', label: 'Pengaturan Sistem', icon: Settings }
+  ].filter(item => !item.adminOnly || isSuperAdmin);
+
+  function CalendarDaysIcon(FallbackIcon) {
+    return FallbackIcon || Calendar;
+  }
 
   if (location.pathname === '/login') {
     return <Login onLoginSuccess={handleLoginSuccess} />;
@@ -217,57 +223,64 @@ function AppContent() {
   return (
     <div className="spatial-environment">
       
-      {/* ── 1. MODERN PILL NAVIGATION BAR (MATCHING REFERENCE IMAGE) ── */}
-      <header className="spatial-top-bar" style={{ background: '#ffffff', border: '1px solid #e2e8f0', boxShadow: '0 2px 10px rgba(15, 23, 42, 0.03)' }}>
+      {/* ── 1. MODERN PILL NAVIGATION BAR ── */}
+      <header className="spatial-top-bar">
         
         {/* Left: IPOS5 Brand & Official Logo + Module Selector */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, position: 'relative' }} ref={categoryMenuRef}>
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
+          
+          {/* Mobile Hamburger Toggle (< 900px) */}
+          <button
+            type="button"
+            onClick={() => setIsMobileDrawerOpen(!isMobileDrawerOpen)}
+            className="capsule-btn-circle"
+            style={{ display: 'none' }}
+            id="mobile-nav-toggle"
+            title="Buka Menu Navigasi"
+          >
+            <Menu size={16} />
+          </button>
+
+          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
             <div style={{
-              width: 32,
-              height: 32,
-              borderRadius: 8,
-              background: '#f0f9ff',
-              border: '1px solid #bae6fd',
+              width: 38,
+              height: 38,
+              borderRadius: 10,
+              background: isDark ? 'rgba(59, 130, 246, 0.12)' : 'rgba(30, 64, 175, 0.06)',
+              border: isDark ? '1px solid rgba(59, 130, 246, 0.25)' : '1px solid rgba(30, 64, 175, 0.15)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               overflow: 'hidden',
-              flexShrink: 0
+              flexShrink: 0,
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+              transition: 'all 0.2s ease'
             }}>
               <img 
-                src={logoImg} 
+                src={currentLogo} 
                 alt="IPOS5 Logo" 
-                style={{ width: 22, height: 22, objectFit: 'contain' }} 
+                style={{ width: 28, height: 28, objectFit: 'contain', transition: 'transform 0.2s ease' }} 
               />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
               <span style={{ 
-                fontSize: 18, 
+                fontSize: 19, 
                 fontWeight: 900, 
-                color: '#0b2e8a', 
+                color: 'var(--primary-navy)', 
                 letterSpacing: '-0.02em',
-                fontFamily: 'Plus Jakarta Sans, sans-serif',
+                fontFamily: 'var(--font-sans)',
                 lineHeight: 1.1
               }}>
-                IPOS<span style={{ color: '#ea580c' }}>5</span>
+                IPOS<span style={{ color: 'var(--accent-orange)' }}>5</span>
               </span>
             </div>
           </Link>
+
           <button 
             type="button"
             onClick={() => setIsCategoryMenuOpen(!isCategoryMenuOpen)}
-            style={{ 
-              background: isCategoryMenuOpen ? '#f1f5f9' : 'transparent', 
-              border: 'none', 
-              borderRadius: 6,
-              cursor: 'pointer', 
-              padding: '4px 6px', 
-              color: '#64748b',
-              display: 'flex',
-              alignItems: 'center',
-              transition: 'all 0.15s ease'
-            }}
+            className="capsule-btn-circle"
+            style={{ width: 28, height: 28, borderRadius: 6 }}
             title="Pilih Modul Navigasi"
           >
             <ChevronDown size={14} style={{ transform: isCategoryMenuOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
@@ -276,15 +289,15 @@ function AppContent() {
           {/* Module Selector Dropdown */}
           {isCategoryMenuOpen && (
             <div
-              className="spatial-card"
+              className="surface-card"
               style={{
                 position: 'absolute',
                 top: 'calc(100% + 10px)',
                 left: 0,
                 width: 260,
-                borderRadius: 14,
+                maxHeight: '80vh',
+                overflowY: 'auto',
                 padding: '8px',
-                boxShadow: '0 12px 30px rgba(0, 0, 0, 0.25)',
                 zIndex: 9999,
                 display: 'flex',
                 flexDirection: 'column',
@@ -295,19 +308,7 @@ function AppContent() {
                 Modul Operasional
               </div>
 
-              {[
-                { to: '/', label: 'Overview & Analytics', icon: LayoutDashboard },
-                { to: '/checker', label: 'Tracking & Connote', icon: Package },
-                { to: '/transaksi', label: 'Invoices & Transaksi', icon: ClipboardList },
-                { to: '/kendaraan', label: 'Armada & Fleet', icon: Truck },
-                { to: '/estimasi', label: 'Routing Journey', icon: TrendingUp },
-                { to: '/kantor', label: 'Master Kantor Pos', icon: Building2 },
-                { to: '/route', label: 'Master Rute & Nopen', icon: MapPin },
-                { to: '/transit-monitoring', label: 'Gate & Transit Inbound', icon: ShieldCheck },
-                { to: '/jadwal-pickup', label: 'Jadwal Pickup Loket', icon: CalendarClock },
-                { to: '/compass', label: 'MongoDB Compass', icon: Database, adminOnly: true },
-                { to: '/settings', label: 'Pengaturan Sistem', icon: Settings }
-              ].filter(item => !item.adminOnly || isSuperAdmin).map((item) => {
+              {navMenuItems.map((item) => {
                 const IconComponent = item.icon;
                 const active = location.pathname === item.to;
                 return (
@@ -323,13 +324,15 @@ function AppContent() {
                       borderRadius: 8,
                       fontSize: 12,
                       fontWeight: active ? 700 : 600,
-                      color: active ? 'var(--primary-blue)' : 'var(--text-primary)',
-                      background: active ? 'rgba(2, 132, 199, 0.15)' : 'transparent',
+                      color: active ? 'var(--primary-navy)' : 'var(--text-primary)',
+                      background: active ? 'var(--accent-cyan-bg)' : 'transparent',
                       textDecoration: 'none',
                       transition: 'all 0.15s ease'
                     }}
+                    onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = 'var(--bg-surface-soft)'; }}
+                    onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = 'transparent'; }}
                   >
-                    <IconComponent size={15} color={active ? 'var(--primary-blue)' : 'var(--text-muted)'} />
+                    <IconComponent size={15} color={active ? 'var(--primary-navy)' : 'var(--text-muted)'} />
                     <span>{item.label}</span>
                   </Link>
                 );
@@ -338,8 +341,8 @@ function AppContent() {
           )}
         </div>
 
-        {/* Center: Clean Floating Pill Navigation Bar */}
-        <nav className="pill-nav-container">
+        {/* Center: Floating Pill Navigation Bar (Desktop) */}
+        <nav className="pill-nav-container hide-on-mobile">
           <Link 
             to="/produk" 
             className={`pill-nav-item ${location.pathname.startsWith('/produk') ? 'active' : ''}`}
@@ -378,9 +381,9 @@ function AppContent() {
         </nav>
 
         {/* Right: Quick Actions & User Profile Pill */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           
-          {/* Theme Toggle (Light / Dark Mode with Wave & Particles) */}
+          {/* Theme Toggle (Light / Dark Mode) */}
           <ThemeToggle />
 
           {/* Refresh / Sync Button */}
@@ -389,18 +392,16 @@ function AppContent() {
             onClick={() => setRefreshStatsTrigger(prev => prev + 1)}
             className="capsule-btn-circle"
             title="Refresh Real-time Data"
-            style={{ width: 34, height: 34 }}
           >
             <RefreshCw size={14} />
           </button>
 
-          {/* Fullscreen Toggle */}
+          {/* Fullscreen Toggle (Hidden on mobile) */}
           <button
             type="button"
             onClick={toggleFullscreen}
-            className="capsule-btn-circle"
+            className="capsule-btn-circle hide-on-mobile"
             title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
-            style={{ width: 34, height: 34 }}
           >
             {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
           </button>
@@ -408,7 +409,7 @@ function AppContent() {
           {/* Notification Bell */}
           <NotificationDrawer />
 
-          {/* User Profile Capsule (Liam Brooks / Shop Owner Reference) */}
+          {/* User Profile Capsule */}
           <div style={{ position: 'relative' }} ref={userMenuRef}>
             <button
               type="button"
@@ -430,13 +431,13 @@ function AppContent() {
                   width: 30,
                   height: 30,
                   borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #0b2e8a, #0284c7)',
+                  background: 'linear-gradient(135deg, var(--primary-navy), var(--primary-blue))',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontSize: 11.5,
                   fontWeight: 800,
-                  color: '#fff',
+                  color: '#ffffff',
                   overflow: 'hidden'
                 }}
               >
@@ -446,8 +447,8 @@ function AppContent() {
                   currentUser?.name ? currentUser.name.slice(0, 2).toUpperCase() : 'LB'
                 )}
               </div>
-              <div style={{ textAlign: 'left', display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.1 }}>
+              <div style={{ textAlign: 'left', display: 'flex', flexDirection: 'column' }} className="hide-on-mobile">
+                <span style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.1, color: 'var(--text-primary)' }}>
                   {currentUser?.name || 'Liam Brooks'}
                 </span>
                 <span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 500 }}>
@@ -460,12 +461,12 @@ function AppContent() {
             {/* User Dropdown Menu */}
             {isUserMenuOpen && (
               <div
-                className="spatial-card"
+                className="surface-card"
                 style={{
                   position: 'absolute',
                   top: 'calc(100% + 8px)',
                   right: 0,
-                  width: 200,
+                  width: 210,
                   borderRadius: 14,
                   padding: '6px',
                   boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2)',
@@ -476,7 +477,7 @@ function AppContent() {
                 }}
               >
                 <div style={{ padding: '8px 10px 6px', borderBottom: '1px solid var(--border-light)' }}>
-                  <div style={{ fontSize: 12, fontWeight: 800 }}>{currentUser?.name || 'Liam Brooks'}</div>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)' }}>{currentUser?.name || 'Liam Brooks'}</div>
                   <div style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{currentUser?.email || 'liam.brooks@posindonesia.co.id'}</div>
                 </div>
 
@@ -489,7 +490,8 @@ function AppContent() {
                     fontSize: 11.5,
                     border: 'none',
                     borderRadius: 8,
-                    justifyContent: 'flex-start'
+                    justifyContent: 'flex-start',
+                    width: '100%'
                   }}
                 >
                   <User size={13} />
@@ -505,7 +507,8 @@ function AppContent() {
                     fontSize: 11.5,
                     border: 'none',
                     borderRadius: 8,
-                    justifyContent: 'flex-start'
+                    justifyContent: 'flex-start',
+                    width: '100%'
                   }}
                 >
                   <Settings size={13} />
@@ -521,8 +524,9 @@ function AppContent() {
                     fontSize: 11.5,
                     border: 'none',
                     borderRadius: 8,
-                    color: '#f43f5e',
-                    justifyContent: 'flex-start'
+                    color: 'var(--accent-pink)',
+                    justifyContent: 'flex-start',
+                    width: '100%'
                   }}
                 >
                   <LogOut size={13} />
@@ -534,6 +538,87 @@ function AppContent() {
 
         </div>
       </header>
+
+      {/* ── MOBILE NAVIGATION DRAWER OVERLAY ── */}
+      {isMobileDrawerOpen && (
+        <div 
+          className="modal-overlay" 
+          style={{ zIndex: 9999, justifyContent: 'flex-start', padding: 0 }}
+          onClick={() => setIsMobileDrawerOpen(false)}
+        >
+          <div 
+            className="surface-card" 
+            style={{ 
+              width: '85%', 
+              maxWidth: 320, 
+              height: '100vh', 
+              borderRadius: 0, 
+              padding: 16, 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: 12,
+              overflowY: 'auto' 
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 10, borderBottom: '1px solid var(--border-light)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 8,
+                  background: isDark ? 'rgba(59, 130, 246, 0.12)' : 'rgba(30, 64, 175, 0.06)',
+                  border: isDark ? '1px solid rgba(59, 130, 246, 0.25)' : '1px solid rgba(30, 64, 175, 0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <img src={currentLogo} alt="Logo" style={{ width: 26, height: 26, objectFit: 'contain' }} />
+                </div>
+                <span style={{ fontWeight: 900, fontSize: 17, color: 'var(--primary-navy)' }}>IPOS<span style={{ color: 'var(--accent-orange)' }}>5</span></span>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setIsMobileDrawerOpen(false)}
+                className="capsule-btn-circle"
+                style={{ width: 30, height: 30 }}
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {navMenuItems.map((item) => {
+                const IconComponent = item.icon;
+                const active = location.pathname === item.to;
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    onClick={() => setIsMobileDrawerOpen(false)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      padding: '10px 12px',
+                      borderRadius: 10,
+                      fontSize: 13,
+                      fontWeight: active ? 700 : 500,
+                      color: active ? 'var(--primary-navy)' : 'var(--text-primary)',
+                      background: active ? 'var(--accent-cyan-bg)' : 'transparent',
+                      textDecoration: 'none'
+                    }}
+                  >
+                    <IconComponent size={16} color={active ? 'var(--primary-navy)' : 'var(--text-muted)'} />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── 2. MAIN WORKSPACE VIEWPORT ── */}
       <div className="spatial-viewport">

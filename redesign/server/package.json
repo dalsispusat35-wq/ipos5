@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node app.js",
+    "dev": "node app.js",
     "db:index": "node scripts/createIndexes.js",
     "db:standardize": "node scripts/clean-and-standardize-db.js",
     "sync:pickup-slide2-night": "node scripts/syncPickupSlide2Night.js"

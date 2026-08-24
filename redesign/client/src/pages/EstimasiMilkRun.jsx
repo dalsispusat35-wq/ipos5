@@ -81,14 +81,14 @@ function CargoTruckVisual({ weight, maxWeight = 600, packagesCount, isSelected, 
       <div style={{
         fontSize: 11.5,
         fontWeight: 800,
-        color: weight > 0 ? '#0b2e8a' : '#64748b',
-        background: '#ffffff',
-        border: `1.5px solid ${weight > 0 ? '#0284c7' : '#e2e8f0'}`,
+        color: weight > 0 ? 'var(--primary-navy)' : 'var(--text-secondary)',
+        background: 'var(--bg-card)',
+        border: `1.5px solid ${weight > 0 ? 'var(--accent-cyan)' : 'var(--border-light)'}`,
         padding: '3px 12px',
         borderRadius: 14,
         marginBottom: 4,
         whiteSpace: 'nowrap',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+        boxShadow: 'var(--spatial-shadow)',
         display: 'flex',
         alignItems: 'center',
         gap: 6
@@ -539,25 +539,26 @@ export default function EstimasiMilkRun() {
 
             {/* Search Filter */}
             <div style={{ position: 'relative', width: 200 }}>
-              <Search size={14} color="#94a3b8" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
+              <Search size={14} color="var(--text-muted)" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
               <input 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cari Plat / Mobil..."
-                style={{ paddingLeft: 30, fontSize: 12.5, width: '100%', height: 38, borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', outline: 'none', boxSizing: 'border-box' }}
+                style={{ paddingLeft: 30, fontSize: 12.5, width: '100%', height: 38, borderRadius: 8, border: '1px solid var(--border-light)', background: 'var(--bg-surface-soft)', color: 'var(--text-primary)', outline: 'none', boxSizing: 'border-box' }}
               />
             </div>
 
             {/* Sorting Control */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f8fafc', padding: '6px 12px', borderRadius: 8, border: '1px solid #e2e8f0' }}>
-              <ArrowUpDown size={14} color="#0284c7" />
-              <span style={{ fontSize: 12, color: '#64748b', whiteSpace: 'nowrap', fontWeight: 600 }}>Urutkan:</span>
+            <div className="surface-soft" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderRadius: 8 }}>
+              <ArrowUpDown size={14} color="var(--accent-cyan)" />
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap', fontWeight: 600 }}>Urutkan:</span>
               <select 
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
                 style={{
                   background: 'transparent',
                   border: 'none',
+                  color: 'var(--text-primary)',
                   color: '#0f172a',
                   fontSize: 12.5,
                   fontWeight: 700,
@@ -820,14 +821,14 @@ export default function EstimasiMilkRun() {
                               width: 28, 
                               height: 28, 
                               borderRadius: '50%', 
-                              background: isActiveNode ? '#0b2e8a' : isPassedNode ? '#0284c7' : '#f8fafc',
-                              border: `2.5px solid ${isActiveNode ? '#0284c7' : isPassedNode ? '#bae6fd' : '#cbd5e1'}`,
+                              background: isActiveNode ? 'var(--primary-navy)' : isPassedNode ? 'var(--accent-cyan)' : 'var(--bg-surface-soft)',
+                              border: `2.5px solid ${isActiveNode ? 'var(--accent-cyan)' : isPassedNode ? 'var(--accent-cyan)' : 'var(--border-light)'}`,
                               display: 'flex', 
                               alignItems: 'center', 
                               justifyContent: 'center', 
                               fontSize: 11.5, 
                               fontWeight: 800, 
-                              color: isActiveNode || isPassedNode ? '#ffffff' : '#64748b',
+                              color: isActiveNode || isPassedNode ? '#ffffff' : 'var(--text-secondary)',
                               transition: 'all 0.3s ease'
                             }}
                           >
@@ -888,19 +889,16 @@ export default function EstimasiMilkRun() {
               maxHeight: '90vh',
               overflowY: 'auto',
               borderRadius: 16,
-              background: '#ffffff',
-              border: '1px solid #e2e8f0',
-              padding: '24px 28px',
-              color: '#0f172a'
+              padding: '24px 28px'
             }}
           >
             {/* Modal Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: 16, marginBottom: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-light)', paddingBottom: 16, marginBottom: 20 }}>
               <div>
-                <div style={{ fontSize: 11, color: '#0284c7', fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                <div style={{ fontSize: 11, color: 'var(--accent-cyan)', fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                   Detail Data Manifest Kiriman (40 Field Lengkap)
                 </div>
-                <h3 style={{ fontSize: 20, fontWeight: 900, color: '#0f172a', margin: '4px 0 0' }}>
+                <h3 style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', margin: '4px 0 0' }}>
                   Resi: {selectedManifest.resi}
                 </h3>
               </div>
@@ -935,13 +933,13 @@ export default function EstimasiMilkRun() {
 
               {/* Section 2: Data Pengirim & Penerima */}
               <div>
-                <h4 style={{ fontSize: 13, color: '#0b2e8a', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 800 }}>
+                <h4 style={{ fontSize: 13, color: 'var(--primary-navy)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 800 }}>
                   <User size={15} /> 2. Data Pengirim & Penerima Lengkap
                 </h4>
                 <div className="responsive-modal-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                   {/* Pengirim Box */}
-                  <div style={{ background: '#f8fafc', padding: 14, borderRadius: 10, border: '1px solid #e2e8f0' }}>
-                    <div style={{ fontWeight: 800, color: '#d97706', fontSize: 12, marginBottom: 8 }}>DOKUMEN PENGIRIM</div>
+                  <div className="surface-soft" style={{ padding: 14, borderRadius: 10 }}>
+                    <div style={{ fontWeight: 800, color: 'var(--accent-amber)', fontSize: 12, marginBottom: 8 }}>DOKUMEN PENGIRIM</div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       <FieldRow label="5. Nama Pengirim" value={selectedManifest.namapengirim} />
                       <FieldRow label="6. Alamat Pengirim" value={selectedManifest.alamtpengirim} />
@@ -953,8 +951,8 @@ export default function EstimasiMilkRun() {
                   </div>
 
                   {/* Penerima Box */}
-                  <div style={{ background: '#f8fafc', padding: 14, borderRadius: 10, border: '1px solid #e2e8f0' }}>
-                    <div style={{ fontWeight: 800, color: '#16a34a', fontSize: 12, marginBottom: 8 }}>DOKUMEN PENERIMA</div>
+                  <div className="surface-soft" style={{ padding: 14, borderRadius: 10 }}>
+                    <div style={{ fontWeight: 800, color: 'var(--accent-emerald)', fontSize: 12, marginBottom: 8 }}>DOKUMEN PENERIMA</div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       <FieldRow label="10. Nama Penerima" value={selectedManifest.namapenerima} />
                       <FieldRow label="11. Alamat Penerima" value={selectedManifest.alamtpenerima} />
@@ -1015,12 +1013,12 @@ export default function EstimasiMilkRun() {
                     <div style={{ fontSize: 11, color: '#64748b', marginBottom: 6, fontWeight: 600 }}>38. Photo2 (Manifest Barcode)</div>
                     <img src={selectedManifest.photo2} alt="Photo 2" style={{ width: '100%', height: 110, objectFit: 'cover', borderRadius: 6 }} />
                   </div>
-                  <div style={{ background: '#f8fafc', padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                    <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>39. Tanda Tangan (Verified TTD)</div>
-                    <div style={{ height: 75, background: '#ffffff', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #e2e8f0' }}>
-                      <span style={{ fontFamily: 'cursive', fontSize: 18, color: '#0b2e8a' }}>{selectedManifest.namapengirim.split(' ')[0]} Verified</span>
+                  <div className="surface-soft" style={{ padding: 10, borderRadius: 8, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600 }}>39. Tanda Tangan (Verified TTD)</div>
+                    <div className="surface-card" style={{ height: 75, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{ fontFamily: 'cursive', fontSize: 18, color: 'var(--primary-navy)' }}>{selectedManifest.namapengirim.split(' ')[0]} Verified</span>
                     </div>
-                    <div style={{ fontSize: 10, color: '#16a34a', textAlign: 'center', fontWeight: 700 }}>
+                    <div style={{ fontSize: 10, color: 'var(--accent-emerald)', textAlign: 'center', fontWeight: 700 }}>
                       ✓ {selectedManifest.tandatangan}
                     </div>
                   </div>
@@ -1038,14 +1036,14 @@ export default function EstimasiMilkRun() {
 
 function FieldCard({ label, value, highlight }) {
   return (
-    <div style={{
-      background: highlight ? '#f0f9ff' : '#f8fafc',
-      border: `1px solid ${highlight ? '#bae6fd' : '#e2e8f0'}`,
+    <div className="surface-soft" style={{
+      background: highlight ? 'var(--accent-cyan-bg)' : undefined,
+      border: highlight ? '1px solid rgba(2, 132, 199, 0.3)' : undefined,
       padding: '8px 12px',
       borderRadius: 8
     }}>
-      <div style={{ fontSize: 10.5, color: '#64748b', fontWeight: 700 }}>{label}</div>
-      <div style={{ fontSize: 12.5, color: highlight ? '#0b2e8a' : '#0f172a', fontWeight: highlight ? 800 : 600, marginTop: 2, wordBreak: 'break-word' }}>
+      <div style={{ fontSize: 10.5, color: 'var(--text-secondary)', fontWeight: 700 }}>{label}</div>
+      <div style={{ fontSize: 12.5, color: highlight ? 'var(--accent-cyan)' : 'var(--text-primary)', fontWeight: highlight ? 800 : 600, marginTop: 2, wordBreak: 'break-word' }}>
         {value || '-'}
       </div>
     </div>
@@ -1055,8 +1053,8 @@ function FieldCard({ label, value, highlight }) {
 function FieldRow({ label, value }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5 }}>
-      <span style={{ color: '#64748b', fontWeight: 600 }}>{label}:</span>
-      <span style={{ color: '#0f172a', fontWeight: 700, maxWidth: '60%', textAlign: 'right' }}>{value || '-'}</span>
+      <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>{label}:</span>
+      <span style={{ color: 'var(--text-primary)', fontWeight: 700, maxWidth: '60%', textAlign: 'right' }}>{value || '-'}</span>
     </div>
   );
 }

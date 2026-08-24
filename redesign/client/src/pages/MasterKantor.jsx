@@ -627,30 +627,31 @@ export default function MasterKantor() {
           style={{ zIndex: 1000 }}
           onClick={(e) => { if (e.target === e.currentTarget) setSelectedOffice(null); }}
         >
-          <div className="modal-content" style={{ maxWidth: '640px', width: '95%', padding: 0, overflow: 'hidden', background: '#ffffff', color: '#0f172a' }}>
+          <div className="modal-content" style={{ maxWidth: '640px', width: '95%', padding: 0, overflow: 'hidden' }}>
             
             {/* Modal Header */}
-            <div style={{ padding: '20px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
+            <div className="modal-header" style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-surface-soft)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 42, height: 42, borderRadius: 12, background: '#e0f2fe', border: '1px solid #bae6fd', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Building2 size={22} color="#0284c7" />
+                <div style={{ width: 42, height: 42, borderRadius: 12, background: 'var(--accent-cyan-bg)', border: '1px solid rgba(2, 132, 199, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Building2 size={22} color="var(--accent-cyan)" />
                 </div>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <h3 style={{ margin: 0, color: '#0f172a', fontSize: 17, fontWeight: 800 }}>
+                    <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: 17, fontWeight: 800 }}>
                       {selectedOffice.nama_kantor || selectedOffice.nama_nopend}
                     </h3>
                   </div>
-                  <span style={{ fontSize: 12, color: '#64748b', fontFamily: 'monospace' }}>
+                  <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
                     Nopend: {selectedOffice.nopend}
                   </span>
                 </div>
               </div>
               <button 
                 onClick={() => setSelectedOffice(null)}
-                style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: 6 }}
+                className="capsule-btn-circle"
+                style={{ width: 32, height: 32 }}
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
 
@@ -658,57 +659,57 @@ export default function MasterKantor() {
             <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 18 }}>
               
               {/* Type Badge & Status */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '12px 16px', borderRadius: 12, border: '1px solid #e2e8f0' }}>
+              <div className="surface-soft" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderRadius: 12 }}>
                 <div>
-                  <div style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 800, marginBottom: 4 }}>
+                  <div style={{ fontSize: 10, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 800, marginBottom: 4 }}>
                     KLASIFIKASI KANTOR
                   </div>
                   {renderBranchBadge(selectedOffice.jenis_kantor || selectedOffice.tipe, selectedOffice.is_real_verified)}
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 800, marginBottom: 4 }}>
+                  <div style={{ fontSize: 10, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 800, marginBottom: 4 }}>
                     STATUS OPERASIONAL
                   </div>
-                  <span style={{ color: '#16a34a', fontWeight: 800, fontSize: 12 }}>
+                  <span style={{ color: 'var(--accent-emerald)', fontWeight: 800, fontSize: 12 }}>
                     ● {selectedOffice.status || 'AKTIF'}
                   </span>
                 </div>
               </div>
 
               {/* Spec Details Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
-                <div style={{ background: '#f8fafc', padding: 14, borderRadius: 10, border: '1px solid #e2e8f0' }}>
-                  <div style={{ fontSize: 10.5, color: '#64748b', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 }}>
+                <div className="surface-soft" style={{ padding: 14 }}>
+                  <div style={{ fontSize: 10.5, color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>
                     ALAMAT KANTOR
                   </div>
-                  <div style={{ fontSize: 12.5, fontWeight: 700, color: '#0f172a' }}>
+                  <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text-primary)' }}>
                     {selectedOffice.alamat !== '-' ? selectedOffice.alamat : 'Jl. Asia Afrika / Feeder Bandung'}
                   </div>
                 </div>
 
-                <div style={{ background: '#f8fafc', padding: 14, borderRadius: 10, border: '1px solid #e2e8f0' }}>
-                  <div style={{ fontSize: 10.5, color: '#64748b', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>
+                <div className="surface-soft" style={{ padding: 14 }}>
+                  <div style={{ fontSize: 10.5, color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>
                     KELURAHAN / KECAMATAN
                   </div>
-                  <div style={{ fontSize: 12.5, fontWeight: 700, color: '#0f172a' }}>
+                  <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text-primary)' }}>
                     {selectedOffice.kelurahan || '-'} / {selectedOffice.kecamatan || '-'}
                   </div>
                 </div>
 
-                <div style={{ background: '#f8fafc', padding: 14, borderRadius: 10, border: '1px solid #e2e8f0' }}>
-                  <div style={{ fontSize: 10.5, color: '#64748b', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>
+                <div className="surface-soft" style={{ padding: 14 }}>
+                  <div style={{ fontSize: 10.5, color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>
                     KABUPATEN / KOTA & PROVINSI
                   </div>
-                  <div style={{ fontSize: 12.5, fontWeight: 700, color: '#0b2e8a' }}>
+                  <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--primary-navy)' }}>
                     {selectedOffice.kabupaten_kota}, {selectedOffice.provinsi || 'Jawa Barat'}
                   </div>
                 </div>
 
-                <div style={{ background: '#f8fafc', padding: 14, borderRadius: 10, border: '1px solid #e2e8f0' }}>
-                  <div style={{ fontSize: 10.5, color: '#64748b', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>
+                <div className="surface-soft" style={{ padding: 14 }}>
+                  <div style={{ fontSize: 10.5, color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>
                     CONTACT CENTER
                   </div>
-                  <div style={{ fontSize: 12.5, fontWeight: 700, color: '#d97706', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--accent-amber)', display: 'flex', alignItems: 'center', gap: 6 }}>
                     <Phone size={12} /> {selectedOffice.contact_center || '1500161'}
                   </div>
                 </div>
@@ -769,32 +770,32 @@ export default function MasterKantor() {
           style={{ zIndex: 1000 }}
           onClick={(e) => { if (e.target === e.currentTarget) setSelectedMapOffice(null); }}
         >
-          <div className="modal-content" style={{ maxWidth: '600px', width: '95%', padding: 24, background: '#ffffff', color: '#0f172a' }}>
+          <div className="modal-content" style={{ maxWidth: '600px', width: '95%', padding: 24 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <MapPin size={20} color="#16a34a" />
-                <h3 style={{ margin: 0, color: '#0f172a', fontSize: 16, fontWeight: 800 }}>
+                <MapPin size={20} color="var(--accent-emerald)" />
+                <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: 16, fontWeight: 800 }}>
                   Peta Lokasi: {selectedMapOffice.nama_kantor || selectedMapOffice.nama_nopend}
                 </h3>
               </div>
-              <button onClick={() => setSelectedMapOffice(null)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}>
-                <X size={18} />
+              <button onClick={() => setSelectedMapOffice(null)} className="capsule-btn-circle" style={{ width: 30, height: 30 }}>
+                <X size={16} />
               </button>
             </div>
 
-            <div style={{ background: '#f8fafc', borderRadius: 12, padding: 18, border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div className="surface-soft" style={{ borderRadius: 12, padding: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
-                <div style={{ fontSize: 11, color: '#64748b', marginBottom: 2, fontWeight: 600 }}>ALAMAT LENGKAP</div>
-                <div style={{ fontSize: 13, color: '#0f172a', fontWeight: 700 }}>{selectedMapOffice.alamat || 'Wilayah Bandung'}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 2, fontWeight: 600 }}>ALAMAT LENGKAP</div>
+                <div style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 700 }}>{selectedMapOffice.alamat || 'Wilayah Bandung'}</div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', padding: 10, borderRadius: 8 }}>
-                  <div style={{ fontSize: 10, color: '#64748b', fontWeight: 600 }}>LATITUDE</div>
-                  <div style={{ fontSize: 13, color: '#16a34a', fontWeight: 800, fontFamily: 'monospace' }}>{selectedMapOffice.latitude}</div>
+                <div className="surface-card" style={{ padding: 10, borderRadius: 8 }}>
+                  <div style={{ fontSize: 10, color: 'var(--text-secondary)', fontWeight: 600 }}>LATITUDE</div>
+                  <div style={{ fontSize: 13, color: 'var(--accent-emerald)', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>{selectedMapOffice.latitude}</div>
                 </div>
-                <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', padding: 10, borderRadius: 8 }}>
-                  <div style={{ fontSize: 10, color: '#64748b', fontWeight: 600 }}>LONGITUDE</div>
-                  <div style={{ fontSize: 13, color: '#16a34a', fontWeight: 800, fontFamily: 'monospace' }}>{selectedMapOffice.longitude}</div>
+                <div className="surface-card" style={{ padding: 10, borderRadius: 8 }}>
+                  <div style={{ fontSize: 10, color: 'var(--text-secondary)', fontWeight: 600 }}>LONGITUDE</div>
+                  <div style={{ fontSize: 13, color: 'var(--accent-emerald)', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>{selectedMapOffice.longitude}</div>
                 </div>
               </div>
 
@@ -819,11 +820,11 @@ export default function MasterKantor() {
           style={{ zIndex: 1000 }}
           onClick={(e) => { if (e.target === e.currentTarget) setShowAddModal(false); }}
         >
-          <div className="modal-content" style={{ maxWidth: '500px', width: '95%', padding: 24, background: '#ffffff', color: '#0f172a' }}>
+          <div className="modal-content" style={{ maxWidth: '500px', width: '95%', padding: 24 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
-              <h3 style={{ margin: 0, color: '#0f172a', fontSize: 16, fontWeight: 800 }}>Tambah Kantor Pos Baru</h3>
-              <button onClick={() => setShowAddModal(false)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}>
-                <X size={18} />
+              <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: 16, fontWeight: 800 }}>Tambah Kantor Pos Baru</h3>
+              <button onClick={() => setShowAddModal(false)} className="capsule-btn-circle" style={{ width: 30, height: 30 }}>
+                <X size={16} />
               </button>
             </div>
 
@@ -847,16 +848,16 @@ export default function MasterKantor() {
               }
             }} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div>
-                <label style={{ fontSize: 11, color: '#475569', fontWeight: 700, display: 'block', marginBottom: 4 }}>KODE NOPEND</label>
-                <input required name="nopend" placeholder="misal: 40118A" style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }} />
+                <label style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 700, display: 'block', marginBottom: 4 }}>KODE NOPEND</label>
+                <input required name="nopend" placeholder="misal: 40118A" style={{ width: '100%', height: 38 }} />
               </div>
               <div>
-                <label style={{ fontSize: 11, color: '#475569', fontWeight: 700, display: 'block', marginBottom: 4 }}>NAMA KANTOR POS</label>
-                <input required name="nama_nopend" placeholder="misal: KCP Bandung Gegerkalong" style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }} />
+                <label style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 700, display: 'block', marginBottom: 4 }}>NAMA KANTOR POS</label>
+                <input required name="nama_nopend" placeholder="misal: KCP Bandung Gegerkalong" style={{ width: '100%', height: 38 }} />
               </div>
               <div>
-                <label style={{ fontSize: 11, color: '#475569', fontWeight: 700, display: 'block', marginBottom: 4 }}>TIPE KANTOR</label>
-                <select name="jenis_kantor" style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }}>
+                <label style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 700, display: 'block', marginBottom: 4 }}>TIPE KANTOR</label>
+                <select name="jenis_kantor" style={{ width: '100%', height: 38 }}>
                   <option value="Kantor Cabang Pembantu">Kantor Cabang Pembantu (KCP)</option>
                   <option value="Kantor Cabang">Kantor Cabang (KC)</option>
                   <option value="Kantor Cabang Utama">Kantor Cabang Utama (KCU)</option>
@@ -865,12 +866,12 @@ export default function MasterKantor() {
                 </select>
               </div>
               <div>
-                <label style={{ fontSize: 11, color: '#475569', fontWeight: 700, display: 'block', marginBottom: 4 }}>ALAMAT</label>
-                <input name="alamat" placeholder="misal: Jl. Dr. Setiabudi No. 120" style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }} />
+                <label style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 700, display: 'block', marginBottom: 4 }}>ALAMAT</label>
+                <input name="alamat" placeholder="misal: Jl. Dr. Setiabudi No. 120" style={{ width: '100%', height: 38 }} />
               </div>
               <div>
-                <label style={{ fontSize: 11, color: '#475569', fontWeight: 700, display: 'block', marginBottom: 4 }}>KOTA / KABUPATEN</label>
-                <input name="kabupaten_kota" defaultValue="Kota Bandung" style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }} />
+                <label style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 700, display: 'block', marginBottom: 4 }}>KOTA / KABUPATEN</label>
+                <input name="kabupaten_kota" defaultValue="Kota Bandung" style={{ width: '100%', height: 38 }} />
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 12 }}>

@@ -64,8 +64,8 @@ export default function Compass({ activeConnection }) {
           padding: 0
         }}
       >
-        <div style={{ padding: '14px 16px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
-          <div style={{ fontSize: 11, color: '#64748b', letterSpacing: '0.05em', textTransform: 'uppercase', fontWeight: 800 }}>
+        <div className="surface-soft" style={{ padding: '14px 16px', borderBottom: '1px solid var(--border-light)' }}>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', letterSpacing: '0.05em', textTransform: 'uppercase', fontWeight: 800 }}>
             MongoDB Collections
           </div>
         </div>
@@ -81,16 +81,16 @@ export default function Compass({ activeConnection }) {
                 padding: '8px 10px',
                 cursor: 'pointer',
                 borderRadius: 8,
-                background: selected === col.name ? '#0b2e8a' : 'transparent',
+                background: selected === col.name ? 'var(--primary-navy)' : 'transparent',
                 marginBottom: 4,
                 transition: 'all 0.15s ease'
               }}
             >
-              <Database size={14} color={selected === col.name ? '#ffffff' : '#0284c7'} />
-              <span style={{ fontSize: 12, color: selected === col.name ? '#ffffff' : '#0f172a', flex: 1, fontWeight: selected === col.name ? 800 : 500, fontFamily: 'monospace' }}>
+              <Database size={14} color={selected === col.name ? '#ffffff' : 'var(--accent-cyan)'} />
+              <span style={{ fontSize: 12, color: selected === col.name ? '#ffffff' : 'var(--text-primary)', flex: 1, fontWeight: selected === col.name ? 800 : 500, fontFamily: 'var(--font-mono)' }}>
                 {col.name}
               </span>
-              <span style={{ fontSize: 10, color: selected === col.name ? '#bae6fd' : '#94a3b8', fontWeight: 700, fontFamily: 'monospace' }}>
+              <span style={{ fontSize: 10, color: selected === col.name ? 'rgba(255,255,255,0.8)' : 'var(--text-muted)', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
                 {col.count}
               </span>
             </div>
@@ -101,15 +101,15 @@ export default function Compass({ activeConnection }) {
       {/* Main JSON / Table Data Panel */}
       <div className="spatial-card" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 20, gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 15, color: '#0b2e8a', fontWeight: 800, fontFamily: 'monospace' }}>
+          <span style={{ fontSize: 15, color: 'var(--primary-navy)', fontWeight: 800, fontFamily: 'var(--font-mono)' }}>
             collection: {selected}
           </span>
-          <span style={{ fontSize: 12, color: '#64748b' }}>
+          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
             ({data.length} dokumen dimuat)
           </span>
 
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
-            <div style={{ display: 'flex', background: '#f1f5f9', borderRadius: 8, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', background: 'var(--bg-surface-soft)', borderRadius: 8, border: '1px solid var(--border-light)', overflow: 'hidden' }}>
               {['json', 'table'].map((m) => (
                 <button
                   key={m}
@@ -117,9 +117,9 @@ export default function Compass({ activeConnection }) {
                   style={{
                     padding: '5px 12px',
                     fontSize: 11,
-                    background: viewMode === m ? '#0b2e8a' : 'transparent',
+                    background: viewMode === m ? 'var(--primary-navy)' : 'transparent',
                     border: 'none',
-                    color: viewMode === m ? '#ffffff' : '#64748b',
+                    color: viewMode === m ? '#ffffff' : 'var(--text-secondary)',
                     cursor: 'pointer',
                     fontWeight: viewMode === m ? 800 : 500,
                     textTransform: 'uppercase'
@@ -137,26 +137,26 @@ export default function Compass({ activeConnection }) {
         </div>
 
         {/* Output container */}
-        <div style={{ flex: 1, background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0', overflow: 'auto', padding: 16 }}>
+        <div className="surface-soft" style={{ flex: 1, borderRadius: 10, overflow: 'auto', padding: 16 }}>
           {viewMode === 'json' ? (
-            <pre style={{ fontSize: 12, color: '#0f172a', margin: 0, lineHeight: 1.6, fontFamily: 'monospace' }}>
+            <pre style={{ fontSize: 12, color: 'var(--text-primary)', margin: 0, lineHeight: 1.6, fontFamily: 'var(--font-mono)' }}>
               {JSON.stringify(data, null, 2)}
             </pre>
           ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, fontFamily: 'monospace' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, fontFamily: 'var(--font-mono)' }}>
               <thead>
-                <tr style={{ background: '#e2e8f0', textAlign: 'left' }}>
+                <tr style={{ background: 'var(--bg-card)', textAlign: 'left' }}>
                   {data[0] && Object.keys(data[0]).map((k) => (
-                    <th key={k} style={{ padding: '8px 10px', color: '#0f172a', fontWeight: 800, borderBottom: '1px solid #cbd5e1' }}>{k}</th>
+                    <th key={k} style={{ padding: '8px 10px', color: 'var(--text-primary)', fontWeight: 800, borderBottom: '1px solid var(--border-light)' }}>{k}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {data.map((doc, di) => (
-                  <tr key={di} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                    {Object.values(doc).map((val, vi) => (
-                      <td key={vi} style={{ padding: '8px 10px', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#334155' }}>
-                        {typeof val === 'object' ? JSON.stringify(val) : String(val)}
+                {data.map((row, idx) => (
+                  <tr key={idx} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                    {Object.keys(data[0] || {}).map((k) => (
+                      <td key={k} style={{ padding: '8px 10px', color: 'var(--text-secondary)', verticalAlign: 'top' }}>
+                        {typeof row[k] === 'object' ? JSON.stringify(row[k]) : String(row[k] ?? '')}
                       </td>
                     ))}
                   </tr>

@@ -63,30 +63,30 @@ export default function NotificationDrawer() {
     switch (type) {
       case 'CRITICAL':
         return {
-          bg: 'var(--kpi-pink-bg, #fef2f2)',
-          border: '1px solid var(--kpi-pink-border, #fecaca)',
-          iconColor: '#ef4444',
+          bg: 'var(--accent-pink-bg)',
+          border: '1px solid rgba(244, 63, 94, 0.3)',
+          iconColor: 'var(--accent-pink)',
           Icon: AlertTriangle,
-          badgeBg: '#fee2e2',
-          badgeColor: '#b91c1c'
+          badgeBg: 'var(--accent-pink-bg)',
+          badgeColor: 'var(--accent-pink)'
         };
       case 'WARNING':
         return {
-          bg: 'var(--accent-amber-bg, #fffbeb)',
-          border: '1px solid var(--kpi-pink-border, #fde68a)',
-          iconColor: '#d97706',
+          bg: 'var(--accent-amber-bg)',
+          border: '1px solid rgba(245, 158, 11, 0.3)',
+          iconColor: 'var(--accent-amber)',
           Icon: AlertCircle,
-          badgeBg: '#fef3c7',
-          badgeColor: '#92400e'
+          badgeBg: 'var(--accent-amber-bg)',
+          badgeColor: 'var(--accent-amber)'
         };
       default:
         return {
-          bg: 'var(--kpi-cyan-bg, #f0f9ff)',
-          border: '1px solid var(--kpi-cyan-border, #bae6fd)',
-          iconColor: '#0284c7',
+          bg: 'var(--accent-cyan-bg)',
+          border: '1px solid rgba(2, 132, 199, 0.3)',
+          iconColor: 'var(--accent-cyan)',
           Icon: Info,
-          badgeBg: '#e0f2fe',
-          badgeColor: '#0369a1'
+          badgeBg: 'var(--accent-cyan-bg)',
+          badgeColor: 'var(--accent-cyan)'
         };
     }
   };
@@ -110,8 +110,8 @@ export default function NotificationDrawer() {
               position: 'absolute',
               top: -3,
               right: -3,
-              background: '#ef4444',
-              color: '#fff',
+              background: 'var(--accent-pink)',
+              color: '#ffffff',
               fontSize: 10,
               fontWeight: 800,
               width: 18,
@@ -130,7 +130,7 @@ export default function NotificationDrawer() {
 
       {isOpen && (
         <div
-          className="spatial-card"
+          className="surface-card"
           style={{
             position: 'absolute',
             right: 0,
@@ -151,14 +151,15 @@ export default function NotificationDrawer() {
               borderBottom: '1px solid var(--border-light)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between'
+              justifyContent: 'space-between',
+              background: 'var(--bg-surface-soft)'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <Bell size={16} color="var(--primary-blue)" />
-              <span style={{ fontSize: 13, fontWeight: 800 }}>Notifikasi & Alert System</span>
+              <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>Notifikasi & Alert System</span>
               {unreadCount > 0 && (
-                <span style={{ fontSize: 10, background: '#fee2e2', color: '#b91c1c', padding: '2px 6px', borderRadius: 10, fontWeight: 800 }}>
+                <span className="badge badge-pink" style={{ fontSize: 10, padding: '2px 6px' }}>
                   {unreadCount} Warning
                 </span>
               )}
@@ -176,7 +177,7 @@ export default function NotificationDrawer() {
           <div style={{ maxHeight: 360, overflowY: 'auto', padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
             {alerts.length === 0 ? (
               <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>
-                <Check size={28} color="#16a34a" style={{ margin: '0 auto 6px', display: 'block' }} />
+                <Check size={28} color="var(--accent-emerald)" style={{ margin: '0 auto 6px', display: 'block' }} />
                 <div>Semua sistem operasional normal. Tidak ada alert aktif saat ini.</div>
               </div>
             ) : (
@@ -202,7 +203,7 @@ export default function NotificationDrawer() {
                       <AlertIcon size={18} color={style.iconColor} style={{ marginTop: 2, flexShrink: 0 }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, marginBottom: 4 }}>
-                          <span style={{ fontSize: 12, fontWeight: 800 }}>{alert.title}</span>
+                          <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)' }}>{alert.title}</span>
                           <button
                             onClick={(e) => handleDismiss(e, alert.id)}
                             title="Abaikan"
@@ -236,7 +237,8 @@ export default function NotificationDrawer() {
               textAlign: 'center',
               fontSize: 11,
               color: 'var(--text-muted)',
-              fontWeight: 600
+              fontWeight: 600,
+              background: 'var(--bg-surface-soft)'
             }}
           >
             Monitoring Real-time IPOS5 KCU Cimahi & SPP Bandung

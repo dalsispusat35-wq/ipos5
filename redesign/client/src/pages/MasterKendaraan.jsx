@@ -276,39 +276,40 @@ export default function MasterKendaraan() {
 
         {/* Add Vehicle Panel */}
         {showForm && (
-          <div className="spatial-card" style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 14, height: 'fit-content' }}>
+          <div className="surface-card" style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 14, height: 'fit-content' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>Tambah Armada Baru</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)' }}>Tambah Armada Baru</div>
               <button
                 onClick={() => setShowForm(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: 4 }}
+                className="capsule-btn-circle"
+                style={{ width: 28, height: 28 }}
               >
-                <X size={16} />
+                <X size={14} />
               </button>
             </div>
 
             <div>
-              <label style={{ fontSize: 11.5, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 5 }}>Nopen Asal (Home Base)</label>
+              <label style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 5 }}>Nopen Asal (Home Base)</label>
               <input
                 placeholder="misal: 40395C1 - KCP Cililin / 40500"
                 value={form.homeBase}
                 onChange={(e) => setForm((prev) => ({ ...prev, homeBase: e.target.value, nopenAsal: e.target.value.split(' ')[0] }))}
-                style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }}
+                style={{ width: '100%', height: 38 }}
               />
             </div>
 
             <div>
-              <label style={{ fontSize: 11.5, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 5 }}>Nomor Polisi (Plat)</label>
+              <label style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 5 }}>Nomor Polisi (Plat)</label>
               <input
                 placeholder="misal: B 9910 PCX"
                 value={form.plate}
                 onChange={(e) => setForm((prev) => ({ ...prev, plate: e.target.value }))}
-                style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }}
+                style={{ width: '100%', height: 38 }}
               />
             </div>
 
             <div>
-              <label style={{ fontSize: 11.5, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 5 }}>Jenis Kendaraan</label>
+              <label style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 5 }}>Jenis Kendaraan</label>
               <select
                 value={form.type}
                 onChange={(e) => {
@@ -319,7 +320,7 @@ export default function MasterKendaraan() {
                   else if (val.includes('1.5') || val.includes('VAN')) defaultCap = 1500;
                   setForm((prev) => ({ ...prev, type: val, maxCapacityKg: defaultCap }));
                 }}
-                style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }}
+                style={{ width: '100%', height: 38 }}
               >
                 <option value="TRUK HEAVY BOX (10 TON)">TRUK HEAVY BOX (10 TON)</option>
                 <option value="TRUK MEDIUM BOX (6 TON)">TRUK MEDIUM BOX (6 TON)</option>
@@ -330,31 +331,31 @@ export default function MasterKendaraan() {
             </div>
 
             <div>
-              <label style={{ fontSize: 11.5, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 5 }}>Merk / Model</label>
+              <label style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 5 }}>Merk / Model</label>
               <input
                 placeholder="misal: Daihatsu Gran Max Box"
                 value={form.brand}
                 onChange={(e) => setForm((prev) => ({ ...prev, brand: e.target.value }))}
-                style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }}
+                style={{ width: '100%', height: 38 }}
               />
             </div>
 
             <div>
-              <label style={{ fontSize: 11.5, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 5 }}>Nama Pengemudi</label>
+              <label style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 5 }}>Nama Pengemudi</label>
               <input
                 placeholder="Nama lengkap supir"
                 value={form.driver}
                 onChange={(e) => setForm((prev) => ({ ...prev, driver: e.target.value }))}
-                style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }}
+                style={{ width: '100%', height: 38 }}
               />
             </div>
 
             <div>
-              <label style={{ fontSize: 11.5, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 5 }}>Penugasan Rute</label>
+              <label style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 5 }}>Penugasan Rute</label>
               <select
                 value={form.assignedRoute}
                 onChange={(e) => setForm((prev) => ({ ...prev, assignedRoute: e.target.value }))}
-                style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }}
+                style={{ width: '100%', height: 38 }}
               >
                 {routesList.map(r => (
                   <option key={r.id} value={r.id}>{r.name}</option>
@@ -363,13 +364,13 @@ export default function MasterKendaraan() {
             </div>
 
             <div>
-              <label style={{ fontSize: 11.5, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 5 }}>Kapasitas Maksimal (Kg)</label>
+              <label style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 5 }}>Kapasitas Maksimal (Kg)</label>
               <input
                 type="number"
                 placeholder="misal: 3500"
                 value={form.maxCapacityKg}
                 onChange={(e) => setForm((prev) => ({ ...prev, maxCapacityKg: e.target.value }))}
-                style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }}
+                style={{ width: '100%', height: 38 }}
               />
             </div>
 

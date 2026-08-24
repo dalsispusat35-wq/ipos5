@@ -102,12 +102,11 @@ export default function RouteJourney() {
 
         {/* Horizontal Telemetry Node Graph */}
         <div 
+          className="surface-soft"
           style={{ 
             marginTop: 20, 
             padding: '24px 20px', 
             borderRadius: 14, 
-            background: '#f8fafc', 
-            border: '1px solid #e2e8f0',
             overflowX: 'auto'
           }}
         >
@@ -167,12 +166,12 @@ export default function RouteJourney() {
                       width: isCurrent ? 34 : 28,
                       height: isCurrent ? 34 : 28,
                       borderRadius: '50%',
-                      background: isCurrent ? '#0b2e8a' : isPassed ? '#16a34a' : isSkipped ? '#f1f5f9' : '#ffffff',
-                      border: isCurrent ? '2px solid #0284c7' : isPassed ? '2px solid #16a34a' : '2px solid #cbd5e1',
+                      background: isCurrent ? 'var(--primary-navy)' : isPassed ? 'var(--accent-emerald)' : isSkipped ? 'var(--bg-surface-soft)' : 'var(--bg-card)',
+                      border: isCurrent ? '2px solid var(--accent-cyan)' : isPassed ? '2px solid var(--accent-emerald)' : '2px solid var(--border-light)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: (isCurrent || isPassed) ? '#fff' : isSkipped ? '#ef4444' : '#64748b',
+                      color: (isCurrent || isPassed) ? '#ffffff' : isSkipped ? 'var(--accent-pink)' : 'var(--text-secondary)',
                       fontSize: 12,
                       fontWeight: 800,
                       cursor: 'pointer',
@@ -253,22 +252,22 @@ export default function RouteJourney() {
         {/* Manifest Cargo Card */}
         <div className="spatial-card" style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <h3 style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <PackageCheck size={16} color="#0284c7" /> Manifest Cargo Aktif di Dalam Truk
+            <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <PackageCheck size={16} color="var(--accent-cyan)" /> Manifest Cargo Aktif di Dalam Truk
             </h3>
             <span className="badge badge-navy">{currentLoad > 0 ? `${Math.round(currentLoad / 2.5)} PAKET RESI` : '0 PAKET RESI'}</span>
           </div>
 
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 80 }}>
             {currentLoad === 0 ? (
-              <div style={{ fontSize: 13, color: '#94a3b8', textAlign: 'center' }}>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center' }}>
                 Truk kosong (Belum ada muatan atau telah dibongkar di SPP Bandung).
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12 }}>
-                  <span style={{ color: '#475569', fontWeight: 600 }}>MNFST-240724-MILK01</span>
-                  <span style={{ fontWeight: 800, color: '#0f172a' }}>{currentLoad} kg</span>
+                <div className="surface-soft" style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 8, fontSize: 12 }}>
+                  <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>MNFST-240724-MILK01</span>
+                  <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{currentLoad} kg</span>
                 </div>
               </div>
             )}

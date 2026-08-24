@@ -413,7 +413,7 @@ export default function Checker() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
           
           {/* Mode Tabs */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f1f5f9', padding: 4, borderRadius: 12, border: '1px solid #e2e8f0' }}>
+          <div className="surface-soft" style={{ display: 'flex', alignItems: 'center', gap: 6, padding: 4, borderRadius: 12 }}>
             <button
               onClick={() => {
                 setSearchMode('FLEET');
@@ -430,9 +430,9 @@ export default function Checker() {
                 cursor: 'pointer',
                 fontSize: 12,
                 fontWeight: 800,
-                background: searchMode === 'FLEET' ? '#0b2e8a' : 'transparent',
-                color: searchMode === 'FLEET' ? '#ffffff' : '#475569',
-                boxShadow: searchMode === 'FLEET' ? '0 2px 8px rgba(11, 46, 138, 0.25)' : 'none',
+                background: searchMode === 'FLEET' ? 'var(--primary-navy)' : 'transparent',
+                color: searchMode === 'FLEET' ? '#ffffff' : 'var(--text-secondary)',
+                boxShadow: searchMode === 'FLEET' ? 'var(--btn-primary-shadow)' : 'none',
                 transition: 'all 0.15s ease'
               }}
             >
@@ -455,9 +455,9 @@ export default function Checker() {
                 cursor: 'pointer',
                 fontSize: 12,
                 fontWeight: 800,
-                background: searchMode === 'PACKAGE' ? '#0b2e8a' : 'transparent',
-                color: searchMode === 'PACKAGE' ? '#ffffff' : '#475569',
-                boxShadow: searchMode === 'PACKAGE' ? '0 2px 8px rgba(11, 46, 138, 0.25)' : 'none',
+                background: searchMode === 'PACKAGE' ? 'var(--primary-navy)' : 'transparent',
+                color: searchMode === 'PACKAGE' ? '#ffffff' : 'var(--text-secondary)',
+                boxShadow: searchMode === 'PACKAGE' ? 'var(--btn-primary-shadow)' : 'none',
                 transition: 'all 0.15s ease'
               }}
             >
@@ -469,9 +469,9 @@ export default function Checker() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             
             {/* Date Picker Capsule */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f8fafc', padding: '6px 14px', borderRadius: 10, border: '1px solid #e2e8f0' }}>
-              <CalendarDays size={15} color="#0284c7" />
-              <span style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Tanggal:</span>
+            <div className="surface-soft" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: 10 }}>
+              <CalendarDays size={15} color="var(--accent-cyan)" />
+              <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Tanggal:</span>
               <input
                 type="date"
                 value={selectedDate}
@@ -486,7 +486,7 @@ export default function Checker() {
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: '#0f172a',
+                  color: 'var(--text-primary)',
                   fontWeight: 800,
                   fontSize: 12.5,
                   cursor: 'pointer',
@@ -533,10 +533,10 @@ export default function Checker() {
               display: 'flex',
               alignItems: 'center',
               gap: 6,
-              background: autoRefresh ? '#ecfdf5' : '#f8fafc',
+              background: autoRefresh ? 'var(--accent-emerald-bg)' : 'var(--bg-surface-soft)',
               padding: '4px 10px',
               borderRadius: 10,
-              border: `1px solid ${autoRefresh ? '#a7f3d0' : '#e2e8f0'}`,
+              border: `1px solid ${autoRefresh ? 'rgba(16, 185, 129, 0.3)' : 'var(--border-light)'}`,
               height: 36
             }}>
               <button
@@ -545,7 +545,7 @@ export default function Checker() {
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: autoRefresh ? '#059669' : '#64748b',
+                  color: autoRefresh ? 'var(--accent-emerald)' : 'var(--text-secondary)',
                   fontSize: 11.5,
                   fontWeight: 800,
                   cursor: 'pointer',
@@ -556,7 +556,7 @@ export default function Checker() {
                 }}
                 title={autoRefresh ? 'Klik untuk jeda Auto-Refresh' : 'Klik untuk aktifkan Auto-Refresh'}
               >
-                <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: autoRefresh ? '#10b981' : '#94a3b8' }} />
+                <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: autoRefresh ? 'var(--accent-emerald)' : 'var(--text-muted)' }} />
                 <span>Auto-Sync {autoRefresh ? 'ON' : 'OFF'}</span>
               </button>
 
@@ -565,9 +565,9 @@ export default function Checker() {
                   value={autoRefreshInterval}
                   onChange={(e) => setAutoRefreshInterval(Number(e.target.value))}
                   style={{
-                    background: '#ffffff',
-                    border: '1px solid #a7f3d0',
-                    color: '#059669',
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border-light)',
+                    color: 'var(--accent-emerald)',
                     fontSize: 11,
                     fontWeight: 800,
                     borderRadius: 6,
@@ -584,7 +584,7 @@ export default function Checker() {
               )}
 
               {lastSyncTime && autoRefresh && (
-                <span style={{ fontSize: 10, color: '#64748b', marginLeft: 2 }}>
+                <span style={{ fontSize: 10, color: 'var(--text-muted)', marginLeft: 2 }}>
                   {lastSyncTime.slice(3)}
                 </span>
               )}
@@ -609,10 +609,10 @@ export default function Checker() {
         {searchMode === 'FLEET' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontSize: 12, fontWeight: 800, color: '#0b2e8a', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <ListFilter size={15} color="#0284c7" /> DAFTAR ARMADA KENDARAAN AKTIF DI DATABASE ({fleetList.length} ARMADA):
+              <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--primary-navy)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <ListFilter size={15} color="var(--accent-cyan)" /> DAFTAR ARMADA KENDARAAN AKTIF DI DATABASE ({fleetList.length} ARMADA):
               </div>
-              <span style={{ fontSize: 11, color: '#64748b' }}>
+              <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
                 Klik armada untuk memuat data tracking rute, kapasitas, dan muatan connote
               </span>
             </div>
@@ -634,13 +634,13 @@ export default function Checker() {
                       handleSearch(v.nopol, selectedDate);
                     }}
                     style={{
-                      background: isSelected ? 'rgba(2, 132, 199, 0.14)' : 'var(--bg-card)',
-                      border: isSelected ? '2px solid var(--primary-blue)' : '1px solid var(--border-light)',
+                      background: isSelected ? 'var(--accent-cyan-bg)' : 'var(--bg-card)',
+                      border: isSelected ? '1.5px solid var(--primary-blue)' : '1px solid var(--border-light)',
                       borderRadius: 14,
                       padding: '14px 16px',
                       cursor: 'pointer',
                       transition: 'all 0.15s ease',
-                      boxShadow: isSelected ? '0 4px 14px rgba(2, 132, 199, 0.2)' : '0 1px 3px rgba(0, 0, 0, 0.05)',
+                      boxShadow: isSelected ? '0 2px 10px rgba(37, 99, 235, 0.2)' : '0 1px 3px rgba(0, 0, 0, 0.05)',
                       display: 'flex',
                       flexDirection: 'column',
                       gap: 8
@@ -656,12 +656,12 @@ export default function Checker() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <div style={{
                           width: 32, height: 32, borderRadius: 8,
-                          background: isSelected ? 'rgba(2, 132, 199, 0.25)' : 'var(--bg-workspace)',
+                          background: isSelected ? 'rgba(37, 99, 235, 0.2)' : 'var(--bg-surface-soft)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center'
                         }}>
                           <Truck size={16} color={isSelected ? 'var(--primary-blue)' : 'var(--text-secondary)'} />
                         </div>
-                        <span style={{ fontSize: 14, fontWeight: 900, color: isSelected ? 'var(--primary-blue)' : 'var(--text-primary)', fontFamily: 'monospace' }}>
+                        <span style={{ fontSize: 14, fontWeight: 900, color: isSelected ? 'var(--primary-blue)' : 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
                           {v.nopol}
                         </span>
                       </div>
@@ -979,8 +979,8 @@ export default function Checker() {
             <div className="spatial-card" style={{ padding: 22, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: '#0b2e8a', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Truck size={16} color="#0284c7" /> CURRENT VEHICLE JOURNEY
+                  <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--primary-navy)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Truck size={16} color="var(--accent-cyan)" /> CURRENT VEHICLE JOURNEY
                   </div>
                   <span className="badge badge-amber" style={{ fontSize: 10.5, padding: '3px 8px' }}>
                     IN_PROGRESS
@@ -988,37 +988,37 @@ export default function Checker() {
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
-                  <div style={{ width: 48, height: 48, borderRadius: 12, background: '#e0f2fe', border: '1px solid #bae6fd', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Truck size={24} color="#0284c7" />
+                  <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--accent-cyan-bg)', border: '1px solid rgba(59, 130, 246, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Truck size={24} color="var(--accent-cyan)" />
                   </div>
                   <div>
-                    <div style={{ fontSize: 18, fontWeight: 900, color: '#0f172a', fontFamily: 'monospace' }}>
+                    <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
                       {result.vehicleNopol || 'B 9910 PCX'}
                     </div>
-                    <div style={{ fontSize: 11.5, color: '#64748b' }}>
+                    <div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>
                       Rute: {result.routeId || 'RT-MALAM-B9910-PCX'} &nbsp;•&nbsp; Driver: {result.vehicleInfo?.driver || 'Ahmad Supriadi'}
                     </div>
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, background: '#f8fafc', padding: 14, borderRadius: 12, border: '1px solid #e2e8f0', marginBottom: 16 }}>
+                <div className="surface-soft" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, padding: 14, borderRadius: 12, marginBottom: 16 }}>
                   <div>
-                    <div style={{ fontSize: 10.5, color: '#64748b', textTransform: 'uppercase' }}>Stop Sequence:</div>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', marginTop: 2 }}>Stop #{activeSeq} dari {(result.routeStops || []).length || 5}</div>
+                    <div style={{ fontSize: 10.5, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Stop Sequence:</div>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)', marginTop: 2 }}>Stop #{activeSeq} dari {(result.routeStops || []).length || 5}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 10.5, color: '#64748b', textTransform: 'uppercase' }}>Stop Saat Ini:</div>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: '#0284c7', marginTop: 2 }}>{activeStopObj.officeName || 'SPP Bandung'}</div>
+                    <div style={{ fontSize: 10.5, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Stop Saat Ini:</div>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--accent-cyan)', marginTop: 2 }}>{activeStopObj.officeName || 'SPP Bandung'}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 10.5, color: '#64748b', textTransform: 'uppercase' }}>Estimasi Tiba (ETA):</div>
-                    <div style={{ fontSize: 12.5, fontWeight: 800, color: '#d97706', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
-                      {activeStopObj.etaTime || '10:00 WIB'} <span style={{ fontSize: 10, color: '#16a34a', display: 'inline-flex', alignItems: 'center', gap: 2 }}><Clock size={10} /> On Schedule</span>
+                    <div style={{ fontSize: 10.5, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Estimasi Tiba (ETA):</div>
+                    <div style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--accent-amber)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      {activeStopObj.etaTime || '10:00 WIB'} <span style={{ fontSize: 10, color: 'var(--accent-emerald)', display: 'inline-flex', alignItems: 'center', gap: 2 }}><Clock size={10} /> On Schedule</span>
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 10.5, color: '#64748b', textTransform: 'uppercase' }}>Stop Berikutnya:</div>
-                    <div style={{ fontSize: 12.5, fontWeight: 800, color: '#7c3aed', marginTop: 2 }}>
+                    <div style={{ fontSize: 10.5, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Stop Berikutnya:</div>
+                    <div style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--accent-purple)', marginTop: 2 }}>
                       {result.routeStops?.[activeSeq]?.officeName || (result.routeStops?.[result.routeStops.length - 1]?.officeName ? `${result.routeStops[result.routeStops.length - 1].officeName} (Terminal Akhir)` : 'SPP Bandung (Terminal Akhir)')}
                     </div>
                   </div>
@@ -1047,7 +1047,7 @@ export default function Checker() {
                 <div className="spatial-card" style={{ padding: 22, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                      <div style={{ fontSize: 12, fontWeight: 800, color: '#0b2e8a', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--primary-navy)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 8 }}>
                         <Zap size={16} color={capInfo.color} /> VEHICLE CAPACITY GAUGE (STOP #{activeSeq})
                       </div>
                       <span 
@@ -1065,9 +1065,9 @@ export default function Checker() {
                       </span>
                     </div>
 
-                    <div style={{ background: '#f8fafc', padding: 16, borderRadius: 14, border: '1px solid #e2e8f0', marginBottom: 14 }}>
+                    <div className="surface-soft" style={{ padding: 16, borderRadius: 14, marginBottom: 14 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                        <span style={{ fontSize: 12, color: '#64748b', fontWeight: 700 }}>
+                        <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 700 }}>
                           Penggunaan Muatan (Utilitas Stop #{activeSeq}):
                         </span>
                         <span style={{ fontSize: 18, fontWeight: 900, color: capInfo.color }}>
@@ -1076,7 +1076,7 @@ export default function Checker() {
                       </div>
 
                       {/* Progress Bar Gauge */}
-                      <div style={{ width: '100%', height: 10, borderRadius: 10, background: '#e2e8f0', overflow: 'hidden', marginBottom: 10 }}>
+                      <div style={{ width: '100%', height: 10, borderRadius: 10, background: 'var(--border-light)', overflow: 'hidden', marginBottom: 10 }}>
                         <div style={{
                           width: `${Math.min(100, activeUtilPct)}%`,
                           height: '100%',
@@ -1088,20 +1088,20 @@ export default function Checker() {
 
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, fontSize: 11.5 }}>
                         <div>
-                          <span style={{ color: '#64748b' }}>Beban di Stop Ini:</span>
-                          <div style={{ fontWeight: 800, color: '#0f172a', fontSize: 13 }}>{activeLoadKg} kg</div>
+                          <span style={{ color: 'var(--text-secondary)' }}>Beban di Stop Ini:</span>
+                          <div style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: 13 }}>{activeLoadKg} kg</div>
                         </div>
                         <div>
-                          <span style={{ color: '#64748b' }}>Kapasitas Maksimal:</span>
-                          <div style={{ fontWeight: 800, color: '#0f172a', fontSize: 13 }}>{maxCap} kg</div>
+                          <span style={{ color: 'var(--text-secondary)' }}>Kapasitas Maksimal:</span>
+                          <div style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: 13 }}>{maxCap} kg</div>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div style={{ fontSize: 11.5, color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12, borderTop: '1px solid #f1f5f9' }}>
+                  <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12, borderTop: '1px solid var(--border-light)' }}>
                     <span>Kapasitas Tersedia:</span>
-                    <strong style={{ color: '#16a34a', fontSize: 13 }}>{availKg.toFixed(1)} kg sisa</strong>
+                    <strong style={{ color: 'var(--accent-emerald)', fontSize: 13 }}>{availKg.toFixed(1)} kg sisa</strong>
                   </div>
                 </div>
               );
@@ -1114,26 +1114,24 @@ export default function Checker() {
             {/* Top Bar with Title & Simulation Toolbar */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 14 }}>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 900, color: '#0b2e8a', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Navigation size={17} color="#0284c7" /> MULTI-STOP ROUTE JOURNEY ({(result.routeStops || []).length} WAYPOINTS DATABASE)
+                <div style={{ fontSize: 13, fontWeight: 900, color: 'var(--primary-navy)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Navigation size={17} color="var(--accent-cyan)" /> MULTI-STOP ROUTE JOURNEY ({(result.routeStops || []).length} WAYPOINTS DATABASE)
                 </div>
-                <div style={{ fontSize: 11, color: '#64748b', marginTop: 3 }}>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 3 }}>
                   Lintasan armada {result.vehicleNopol || 'B 9910 PCX'} — Klik waypoint untuk memfilter muatan resi di bawah
                 </div>
               </div>
 
               {/* SIMULATION TOOLBAR */}
-              <div style={{
+              <div className="surface-soft" style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: 8,
-                background: '#f8fafc',
                 padding: '6px 12px',
-                borderRadius: 12,
-                border: '1px solid #e2e8f0'
+                borderRadius: 12
               }}>
-                <span style={{ fontSize: 10.5, fontWeight: 800, color: '#0284c7', textTransform: 'uppercase', letterSpacing: '0.05em', marginRight: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <Sparkles size={13} color="#0284c7" /> Mode Simulasi:
+                <span style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--accent-cyan)', textTransform: 'uppercase', letterSpacing: '0.05em', marginRight: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Sparkles size={13} color="var(--accent-cyan)" /> Mode Simulasi:
                 </span>
 
                 <button
@@ -1307,9 +1305,9 @@ export default function Checker() {
                             fontWeight: 800,
                             padding: '2px 6px',
                             borderRadius: 4,
-                            background: stop.utilizationPctAtStop > 100 ? '#fef2f2' : '#f8fafc',
-                            border: `1px solid ${stop.utilizationPctAtStop > 100 ? '#fca5a5' : '#e2e8f0'}`,
-                            color: stop.utilizationPctAtStop > 100 ? '#ef4444' : stop.utilizationPctAtStop >= 90 ? '#d97706' : '#16a34a',
+                            background: stop.utilizationPctAtStop > 100 ? 'var(--accent-pink-bg)' : 'var(--bg-surface-soft)',
+                            border: `1px solid ${stop.utilizationPctAtStop > 100 ? 'rgba(244,63,94,0.3)' : 'var(--border-light)'}`,
+                            color: stop.utilizationPctAtStop > 100 ? 'var(--accent-pink)' : stop.utilizationPctAtStop >= 90 ? 'var(--accent-amber)' : 'var(--accent-emerald)',
                             display: 'inline-flex',
                             alignItems: 'center',
                             gap: 3
@@ -1339,11 +1337,11 @@ export default function Checker() {
             {/* Header & Controls */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, flexWrap: 'wrap', gap: 14 }}>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 900, color: '#0b2e8a', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Layers size={17} color="#0284c7" /> DAFTAR RESI YANG DIAMBIL MOBIL {result.vehicleNopol} ({filteredCargoItems.length} PAKET TERDAFTAR)
+                <div style={{ fontSize: 13, fontWeight: 900, color: 'var(--primary-navy)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Layers size={17} color="var(--accent-cyan)" /> DAFTAR RESI YANG DIAMBIL MOBIL {result.vehicleNopol} ({filteredCargoItems.length} PAKET TERDAFTAR)
                 </div>
-                <div style={{ fontSize: 11, color: '#16a34a', marginTop: 3, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <Truck size={13} color="#16a34a" /> Real-time Cargo Milk Run: Muatan fisik di dalam armada {result.vehicleNopol} pada Stop #{activeSeq} ({(result.routeStops || [])[activeSeq - 1]?.officeName || ''})
+                <div style={{ fontSize: 11, color: 'var(--accent-emerald)', marginTop: 3, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <Truck size={13} color="var(--accent-emerald)" /> Real-time Cargo Milk Run: Muatan fisik di dalam armada {result.vehicleNopol} pada Stop #{activeSeq} ({(result.routeStops || [])[activeSeq - 1]?.officeName || ''})
                 </div>
               </div>
 
@@ -1351,7 +1349,7 @@ export default function Checker() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                 
                 {/* Mode Filter: Semua vs Dimuat di Stop Ini */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#f1f5f9', padding: 3, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                <div className="surface-soft" style={{ display: 'flex', alignItems: 'center', gap: 4, padding: 3, borderRadius: 8 }}>
                   <button
                     onClick={() => setShowOnlyNewlyLoaded(false)}
                     style={{
@@ -1361,8 +1359,8 @@ export default function Checker() {
                       borderRadius: 6,
                       border: 'none',
                       cursor: 'pointer',
-                      background: !showOnlyNewlyLoaded ? '#0b2e8a' : 'transparent',
-                      color: !showOnlyNewlyLoaded ? '#ffffff' : '#64748b'
+                      background: !showOnlyNewlyLoaded ? 'var(--primary-navy)' : 'transparent',
+                      color: !showOnlyNewlyLoaded ? '#ffffff' : 'var(--text-secondary)'
                     }}
                   >
                     Semua Resi ({(result.cargoItems || []).length})
@@ -1376,8 +1374,8 @@ export default function Checker() {
                       borderRadius: 6,
                       border: 'none',
                       cursor: 'pointer',
-                      background: showOnlyNewlyLoaded ? '#0b2e8a' : 'transparent',
-                      color: showOnlyNewlyLoaded ? '#ffffff' : '#64748b'
+                      background: showOnlyNewlyLoaded ? 'var(--primary-navy)' : 'transparent',
+                      color: showOnlyNewlyLoaded ? '#ffffff' : 'var(--text-secondary)'
                     }}
                   >
                     Stop #{activeSeq}
@@ -1385,7 +1383,7 @@ export default function Checker() {
                 </div>
 
                 {/* View Mode Switcher: Accordion vs Detailed Table */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: '#f1f5f9', padding: 3, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                <div className="surface-soft" style={{ display: 'flex', alignItems: 'center', gap: 2, padding: 3, borderRadius: 8 }}>
                   <button
                     onClick={() => setCargoViewMode('GROUPED')}
                     style={{
@@ -1395,8 +1393,8 @@ export default function Checker() {
                       borderRadius: 6,
                       border: 'none',
                       cursor: 'pointer',
-                      background: cargoViewMode === 'GROUPED' ? '#0b2e8a' : 'transparent',
-                      color: cargoViewMode === 'GROUPED' ? '#ffffff' : '#64748b',
+                      background: cargoViewMode === 'GROUPED' ? 'var(--primary-navy)' : 'transparent',
+                      color: cargoViewMode === 'GROUPED' ? '#ffffff' : 'var(--text-secondary)',
                       display: 'flex',
                       alignItems: 'center',
                       gap: 4
@@ -1413,8 +1411,8 @@ export default function Checker() {
                       borderRadius: 6,
                       border: 'none',
                       cursor: 'pointer',
-                      background: cargoViewMode === 'TABLE' ? '#0b2e8a' : 'transparent',
-                      color: cargoViewMode === 'TABLE' ? '#ffffff' : '#64748b',
+                      background: cargoViewMode === 'TABLE' ? 'var(--primary-navy)' : 'transparent',
+                      color: cargoViewMode === 'TABLE' ? '#ffffff' : 'var(--text-secondary)',
                       display: 'flex',
                       alignItems: 'center',
                       gap: 4
@@ -1426,12 +1424,12 @@ export default function Checker() {
 
                 {/* Search in cargo list */}
                 <div style={{ position: 'relative', width: 180 }}>
-                  <Search size={13} color="#94a3b8" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
+                  <Search size={13} color="var(--text-muted)" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
                   <input
                     value={cargoSearchTerm}
                     onChange={(e) => setCargoSearchTerm(e.target.value)}
                     placeholder="Cari resi / nama..."
-                    style={{ width: '100%', height: 32, paddingLeft: 28, paddingRight: 10, fontSize: 11, borderRadius: 8, background: '#ffffff', border: '1px solid #cbd5e1', color: '#0f172a', boxSizing: 'border-box' }}
+                    style={{ width: '100%', height: 32, paddingLeft: 28, paddingRight: 10, fontSize: 11, borderRadius: 8, background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--input-text)', boxSizing: 'border-box' }}
                   />
                 </div>
 
@@ -1446,10 +1444,9 @@ export default function Checker() {
                   return (
                     <div 
                       key={grp.destination_nopen}
+                      className="surface-card"
                       style={{
-                        background: '#ffffff',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: 14,
+                        padding: 0,
                         overflow: 'hidden'
                       }}
                     >
@@ -1461,13 +1458,13 @@ export default function Checker() {
                           justifyContent: 'space-between',
                           alignItems: 'center',
                           cursor: 'pointer',
-                          background: '#f8fafc'
+                          background: 'var(--bg-surface-soft)'
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                          {isExpanded ? <ChevronDown size={16} color="#0284c7" /> : <ChevronRight size={16} color="#94a3b8" />}
-                          <span style={{ fontSize: 13, fontWeight: 900, color: '#0f172a', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                            <Building2 size={14} color="#0284c7" /> {grp.destination_office_name || `Kantor Tujuan ${grp.destination_nopen}`}
+                          {isExpanded ? <ChevronDown size={16} color="var(--primary-blue)" /> : <ChevronRight size={16} color="var(--text-muted)" />}
+                          <span style={{ fontSize: 13, fontWeight: 900, color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <Building2 size={14} color="var(--primary-blue)" /> {grp.destination_office_name || `Kantor Tujuan ${grp.destination_nopen}`}
                           </span>
                           <span style={{ fontSize: 11, color: '#64748b', fontFamily: 'monospace' }}>
                             (Nopen: {grp.destination_nopen})
