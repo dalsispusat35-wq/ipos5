@@ -3,7 +3,7 @@ import { Plus, CalendarClock, Trash2, Edit2 } from 'lucide-react';
 import { api } from '../utils/api.js';
 
 export default function TemplateJadwal() {
-  const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const dayNames = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 
   const [templates, setTemplates] = useState([
     { id: 1, name: 'Standard Weekday Morning', description: 'Daily morning run for weekday package delivery to Bandung SC.', days: [0, 1, 2, 3, 4], times: ['06:00', '10:00'], vehicle: 'D 9021 AB', route: 'Cimahi → Bandung SC (Main)', active: true },
@@ -45,12 +45,12 @@ export default function TemplateJadwal() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Toolbar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>
-          {templates.filter((t) => t.active).length} active templates · {templates.length} total
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+        <div style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>
+          {templates.filter((t) => t.active).length} template aktif · {templates.length} total pola
         </div>
-        <button className="btn-primary" style={{ marginLeft: 'auto' }}>
-          <Plus size={15} /> New Template
+        <button className="btn-primary" style={{ gap: 6 }}>
+          <Plus size={15} /> Tambah Template Baru
         </button>
       </div>
 
@@ -59,8 +59,8 @@ export default function TemplateJadwal() {
         {templates.map((t) => (
           <div
             key={t.id}
-            className="glass-card-solid"
-            style={{ padding: 22, opacity: t.active ? 1 : 0.6, transition: 'opacity 0.2s' }}
+            className="spatial-card"
+            style={{ padding: 22, opacity: t.active ? 1 : 0.65, transition: 'opacity 0.2s' }}
           >
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap' }}>
               <div
@@ -68,26 +68,26 @@ export default function TemplateJadwal() {
                   width: 42,
                   height: 42,
                   borderRadius: 10,
-                  background: t.active ? 'rgba(232,67,31,0.12)' : 'rgba(255,255,255,0.05)',
-                  border: `1px solid ${t.active ? 'rgba(232,67,31,0.2)' : 'rgba(255,255,255,0.08)'}`,
+                  background: t.active ? '#e0f2fe' : '#f1f5f9',
+                  border: `1px solid ${t.active ? '#bae6fd' : '#e2e8f0'}`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: t.active ? '#e8431f' : 'rgba(255,255,255,0.3)',
+                  color: t.active ? '#0284c7' : '#94a3b8',
                   flexShrink: 0,
                 }}
               >
-                <CalendarClock size={18} />
+                <CalendarClock size={20} />
               </div>
 
               <div style={{ flex: 1, minWidth: 260 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                  <div style={{ fontSize: 14.5, fontWeight: 700, color: '#fff' }}>{t.name}</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: '#0f172a' }}>{t.name}</div>
                   <span className={t.active ? 'badge badge-emerald' : 'badge badge-navy'} style={{ fontSize: 10 }}>
                     {t.active ? 'Active' : 'Inactive'}
                   </span>
                 </div>
-                <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.5)', marginBottom: 14, lineHeight: 1.5 }}>
+                <div style={{ fontSize: 12.5, color: '#64748b', marginBottom: 14, lineHeight: 1.5 }}>
                   {t.description}
                 </div>
 
@@ -104,31 +104,31 @@ export default function TemplateJadwal() {
                         alignItems: 'center',
                         justifyContent: 'center',
                         fontSize: 11,
-                        fontWeight: 700,
-                        background: t.days.includes(i) ? 'rgba(232,67,31,0.15)' : 'rgba(255,255,255,0.04)',
-                        border: t.days.includes(i) ? '1px solid rgba(232,67,31,0.25)' : '1px solid rgba(255,255,255,0.06)',
-                        color: t.days.includes(i) ? '#e8431f' : 'rgba(255,255,255,0.2)',
+                        fontWeight: 800,
+                        background: t.days.includes(i) ? '#0b2e8a' : '#f1f5f9',
+                        border: t.days.includes(i) ? '1px solid #0284c7' : '1px solid #e2e8f0',
+                        color: t.days.includes(i) ? '#ffffff' : '#94a3b8',
                       }}
                     >
                       {d}
                     </div>
                   ))}
 
-                  <div style={{ width: 1, background: 'rgba(255,255,255,0.1)', margin: '0 6px' }} />
+                  <div style={{ width: 1, background: '#e2e8f0', margin: '0 6px' }} />
 
                   {/* Times */}
                   {t.times.map((time) => (
                     <div
                       key={time}
-                      className="font-mono"
                       style={{
                         padding: '4px 10px',
                         borderRadius: 6,
-                        background: 'rgba(36,96,176,0.15)',
-                        border: '1px solid rgba(36,96,176,0.25)',
+                        background: '#f0f9ff',
+                        border: '1px solid #bae6fd',
                         fontSize: 11,
-                        fontWeight: 600,
-                        color: '#6ba3f0',
+                        fontWeight: 700,
+                        color: '#0b2e8a',
+                        fontFamily: 'monospace'
                       }}
                     >
                       {time}
@@ -138,17 +138,17 @@ export default function TemplateJadwal() {
 
                 <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
                   <div>
-                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>Vehicle: </span>
-                    <span className="font-mono" style={{ fontSize: 12, color: '#fff', fontWeight: 600 }}>{t.vehicle}</span>
+                    <span style={{ fontSize: 11, color: '#94a3b8' }}>Armada: </span>
+                    <span style={{ fontSize: 12, color: '#0f172a', fontWeight: 700, fontFamily: 'monospace' }}>{t.vehicle}</span>
                   </div>
                   <div>
-                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>Route: </span>
-                    <span style={{ fontSize: 12, color: '#fff', fontWeight: 500 }}>{t.route}</span>
+                    <span style={{ fontSize: 11, color: '#94a3b8' }}>Rute: </span>
+                    <span style={{ fontSize: 12, color: '#0f172a', fontWeight: 600 }}>{t.route}</span>
                   </div>
                   <div>
-                    <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>Trips/week: </span>
-                    <span style={{ fontSize: 12, color: '#6ba3f0', fontWeight: 700 }}>
-                      {t.days.length * t.times.length}
+                    <span style={{ fontSize: 11, color: '#94a3b8' }}>Trip/minggu: </span>
+                    <span style={{ fontSize: 12, color: '#0284c7', fontWeight: 800 }}>
+                      {t.days.length * t.times.length} Trip
                     </span>
                   </div>
                 </div>
@@ -156,29 +156,22 @@ export default function TemplateJadwal() {
 
               {/* Actions */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-                <div
-                  className="toggle-track"
-                  onClick={() => toggle(t.id)}
-                  style={{ background: t.active ? '#10b981' : 'rgba(255,255,255,0.1)' }}
-                >
-                  <div className="toggle-thumb" style={{ left: t.active ? 20 : 2 }} />
-                </div>
                 <button
-                  onClick={() => remove(t.id)}
-                  style={{
-                    width: 30,
-                    height: 30,
-                    borderRadius: 7,
-                    background: 'rgba(232,67,31,0.06)',
-                    border: '1px solid rgba(232,67,31,0.14)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    color: 'rgba(232,67,31,0.7)',
-                  }}
+                  type="button"
+                  onClick={() => toggle(t.id)}
+                  className="btn-ghost"
+                  style={{ fontSize: 11, padding: '4px 10px' }}
                 >
-                  <Trash2 size={13} />
+                  {t.active ? 'Nonaktifkan' : 'Aktifkan'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => remove(t.id)}
+                  className="btn-ghost"
+                  style={{ color: '#ef4444', padding: '6px 8px' }}
+                  title="Hapus template"
+                >
+                  <Trash2 size={15} />
                 </button>
               </div>
             </div>

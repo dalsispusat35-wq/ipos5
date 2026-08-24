@@ -321,46 +321,77 @@ export const buildTransactionMatch = (queryParams) => {
     }
   }
 
-  // 7. Date range filter
+  // 7. Date range filter (Robust multi-format: ISO strings, Date objects, YYYY-MM-DD, DD/MM/YYYY, Connote YYMMDD prefixes)
   if (date_from || date_to) {
-    const dateConds = [];
-    if (date_from) {
-      const cleanDateFrom = date_from.substring(0, 10) + 'T00:00:00.000Z';
-      const dateFromObj = new Date(cleanDateFrom);
-      dateConds.push({
-        $gte: [
-          {
-            $dateFromString: {
-              dateString: '$connote.created_at',
-              format: '%d/%m/%Y %H:%M',
-              onError: new Date('1970-01-01T00:00:00.000Z')
-            }
-          },
-          dateFromObj
-        ]
-      });
-    }
-    if (date_to) {
-      const cleanDateTo = date_to.substring(0, 10) + 'T23:59:59.999Z';
-      const dateToObj = new Date(cleanDateTo);
-      dateConds.push({
-        $lte: [
-          {
-            $dateFromString: {
-              dateString: '$connote.created_at',
-              format: '%d/%m/%Y %H:%M',
-              onError: new Date('1970-01-01T00:00:00.000Z')
-            }
-          },
-          dateToObj
-        ]
-      });
+    const fromStr = date_from ? date_from.substring(0, 10) : '1970-01-01';
+    const toStr = date_to ? date_to.substring(0, 10) : '2099-12-31';
+
+    const dateFromObj = new Date(fromStr + 'T00:00:00.000Z');
+    const dateToObj = new Date(toStr + 'T23:59:59.999Z');
+
+    const dateClauses = [];
+
+    // 1. ISODate object on createdAt / created_at / connote.created_at
+    dateClauses.push({ createdAt: { $gte: dateFromObj, $lte: dateToObj } });
+    dateClauses.push({ created_at: { $gte: dateFromObj, $lte: dateToObj } });
+    dateClauses.push({ 'connote.created_at': { $gte: dateFromObj, $lte: dateToObj } });
+
+    // 2. ISO String format (e.g. "2026-08-24T..." or "2026-08-24 ...")
+    dateClauses.push({ createdAt: { $gte: fromStr + 'T00:00:00.000Z', $lte: toStr + 'T23:59:59.999Z' } });
+    dateClauses.push({ 'connote.created_at': { $gte: fromStr + ' 00:00:00', $lte: toStr + ' 23:59:59' } });
+    dateClauses.push({ 'connote.created_at': { $gte: fromStr, $lte: toStr + '\uffff' } });
+
+    // 3. For single date (e.g. 2026-08-24)
+    if (fromStr === toStr) {
+      const [y, m, d] = fromStr.split('-');
+      const ddMMyyyy = `${d}/${m}/${y}`;
+      const yyMMdd = `${y.slice(2)}${m}${d}`; // 260824
+
+      dateClauses.push({ 'connote.created_at': { $regex: `^${fromStr}` } });
+      dateClauses.push({ 'connote.created_at': { $regex: `^${ddMMyyyy}` } });
+      dateClauses.push({ 'connote.connote_code': { $regex: `^P${yyMMdd}`, $options: 'i' } });
+      dateClauses.push({ connote_code: { $regex: `^P${yyMMdd}`, $options: 'i' } });
     }
 
-    if (dateConds.length > 0) {
-      match.$expr = {
-        $and: dateConds
-      };
+    // 4. Fallback for DD/MM/YYYY strings using $dateFromString
+    dateClauses.push({
+      $expr: {
+        $and: [
+          {
+            $gte: [
+              {
+                $dateFromString: {
+                  dateString: '$connote.created_at',
+                  format: '%d/%m/%Y %H:%M',
+                  onError: new Date('1970-01-01T00:00:00.000Z')
+                }
+              },
+              dateFromObj
+            ]
+          },
+          {
+            $lte: [
+              {
+                $dateFromString: {
+                  dateString: '$connote.created_at',
+                  format: '%d/%m/%Y %H:%M',
+                  onError: new Date('1970-01-01T00:00:00.000Z')
+                }
+              },
+              dateToObj
+            ]
+          }
+        ]
+      }
+    });
+
+    if (match.$or) {
+      match.$and = [{ $or: match.$or }, { $or: dateClauses }];
+      delete match.$or;
+    } else if (match.$and) {
+      match.$and.push({ $or: dateClauses });
+    } else {
+      match.$or = dateClauses;
     }
   }
 

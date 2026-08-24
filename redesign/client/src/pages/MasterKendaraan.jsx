@@ -136,9 +136,9 @@ export default function MasterKendaraan() {
   };
 
   const getStatusBadge = (st) => {
-    if (st === 'Active') return <span className="badge badge-emerald">Active</span>;
-    if (st === 'Maintenance') return <span className="badge badge-orange">Maintenance</span>;
-    return <span className="badge badge-navy">Inactive</span>;
+    if (st === 'Active') return <span className="badge badge-emerald">Aktif</span>;
+    if (st === 'Maintenance') return <span className="badge badge-pink">Maintenance</span>;
+    return <span className="badge badge-navy">Nonaktif</span>;
   };
 
   return (
@@ -154,29 +154,28 @@ export default function MasterKendaraan() {
       {/* Stats Summary Bar */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14 }}>
         {[
-          { label: 'Total Vehicles', value: vehicles.length, color: '#fff' },
-          { label: 'Operational', value: activeCount, color: '#10b981' },
-          { label: 'In Maintenance', value: maintCount, color: '#e8431f' },
-          { label: 'Inactive', value: inactCount, color: 'rgba(255,255,255,0.35)' },
+          { label: 'Total Armada', value: vehicles.length, color: '#0284c7' },
+          { label: 'Operasional', value: activeCount, color: '#10b981' },
+          { label: 'Dalam Servis', value: maintCount, color: '#ef4444' },
+          { label: 'Standby / Cadangan', value: inactCount, color: 'var(--text-muted)' },
         ].map((s) => (
           <div
             key={s.label}
+            className="spatial-card"
             style={{
               padding: '14px 18px',
-              borderRadius: 10,
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.07)',
+              borderRadius: 12,
               display: 'flex',
               alignItems: 'center',
               gap: 14,
             }}
           >
-            <Truck size={18} color={s.color} />
+            <Truck size={20} color={s.color} />
             <div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: s.color, lineHeight: 1 }}>
+              <div style={{ fontSize: 22, fontWeight: 900, color: s.color, lineHeight: 1 }}>
                 {s.value}
               </div>
-              <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>
+              <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', marginTop: 4, fontWeight: 600 }}>
                 {s.label}
               </div>
             </div>
@@ -185,96 +184,86 @@ export default function MasterKendaraan() {
       </div>
 
       {/* Toolbar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>
-          Real-time Vehicle Capacity Monitoring System (FR-MR-001) — Home Base Nopend Displayed Upfront
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+        <div style={{ fontSize: 13, color: 'var(--text-secondary)', fontWeight: 600 }}>
+          Sistem Telemetri Utilisasi Kapasitas Kendaraan Real-Time — Terhubung Live Database
         </div>
-        <button className="btn-primary" style={{ marginLeft: 'auto' }} onClick={() => setShowForm(true)}>
-          <Plus size={15} /> Add Vehicle
+        <button className="btn-primary" style={{ gap: 6 }} onClick={() => setShowForm(true)}>
+          <Plus size={15} /> Tambah Armada Baru
         </button>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: showForm ? '1fr 340px' : '1fr', gap: 16 }}>
         {/* Vehicles Table */}
-        <div className="glass-card-solid" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div className="spatial-card" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: 0 }}>
           <div style={{ overflowX: 'auto' }}>
-            <table className="data-table">
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 12.5 }}>
               <thead>
-                <tr>
-                  <th>Nopen Asal (Home Base)</th>
-                  <th>Plat Nomor</th>
-                  <th>Jenis Kendaraan</th>
-                  <th>Pengemudi</th>
-                  <th>Penugasan Rute</th>
-                  <th>Utilisasi Kapasitas Real-Time (Kg / Max)</th>
-                  <th>Status</th>
-                  <th>Aksi</th>
+                <tr style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', color: 'var(--text-secondary)', fontWeight: 700 }}>
+                  <th style={{ padding: '12px 14px' }}>Nopen Asal (Home Base)</th>
+                  <th style={{ padding: '12px 14px' }}>Plat Nomor</th>
+                  <th style={{ padding: '12px 14px' }}>Jenis Kendaraan</th>
+                  <th style={{ padding: '12px 14px' }}>Pengemudi</th>
+                  <th style={{ padding: '12px 14px' }}>Penugasan Rute</th>
+                  <th style={{ padding: '12px 14px' }}>Utilisasi Kapasitas (Kg / Max)</th>
+                  <th style={{ padding: '12px 14px' }}>Status</th>
+                  <th style={{ padding: '12px 14px', textAlign: 'center' }}>Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {vehicles.map((v) => {
                   const pct = v.maxCapacityKg > 0 ? Math.round((v.usedCapacityKg / v.maxCapacityKg) * 100) : 0;
-                  const barColor = pct >= 90 ? '#f43f5e' : pct >= 70 ? '#eab308' : '#10b981';
+                  const barColor = pct >= 90 ? '#ef4444' : pct >= 70 ? '#d97706' : '#16a34a';
 
                   return (
-                    <tr key={v.id}>
+                    <tr key={v.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s' }}>
                       {/* Nopen Asal Home Base Upfront Column */}
-                      <td>
-                        <span className="font-mono badge badge-navy" style={{ fontSize: 11.5, color: '#38bdf8', padding: '4px 8px', display: 'inline-flex', alignItems: 'center', gap: 5, fontWeight: 700 }}>
-                          <Building2 size={13} color="#38bdf8" /> Nopen {v.nopenAsal}
+                      <td style={{ padding: '12px 14px' }}>
+                        <span className="badge badge-navy" style={{ fontSize: 11, padding: '3px 8px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <Building2 size={12} color="#0284c7" /> Nopen {v.nopenAsal}
                         </span>
-                        <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>{v.homeBase}</div>
+                        <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{v.homeBase}</div>
                       </td>
 
                       {/* Plat Nomor */}
-                      <td>
+                      <td style={{ padding: '12px 14px' }}>
                         <button 
                           onClick={() => setSelectedNopol(v.plate)}
                           style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}
                         >
-                          <span className="font-mono" style={{ fontSize: 13, fontWeight: 700, color: '#fff', textDecoration: 'underline' }}>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: '#0b2e8a', fontFamily: 'monospace' }}>
                             {v.plate}
                           </span>
-                          <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.4)' }}>{v.brand}</div>
+                          <div style={{ fontSize: 11, color: '#64748b' }}>{v.brand}</div>
                         </button>
                       </td>
 
-                      <td style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12.5, fontWeight: 500 }}>{v.type}</td>
-                      <td style={{ color: '#fff', fontSize: 12.5 }}>{v.driver}</td>
-                      <td>
-                        <span className="badge badge-navy" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11 }}>
-                          <Route size={12} color="#38bdf8" /> {v.assignedRoute}
+                      <td style={{ padding: '12px 14px', color: '#0f172a', fontWeight: 600 }}>{v.type}</td>
+                      <td style={{ padding: '12px 14px', color: '#0f172a', fontWeight: 600 }}>{v.driver}</td>
+                      <td style={{ padding: '12px 14px' }}>
+                        <span className="badge badge-blue" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11 }}>
+                          <Route size={12} /> {v.assignedRoute}
                         </span>
                       </td>
-                      <td style={{ minWidth: 200 }}>
+                      <td style={{ padding: '12px 14px', minWidth: 180 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, marginBottom: 4 }}>
-                          <span style={{ color: '#fff', fontWeight: 700 }}>
+                          <span style={{ color: '#0f172a', fontWeight: 800, fontFamily: 'monospace' }}>
                             {v.usedCapacityKg.toLocaleString()} kg / {v.maxCapacityKg.toLocaleString()} kg
                           </span>
                           <span style={{ fontWeight: 800, color: barColor }}>{pct}%</span>
                         </div>
-                        <div style={{ width: '100%', height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+                        <div style={{ width: '100%', height: 6, borderRadius: 3, background: '#e2e8f0', overflow: 'hidden' }}>
                           <div style={{ width: `${Math.min(100, pct)}%`, height: '100%', background: barColor, borderRadius: 3, transition: 'width 0.4s' }} />
                         </div>
                       </td>
-                      <td>{getStatusBadge(v.status)}</td>
-                      <td>
+                      <td style={{ padding: '12px 14px' }}>{getStatusBadge(v.status)}</td>
+                      <td style={{ padding: '12px 14px', textAlign: 'center' }}>
                         <button
                           onClick={() => setSelectedNopol(v.plate)}
-                          style={{
-                            fontSize: 11.5,
-                            color: '#38bdf8',
-                            background: 'rgba(56,189,248,0.1)',
-                            border: '1px solid rgba(56,189,248,0.25)',
-                            borderRadius: 6,
-                            padding: '4px 10px',
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 4
-                          }}
+                          className="btn-ghost"
+                          style={{ padding: '3px 8px', fontSize: 11, gap: 4 }}
                         >
-                          <Eye size={13} /> Inspect
+                          <Eye size={12} /> Inspeksi
                         </button>
                       </td>
                     </tr>
@@ -287,41 +276,40 @@ export default function MasterKendaraan() {
 
         {/* Add Vehicle Panel */}
         {showForm && (
-          <div className="glass-card-solid" style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div className="spatial-card" style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 14, height: 'fit-content' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>Add New Fleet Vehicle</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>Tambah Armada Baru</div>
               <button
                 onClick={() => setShowForm(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', padding: 4 }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: 4 }}
               >
                 <X size={16} />
               </button>
             </div>
 
             <div>
-              <label style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.45)', display: 'block', marginBottom: 5 }}>Nopen Asal (Home Base)</label>
+              <label style={{ fontSize: 11.5, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 5 }}>Nopen Asal (Home Base)</label>
               <input
-                className="input-navy"
-                placeholder="e.g. 40395C1 - KCP Cililin / 40500"
+                placeholder="misal: 40395C1 - KCP Cililin / 40500"
                 value={form.homeBase}
                 onChange={(e) => setForm((prev) => ({ ...prev, homeBase: e.target.value, nopenAsal: e.target.value.split(' ')[0] }))}
+                style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }}
               />
             </div>
 
             <div>
-              <label style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.45)', display: 'block', marginBottom: 5 }}>Plate Number</label>
+              <label style={{ fontSize: 11.5, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 5 }}>Nomor Polisi (Plat)</label>
               <input
-                className="input-navy"
-                placeholder="e.g. B 9910 PCX"
+                placeholder="misal: B 9910 PCX"
                 value={form.plate}
                 onChange={(e) => setForm((prev) => ({ ...prev, plate: e.target.value }))}
+                style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }}
               />
             </div>
 
             <div>
-              <label style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.45)', display: 'block', marginBottom: 5 }}>Vehicle Type</label>
+              <label style={{ fontSize: 11.5, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 5 }}>Jenis Kendaraan</label>
               <select
-                className="input-navy"
                 value={form.type}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -331,6 +319,7 @@ export default function MasterKendaraan() {
                   else if (val.includes('1.5') || val.includes('VAN')) defaultCap = 1500;
                   setForm((prev) => ({ ...prev, type: val, maxCapacityKg: defaultCap }));
                 }}
+                style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }}
               >
                 <option value="TRUK HEAVY BOX (10 TON)">TRUK HEAVY BOX (10 TON)</option>
                 <option value="TRUK MEDIUM BOX (6 TON)">TRUK MEDIUM BOX (6 TON)</option>
@@ -341,31 +330,31 @@ export default function MasterKendaraan() {
             </div>
 
             <div>
-              <label style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.45)', display: 'block', marginBottom: 5 }}>Brand / Model</label>
+              <label style={{ fontSize: 11.5, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 5 }}>Merk / Model</label>
               <input
-                className="input-navy"
-                placeholder="e.g. Daihatsu Gran Max Box"
+                placeholder="misal: Daihatsu Gran Max Box"
                 value={form.brand}
                 onChange={(e) => setForm((prev) => ({ ...prev, brand: e.target.value }))}
+                style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }}
               />
             </div>
 
             <div>
-              <label style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.45)', display: 'block', marginBottom: 5 }}>Driver Name</label>
+              <label style={{ fontSize: 11.5, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 5 }}>Nama Pengemudi</label>
               <input
-                className="input-navy"
-                placeholder="Driver full name"
+                placeholder="Nama lengkap supir"
                 value={form.driver}
                 onChange={(e) => setForm((prev) => ({ ...prev, driver: e.target.value }))}
+                style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }}
               />
             </div>
 
             <div>
-              <label style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.45)', display: 'block', marginBottom: 5 }}>Assigned Route (Penugasan Rute)</label>
+              <label style={{ fontSize: 11.5, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 5 }}>Penugasan Rute</label>
               <select
-                className="input-navy"
                 value={form.assignedRoute}
                 onChange={(e) => setForm((prev) => ({ ...prev, assignedRoute: e.target.value }))}
+                style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }}
               >
                 {routesList.map(r => (
                   <option key={r.id} value={r.id}>{r.name}</option>
@@ -374,18 +363,18 @@ export default function MasterKendaraan() {
             </div>
 
             <div>
-              <label style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.45)', display: 'block', marginBottom: 5 }}>Max Capacity (Kg)</label>
+              <label style={{ fontSize: 11.5, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 5 }}>Kapasitas Maksimal (Kg)</label>
               <input
                 type="number"
-                className="input-navy"
-                placeholder="e.g. 3500"
+                placeholder="misal: 3500"
                 value={form.maxCapacityKg}
                 onChange={(e) => setForm((prev) => ({ ...prev, maxCapacityKg: e.target.value }))}
+                style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }}
               />
             </div>
 
             <button className="btn-primary" onClick={handleAdd} style={{ width: '100%', justifyContent: 'center', marginTop: 4 }}>
-              Save Vehicle Fleet
+              Simpan Data Armada
             </button>
           </div>
         )}

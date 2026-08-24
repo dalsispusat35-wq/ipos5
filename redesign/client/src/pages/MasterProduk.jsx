@@ -13,21 +13,21 @@ export default function MasterProduk() {
   ]);
 
   const categoryColor = {
-    Express: '#e8431f',
-    Regular: '#2460b0',
-    Priority: '#f59e0b',
-    International: '#10b981',
-    Logistics: '#6ba3f0',
+    Express: '#0284c7',
+    Regular: '#0b2e8a',
+    Priority: '#d97706',
+    International: '#16a34a',
+    Logistics: '#9333ea',
   };
 
   const getIcon = (code) => {
     switch (code) {
-      case 'EKS': return <Zap size={22} />;
-      case 'REG': return <Package size={22} />;
-      case 'KLK': return <Star size={22} />;
-      case 'EXP': return <Globe size={22} />;
-      case 'LOG': return <Truck size={22} />;
-      default: return <Clock size={22} />;
+      case 'EKS': return <Zap size={20} />;
+      case 'REG': return <Package size={20} />;
+      case 'KLK': return <Star size={20} />;
+      case 'EXP': return <Globe size={20} />;
+      case 'LOG': return <Truck size={20} />;
+      default: return <Clock size={20} />;
     }
   };
 
@@ -66,28 +66,26 @@ export default function MasterProduk() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Toolbar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div>
-          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>
-            {activeCount} active · {products.length - activeCount} inactive
-          </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+        <div style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>
+          {activeCount} produk aktif · {products.length - activeCount} nonaktif
         </div>
-        <button className="btn-primary" style={{ marginLeft: 'auto' }}>
-          <Plus size={15} /> Add Product
+        <button className="btn-primary" style={{ gap: 6 }}>
+          <Plus size={15} /> Tambah Layanan Produk
         </button>
       </div>
 
       {/* Product Cards Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
         {products.map((p) => {
-          const catColor = categoryColor[p.category] || '#e8431f';
+          const catColor = categoryColor[p.category] || '#0b2e8a';
           return (
             <div
               key={p.id}
-              className="gradient-border-card"
+              className="spatial-card"
               style={{
                 padding: 22,
-                opacity: p.active ? 1 : 0.6,
+                opacity: p.active ? 1 : 0.65,
                 transition: 'opacity 0.2s',
               }}
             >
@@ -98,8 +96,8 @@ export default function MasterProduk() {
                       width: 44,
                       height: 44,
                       borderRadius: 11,
-                      background: `${catColor}18`,
-                      border: `1px solid ${catColor}30`,
+                      background: '#f0f9ff',
+                      border: '1px solid #bae6fd',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -109,48 +107,48 @@ export default function MasterProduk() {
                     {getIcon(p.code)}
                   </div>
                   <div>
-                    <div className="font-mono" style={{ fontSize: 10, fontWeight: 700, color: catColor, letterSpacing: '0.1em', marginBottom: 2 }}>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: catColor, fontFamily: 'monospace', letterSpacing: '0.05em', marginBottom: 2 }}>
                       {p.code}
                     </div>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{p.name}</div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text-primary)' }}>{p.name}</div>
                   </div>
                 </div>
 
                 <div
                   className="toggle-track"
                   onClick={() => toggleActive(p.id)}
-                  style={{ background: p.active ? '#10b981' : 'rgba(255,255,255,0.1)' }}
+                  style={{ background: p.active ? '#10b981' : 'var(--border-light)' }}
                 >
                   <div className="toggle-thumb" style={{ left: p.active ? 20 : 2 }} />
                 </div>
               </div>
 
-              <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.55)', lineHeight: 1.6, margin: '0 0 16px' }}>
+              <p style={{ fontSize: 12.5, color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0 0 16px' }}>
                 {p.description}
               </p>
 
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <div style={{ padding: '4px 10px', borderRadius: 6, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>SLA · </span>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: '#fff' }}>{p.sla}</span>
+                <div style={{ padding: '4px 10px', borderRadius: 6, background: 'var(--bg-workspace)', border: '1px solid var(--border-light)' }}>
+                  <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>SLA · </span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)' }}>{p.sla}</span>
                 </div>
-                <div style={{ padding: '4px 10px', borderRadius: 6, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>Max · </span>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: '#fff' }}>{p.maxWeight}</span>
+                <div style={{ padding: '4px 10px', borderRadius: 6, background: 'var(--bg-workspace)', border: '1px solid var(--border-light)' }}>
+                  <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Max · </span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)' }}>{p.maxWeight}</span>
                 </div>
-                <div style={{ padding: '4px 10px', borderRadius: 6, background: `${catColor}14`, border: `1px solid ${catColor}22` }}>
-                  <span style={{ fontSize: 11, fontWeight: 600, color: catColor }}>{p.category}</span>
+                <div style={{ padding: '4px 10px', borderRadius: 6, background: 'var(--bg-workspace)', border: '1px solid var(--border-light)' }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: catColor }}>{p.category}</span>
                 </div>
               </div>
 
-              <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: p.active ? '#10b981' : 'rgba(255,255,255,0.2)' }} />
-                  <span style={{ fontSize: 11.5, color: p.active ? '#10b981' : 'rgba(255,255,255,0.35)', fontWeight: 600 }}>
-                    {p.active ? 'Active' : 'Inactive'}
+                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: p.active ? '#10b981' : 'var(--text-muted)' }} />
+                  <span style={{ fontSize: 11.5, color: p.active ? '#10b981' : 'var(--text-muted)', fontWeight: 700 }}>
+                    {p.active ? 'Aktif' : 'Nonaktif'}
                   </span>
                 </div>
-                <button style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>
+                <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px' }}>
                   Edit
                 </button>
               </div>

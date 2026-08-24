@@ -28,7 +28,7 @@ export default function NotificationDrawer() {
 
   useEffect(() => {
     fetchAlerts();
-    const interval = setInterval(fetchAlerts, 30000); // refresh every 30s
+    const interval = setInterval(fetchAlerts, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -63,30 +63,30 @@ export default function NotificationDrawer() {
     switch (type) {
       case 'CRITICAL':
         return {
-          bg: 'rgba(239, 68, 68, 0.12)',
-          border: '1px solid rgba(239, 68, 68, 0.3)',
-          iconColor: '#f87171',
+          bg: 'var(--kpi-pink-bg, #fef2f2)',
+          border: '1px solid var(--kpi-pink-border, #fecaca)',
+          iconColor: '#ef4444',
           Icon: AlertTriangle,
-          badgeBg: 'rgba(239, 68, 68, 0.25)',
-          badgeColor: '#fca5a5'
+          badgeBg: '#fee2e2',
+          badgeColor: '#b91c1c'
         };
       case 'WARNING':
         return {
-          bg: 'rgba(245, 158, 11, 0.12)',
-          border: '1px solid rgba(245, 158, 11, 0.3)',
-          iconColor: '#fbbf24',
+          bg: 'var(--accent-amber-bg, #fffbeb)',
+          border: '1px solid var(--kpi-pink-border, #fde68a)',
+          iconColor: '#d97706',
           Icon: AlertCircle,
-          badgeBg: 'rgba(245, 158, 11, 0.25)',
-          badgeColor: '#fde68a'
+          badgeBg: '#fef3c7',
+          badgeColor: '#92400e'
         };
       default:
         return {
-          bg: 'rgba(56, 189, 248, 0.1)',
-          border: '1px solid rgba(56, 189, 248, 0.25)',
-          iconColor: '#38bdf8',
+          bg: 'var(--kpi-cyan-bg, #f0f9ff)',
+          border: '1px solid var(--kpi-cyan-border, #bae6fd)',
+          iconColor: '#0284c7',
           Icon: Info,
-          badgeBg: 'rgba(56, 189, 248, 0.2)',
-          badgeColor: '#bae6fd'
+          badgeBg: '#e0f2fe',
+          badgeColor: '#0369a1'
         };
     }
   };
@@ -96,22 +96,14 @@ export default function NotificationDrawer() {
       <button
         onClick={() => setIsOpen(!isOpen)}
         title="Pusat Notifikasi Operasional"
+        className="capsule-btn-circle"
         style={{
-          background: isOpen ? 'rgba(72, 202, 228, 0.2)' : 'rgba(255, 255, 255, 0.05)',
-          border: '1px solid rgba(255, 255, 255, 0.12)',
-          borderRadius: 8,
           width: 36,
           height: 36,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'pointer',
-          color: unreadCount > 0 ? '#48cae4' : 'rgba(255, 255, 255, 0.7)',
-          position: 'relative',
-          transition: 'all 0.2s'
+          position: 'relative'
         }}
       >
-        <Bell size={18} />
+        <Bell size={17} />
         {unreadCount > 0 && (
           <span
             style={{
@@ -128,7 +120,7 @@ export default function NotificationDrawer() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 0 8px rgba(239, 68, 68, 0.6)'
+              boxShadow: '0 0 8px rgba(239, 68, 68, 0.5)'
             }}
           >
             {unreadCount}
@@ -138,39 +130,35 @@ export default function NotificationDrawer() {
 
       {isOpen && (
         <div
+          className="spatial-card"
           style={{
             position: 'absolute',
             right: 0,
             top: 46,
             width: 380,
             maxWidth: 'calc(100vw - 32px)',
-            background: 'rgba(11, 19, 43, 0.96)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
-            border: '1px solid rgba(72, 202, 228, 0.25)',
-            borderRadius: 12,
-            boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
-            zIndex: 100,
+            borderRadius: 14,
+            padding: 0,
+            boxShadow: '0 20px 45px rgba(0,0,0,0.25)',
+            zIndex: 1000,
             overflow: 'hidden',
-            animation: 'fadeIn 0.2s ease-out'
           }}
         >
           {/* Header */}
           <div
             style={{
               padding: '12px 16px',
-              background: 'rgba(255, 255, 255, 0.03)',
-              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+              borderBottom: '1px solid var(--border-light)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Bell size={16} color="#48cae4" />
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Notifikasi & Alert System</span>
+              <Bell size={16} color="var(--primary-blue)" />
+              <span style={{ fontSize: 13, fontWeight: 800 }}>Notifikasi & Alert System</span>
               {unreadCount > 0 && (
-                <span style={{ fontSize: 10, background: 'rgba(239, 68, 68, 0.2)', color: '#fca5a5', padding: '2px 6px', borderRadius: 10, fontWeight: 700 }}>
+                <span style={{ fontSize: 10, background: '#fee2e2', color: '#b91c1c', padding: '2px 6px', borderRadius: 10, fontWeight: 800 }}>
                   {unreadCount} Warning
                 </span>
               )}
@@ -178,7 +166,7 @@ export default function NotificationDrawer() {
             <button
               onClick={fetchAlerts}
               title="Refresh Alert"
-              style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
             >
               <RefreshCw size={14} className={loading ? 'spin' : ''} />
             </button>
@@ -187,8 +175,8 @@ export default function NotificationDrawer() {
           {/* List of Alerts */}
           <div style={{ maxHeight: 360, overflowY: 'auto', padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
             {alerts.length === 0 ? (
-              <div style={{ padding: 24, textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
-                <Check size={28} color="rgba(72, 202, 228, 0.5)" style={{ marginBottom: 6 }} />
+              <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>
+                <Check size={28} color="#16a34a" style={{ margin: '0 auto 6px', display: 'block' }} />
                 <div>Semua sistem operasional normal. Tidak ada alert aktif saat ini.</div>
               </div>
             ) : (
@@ -203,7 +191,7 @@ export default function NotificationDrawer() {
                     style={{
                       background: style.bg,
                       border: style.border,
-                      borderRadius: 8,
+                      borderRadius: 10,
                       padding: 12,
                       cursor: alert.link ? 'pointer' : 'default',
                       transition: 'all 0.15s ease',
@@ -214,20 +202,20 @@ export default function NotificationDrawer() {
                       <AlertIcon size={18} color={style.iconColor} style={{ marginTop: 2, flexShrink: 0 }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, marginBottom: 4 }}>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>{alert.title}</span>
+                          <span style={{ fontSize: 12, fontWeight: 800 }}>{alert.title}</span>
                           <button
                             onClick={(e) => handleDismiss(e, alert.id)}
                             title="Abaikan"
-                            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', padding: 2 }}
+                            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 2 }}
                           >
                             <X size={12} />
                           </button>
                         </div>
-                        <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.75)', lineHeight: 1.4, marginBottom: 6 }}>
+                        <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', lineHeight: 1.4, marginBottom: 6 }}>
                           {alert.message}
                         </div>
                         {alert.link && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10.5, fontWeight: 600, color: '#48cae4' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, color: 'var(--primary-blue)' }}>
                             <span>Lihat Halaman</span>
                             <ExternalLink size={10} />
                           </div>
@@ -244,11 +232,11 @@ export default function NotificationDrawer() {
           <div
             style={{
               padding: '8px 12px',
-              background: 'rgba(0,0,0,0.2)',
-              borderTop: '1px solid rgba(255,255,255,0.06)',
+              borderTop: '1px solid var(--border-light)',
               textAlign: 'center',
-              fontSize: 10.5,
-              color: 'rgba(255,255,255,0.4)'
+              fontSize: 11,
+              color: 'var(--text-muted)',
+              fontWeight: 600
             }}
           >
             Monitoring Real-time IPOS5 KCU Cimahi & SPP Bandung

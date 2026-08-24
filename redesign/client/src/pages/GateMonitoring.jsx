@@ -59,25 +59,23 @@ export default function GateMonitoring() {
     setS3Items([]);
   };
 
-  const now = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Session Metadata Header */}
-      <div className="glass-card-solid" style={{ padding: '16px 22px', display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+      <div className="spatial-card" style={{ padding: '18px 24px', display: 'flex', gap: 20, flexWrap: 'wrap' }}>
         {[
-          { label: 'Session', value: 'TRP-240724-008', mono: true },
-          { label: 'Date', value: '24 Jul 2026' },
-          { label: 'Vehicle', value: 'D 9021 AB — Mitsubishi Canter' },
+          { label: 'Sesi Dispatch', value: 'TRP-240724-008', mono: true },
+          { label: 'Tanggal', value: '24 Jul 2026' },
+          { label: 'Armada Truk', value: 'D 9021 AB — Mitsubishi Canter' },
           { label: 'Driver', value: 'Hendra Kusuma' },
-          { label: 'Route', value: 'Cimahi → Bandung SC (Main)' },
-          { label: 'Departed', value: '08:30 WIB' },
+          { label: 'Penugasan Rute', value: 'Cimahi → Bandung SC (Main)' },
+          { label: 'Jam Keberangkatan', value: '08:30 WIB' },
         ].map((f) => (
           <div key={f.label} style={{ flex: 1, minWidth: 120 }}>
-            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 2 }}>
+            <div style={{ fontSize: 10.5, color: '#64748b', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 2 }}>
               {f.label}
             </div>
-            <div className={f.mono ? 'font-mono' : ''} style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>
+            <div className={f.mono ? 'font-mono' : ''} style={{ fontSize: 13, fontWeight: 800, color: '#0f172a' }}>
               {f.value}
             </div>
           </div>
@@ -88,72 +86,72 @@ export default function GateMonitoring() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
         {/* Stage 1: Manifest Creation */}
         <div
-          className="gradient-border-card"
+          className="spatial-card"
           style={{
             padding: 22,
             display: 'flex',
             flexDirection: 'column',
-            opacity: manifested ? 0.6 : 1,
+            opacity: manifested ? 0.65 : 1,
             transition: 'opacity 0.4s',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
             <div
               style={{
                 width: 28,
                 height: 28,
                 borderRadius: '50%',
-                background: manifested ? 'rgba(255,255,255,0.06)' : 'rgba(232,67,31,0.15)',
-                border: `2px solid ${manifested ? 'rgba(255,255,255,0.1)' : 'rgba(232,67,31,0.3)'}`,
+                background: manifested ? '#f1f5f9' : '#e0f2fe',
+                border: `2px solid ${manifested ? '#cbd5e1' : '#bae6fd'}`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: 12,
-                fontWeight: 700,
-                color: manifested ? 'rgba(255,255,255,0.4)' : '#e8431f',
+                fontWeight: 800,
+                color: manifested ? '#94a3b8' : '#0284c7',
               }}
             >
               1
             </div>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Manifest Creation</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>Bagging & Consolidation</div>
+              <div style={{ fontSize: 13.5, fontWeight: 800, color: '#0f172a' }}>Manifest Creation</div>
+              <div style={{ fontSize: 11, color: '#64748b' }}>Bagging & Consolidation</div>
             </div>
             <div style={{ marginLeft: 'auto' }}>
-              <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{s1Items.length}</div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', textAlign: 'right' }}>pkgs</div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: '#0f172a', lineHeight: 1 }}>{s1Items.length}</div>
+              <div style={{ fontSize: 10.5, color: '#94a3b8', textAlign: 'right' }}>paket</div>
             </div>
           </div>
 
           {!manifested && (
-            <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(232,67,31,0.08)', border: '1px solid rgba(232,67,31,0.15)', marginBottom: 12, display: 'flex', gap: 8, alignItems: 'center' }}>
-              <FileText size={13} color="#e8431f" />
+            <div style={{ padding: '10px 14px', borderRadius: 8, background: '#f0f9ff', border: '1px solid #bae6fd', marginBottom: 12, display: 'flex', gap: 8, alignItems: 'center' }}>
+              <FileText size={14} color="#0284c7" />
               <div>
-                <div style={{ fontSize: 11, fontWeight: 600, color: '#e8431f' }}>Manifest ID</div>
-                <div className="font-mono" style={{ fontSize: 12, color: '#fff' }}>MNFST-240724-015</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#0284c7' }}>Manifest ID</div>
+                <div style={{ fontSize: 12, color: '#0f172a', fontWeight: 800, fontFamily: 'monospace' }}>MNFST-240724-015</div>
               </div>
             </div>
           )}
 
           <div style={{ flex: 1, overflow: 'auto', marginBottom: 14 }}>
             {s1Items.map((item) => (
-              <div key={item.connote} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                <Package size={12} color="rgba(255,255,255,0.3)" />
-                <span className="font-mono" style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', flex: 1 }}>{item.connote.slice(-6)}</span>
-                <span style={{ fontSize: 12, color: '#fff', flex: 1 }}>{item.dest}</span>
-                <span className="font-mono" style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{item.weight}</span>
+              <div key={item.connote} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
+                <Package size={13} color="#94a3b8" />
+                <span style={{ fontSize: 11.5, color: '#0b2e8a', fontWeight: 700, fontFamily: 'monospace', flex: 1 }}>{item.connote.slice(-6)}</span>
+                <span style={{ fontSize: 12, color: '#0f172a', fontWeight: 600, flex: 1 }}>{item.dest}</span>
+                <span style={{ fontSize: 11.5, color: '#64748b', fontFamily: 'monospace' }}>{item.weight}</span>
               </div>
             ))}
           </div>
 
           <button className="btn-primary" onClick={handleManifest} disabled={manifested || s1Items.length === 0} style={{ width: '100%', justifyContent: 'center' }}>
-            <FileText size={14} /> {manifested ? 'Manifested' : 'Create Manifest & Bag'}
+            <FileText size={14} /> {manifested ? 'Manifest Selesai' : 'Buat Manifest & Bagging'}
           </button>
         </div>
 
         {/* Stage 2: Inbound Transit */}
         <div
-          className="gradient-border-card"
+          className="spatial-card"
           style={{
             padding: 22,
             display: 'flex',
@@ -162,101 +160,101 @@ export default function GateMonitoring() {
             transition: 'opacity 0.4s',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
             <div
               style={{
                 width: 28,
                 height: 28,
                 borderRadius: '50%',
-                background: inTransit ? 'rgba(255,255,255,0.06)' : 'rgba(36,96,176,0.2)',
-                border: `2px solid ${inTransit ? 'rgba(255,255,255,0.1)' : 'rgba(36,96,176,0.4)'}`,
+                background: inTransit ? '#f1f5f9' : '#e0f2fe',
+                border: `2px solid ${inTransit ? '#cbd5e1' : '#bae6fd'}`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: 12,
-                fontWeight: 700,
-                color: inTransit ? 'rgba(255,255,255,0.4)' : '#6ba3f0',
+                fontWeight: 800,
+                color: inTransit ? '#94a3b8' : '#0284c7',
               }}
             >
               2
             </div>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>Inbound Transit</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>Bandung Sorting Center</div>
+              <div style={{ fontSize: 13.5, fontWeight: 800, color: '#0f172a' }}>Inbound Transit</div>
+              <div style={{ fontSize: 11, color: '#64748b' }}>Bandung Sorting Center</div>
             </div>
             <div style={{ marginLeft: 'auto' }}>
-              <div style={{ fontSize: 24, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{s2Items.length}</div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', textAlign: 'right' }}>pkgs</div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: '#0f172a', lineHeight: 1 }}>{s2Items.length}</div>
+              <div style={{ fontSize: 10.5, color: '#94a3b8', textAlign: 'right' }}>paket</div>
             </div>
           </div>
 
           <div style={{ flex: 1, overflow: 'auto', marginBottom: 14 }}>
             {s2Items.map((item) => (
-              <div key={item.connote} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                <Package size={12} color="rgba(255,255,255,0.3)" />
-                <span className="font-mono" style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', flex: 1 }}>{item.connote.slice(-6)}</span>
-                <span style={{ fontSize: 12, color: '#fff', flex: 1 }}>{item.dest}</span>
-                <span className="font-mono" style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{item.weight}</span>
+              <div key={item.connote} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
+                <Package size={13} color="#94a3b8" />
+                <span style={{ fontSize: 11.5, color: '#0b2e8a', fontWeight: 700, fontFamily: 'monospace', flex: 1 }}>{item.connote.slice(-6)}</span>
+                <span style={{ fontSize: 12, color: '#0f172a', fontWeight: 600, flex: 1 }}>{item.dest}</span>
+                <span style={{ fontSize: 11.5, color: '#64748b', fontFamily: 'monospace' }}>{item.weight}</span>
               </div>
             ))}
           </div>
 
           <button className="btn-primary" onClick={handleTransit} disabled={!manifested || inTransit || s2Items.length === 0} style={{ width: '100%', justifyContent: 'center' }}>
-            <Send size={14} /> {inTransit ? 'In Transit' : 'Mark as In Transit'}
+            <Send size={14} /> {inTransit ? 'Dalam Transit' : 'Tandai Dalam Transit'}
           </button>
         </div>
 
         {/* Stage 3: Final Arrival */}
         <div
-          className="glass-card-solid"
+          className="spatial-card"
           style={{
             padding: 22,
             display: 'flex',
             flexDirection: 'column',
             opacity: !inTransit ? 0.5 : 1,
-            border: arrived ? '1px solid #10b981' : '1px solid rgba(255,255,255,0.08)',
+            border: arrived ? '1px solid #16a34a' : '1px solid #e2e8f0',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
             <div
               style={{
                 width: 28,
                 height: 28,
                 borderRadius: '50%',
-                background: arrived ? 'rgba(16,185,129,0.2)' : 'rgba(16,185,129,0.08)',
-                border: `2px solid ${arrived ? '#10b981' : 'rgba(16,185,129,0.2)'}`,
+                background: arrived ? '#dcfce7' : '#f0fdf4',
+                border: `2px solid ${arrived ? '#16a34a' : '#bbf7d0'}`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontSize: 12,
-                fontWeight: 700,
-                color: arrived ? '#10b981' : 'rgba(16,185,129,0.5)',
+                fontWeight: 800,
+                color: arrived ? '#16a34a' : '#22c55e',
               }}
             >
               3
             </div>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: arrived ? '#10b981' : '#fff' }}>Final Arrival</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>Delivered to Destination</div>
+              <div style={{ fontSize: 13.5, fontWeight: 800, color: arrived ? '#16a34a' : '#0f172a' }}>Final Arrival</div>
+              <div style={{ fontSize: 11, color: '#64748b' }}>Tiba di Kantor Tujuan</div>
             </div>
             <div style={{ marginLeft: 'auto' }}>
-              <div style={{ fontSize: 24, fontWeight: 800, color: arrived ? '#10b981' : '#fff', lineHeight: 1 }}>{arrived ? 0 : s3Items.length}</div>
-              <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', textAlign: 'right' }}>remaining</div>
+              <div style={{ fontSize: 24, fontWeight: 900, color: arrived ? '#16a34a' : '#0f172a', lineHeight: 1 }}>{arrived ? 0 : s3Items.length}</div>
+              <div style={{ fontSize: 10.5, color: '#94a3b8', textAlign: 'right' }}>tersisa</div>
             </div>
           </div>
 
           <div style={{ flex: 1, overflow: 'auto', marginBottom: 14 }}>
             {arrived ? (
-              <div style={{ padding: '20px 0', textAlign: 'center', color: '#10b981', fontSize: 12 }}>
-                All packages confirmed delivered
+              <div style={{ padding: '20px 0', textAlign: 'center', color: '#16a34a', fontSize: 12, fontWeight: 700 }}>
+                Semua paket telah terkonfirmasi tiba
               </div>
             ) : (
               s3Items.map((item) => (
-                <div key={item.connote} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                  <Package size={12} color="rgba(255,255,255,0.3)" />
-                  <span className="font-mono" style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', flex: 1 }}>{item.connote.slice(-6)}</span>
-                  <span style={{ fontSize: 12, color: '#fff', flex: 1 }}>{item.dest}</span>
-                  <span className="font-mono" style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{item.weight}</span>
+                <div key={item.connote} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
+                  <Package size={13} color="#94a3b8" />
+                  <span style={{ fontSize: 11.5, color: '#0b2e8a', fontWeight: 700, fontFamily: 'monospace', flex: 1 }}>{item.connote.slice(-6)}</span>
+                  <span style={{ fontSize: 12, color: '#0f172a', fontWeight: 600, flex: 1 }}>{item.dest}</span>
+                  <span style={{ fontSize: 11.5, color: '#64748b', fontFamily: 'monospace' }}>{item.weight}</span>
                 </div>
               ))
             )}
@@ -265,23 +263,16 @@ export default function GateMonitoring() {
           <button
             onClick={handleArrive}
             disabled={!inTransit || arrived || s3Items.length === 0}
+            className={arrived ? "btn-ghost" : "btn-primary"}
             style={{
-              background: arrived ? 'rgba(16,185,129,0.15)' : (!inTransit ? 'rgba(255,255,255,0.04)' : '#10b981'),
-              color: arrived ? '#10b981' : (!inTransit ? 'rgba(255,255,255,0.3)' : '#fff'),
-              fontWeight: 600,
-              fontSize: 13,
-              padding: '9px 0',
-              borderRadius: 8,
-              border: arrived ? '1px solid rgba(16,185,129,0.25)' : 'none',
-              cursor: !inTransit || arrived ? 'default' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 6,
               width: '100%',
+              justifyContent: 'center',
+              background: arrived ? '#dcfce7' : (!inTransit ? '#f1f5f9' : '#16a34a'),
+              color: arrived ? '#16a34a' : (!inTransit ? '#94a3b8' : '#ffffff'),
+              border: arrived ? '1px solid #bbf7d0' : 'none'
             }}
           >
-            <CheckCircle size={14} /> {arrived ? 'Arrival Confirmed' : 'Confirm Arrival'}
+            <CheckCircle size={14} /> {arrived ? 'Kedatangan Terkonfirmasi' : 'Konfirmasi Kedatangan'}
           </button>
         </div>
       </div>

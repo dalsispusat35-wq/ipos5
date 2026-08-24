@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Truck, MapPin, ArrowRight, RotateCcw, ShieldCheck, PackageCheck, AlertCircle, CheckCircle2, ChevronRight, Info } from 'lucide-react';
+import { Truck, MapPin, ArrowRight, RotateCcw, ShieldCheck, PackageCheck, AlertCircle, CheckCircle2, ChevronRight, Info, X } from 'lucide-react';
 import { api } from '../utils/api.js';
 
 export default function RouteJourney() {
@@ -42,7 +42,6 @@ export default function RouteJourney() {
     setCurrentStopIndex(0);
   };
 
-  // Calculate active load based on visited non-skipped stops and real capacity backend
   const maxCapacity = capacityData?.kapasitas_maksimum_kg || 1500;
   const currentLoad = capacityData?.total_berat_terpakai_kg || stops.slice(0, currentStopIndex + 1).reduce((acc, s) => acc + (s.isSkipped ? 0 : s.load), 0);
   const loadPercentage = capacityData?.persentase_terpakai || Math.min(100, Math.round((currentLoad / maxCapacity) * 100));
@@ -54,37 +53,34 @@ export default function RouteJourney() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Top Header Card */}
-      <div 
-        className="glass-card-solid gradient-border-card" 
-        style={{ padding: '22px 26px', background: 'linear-gradient(135deg, rgba(13,27,56,0.95), rgba(6,13,31,0.95))' }}
-      >
+      <div className="spatial-card" style={{ padding: '22px 26px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, marginBottom: 12 }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
               <div 
                 style={{ 
-                  width: 32, 
-                  height: 32, 
-                  borderRadius: 8, 
-                  background: 'rgba(232,67,31,0.14)', 
-                  border: '1px solid rgba(232,67,31,0.3)',
+                  width: 36, 
+                  height: 36, 
+                  borderRadius: 10, 
+                  background: '#e0f2fe', 
+                  border: '1px solid #bae6fd',
                   display: 'flex', 
                   alignItems: 'center', 
                   justifyContent: 'center' 
                 }}
               >
-                <MapPin size={18} color="#e8431f" />
+                <MapPin size={18} color="#0284c7" />
               </div>
-              <h2 style={{ fontSize: 18, fontWeight: 800, color: '#fff', margin: 0, letterSpacing: '-0.01em' }}>
-                Visualisasi Rute Milk Run Logistics (Line Telemetry & Mobil Box B 9910 PCX)
+              <h2 style={{ fontSize: 18, fontWeight: 800, color: '#0f172a', margin: 0, letterSpacing: '-0.01em' }}>
+                Visualisasi Rute Milk Run Logistics (Telemetri Armada B 9910 PCX)
               </h2>
             </div>
-            <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.6)', display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 4 }}>
-              <span>Armada: <strong style={{ color: '#fff' }}>B 9910 PCX (Mobil Box 1.5 Ton)</strong></span>
-              <span style={{ color: 'rgba(255,255,255,0.2)' }}>|</span>
-              <span>Shift: <strong style={{ color: '#fff' }}>MALAM (16.00 – 21.00 WIB)</strong></span>
-              <span style={{ color: 'rgba(255,255,255,0.2)' }}>|</span>
-              <span>Tujuan Akhir: <strong style={{ color: '#6ba3f0' }}>SPP BANDUNG 40400</strong></span>
+            <div style={{ fontSize: 12.5, color: '#64748b', display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 4 }}>
+              <span>Armada: <strong style={{ color: '#0f172a' }}>B 9910 PCX (Mobil Box 1.5 Ton)</strong></span>
+              <span style={{ color: '#cbd5e1' }}>|</span>
+              <span>Shift: <strong style={{ color: '#0f172a' }}>MALAM (16.00 – 21.00 WIB)</strong></span>
+              <span style={{ color: '#cbd5e1' }}>|</span>
+              <span>Tujuan Akhir: <strong style={{ color: '#0b2e8a' }}>SPP BANDUNG 40400</strong></span>
             </div>
           </div>
 
@@ -104,14 +100,14 @@ export default function RouteJourney() {
           </div>
         </div>
 
-        {/* Horizontal Telemetry Node Graph with Uniform Clean Connecting Lines */}
+        {/* Horizontal Telemetry Node Graph */}
         <div 
           style={{ 
-            marginTop: 24, 
+            marginTop: 20, 
             padding: '24px 20px', 
             borderRadius: 14, 
-            background: 'rgba(6,13,31,0.7)', 
-            border: '1px solid rgba(255,255,255,0.06)',
+            background: '#f8fafc', 
+            border: '1px solid #e2e8f0',
             overflowX: 'auto'
           }}
         >
@@ -123,7 +119,7 @@ export default function RouteJourney() {
 
               return (
                 <div key={stop.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative' }}>
-                  {/* Clean Uniform Connecting Line Segment */}
+                  {/* Connecting Line Segment */}
                   {i < stops.length - 1 && (
                     <div
                       style={{
@@ -133,11 +129,10 @@ export default function RouteJourney() {
                         width: '100%',
                         height: 3,
                         background: i < currentStopIndex 
-                          ? '#10b981' 
+                          ? '#16a34a' 
                           : i === currentStopIndex 
-                          ? 'linear-gradient(90deg, #e8431f 0%, rgba(255,255,255,0.15) 100%)' 
-                          : 'rgba(255,255,255,0.15)',
-                        boxShadow: i < currentStopIndex ? '0 0 8px rgba(16,185,129,0.5)' : (i === currentStopIndex ? '0 0 8px rgba(232,67,31,0.5)' : 'none'),
+                          ? '#0284c7' 
+                          : '#e2e8f0',
                         zIndex: 1,
                         transition: 'all 0.3s ease'
                       }}
@@ -150,13 +145,13 @@ export default function RouteJourney() {
                       style={{
                         position: 'absolute',
                         top: -38,
-                        background: 'linear-gradient(135deg, #e8431f, #b83010)',
+                        background: '#0b2e8a',
                         borderRadius: 8,
                         padding: '4px 10px',
                         display: 'flex',
                         alignItems: 'center',
                         gap: 6,
-                        boxShadow: '0 0 16px rgba(232,67,31,0.5)',
+                        boxShadow: '0 4px 12px rgba(11, 46, 138, 0.25)',
                         zIndex: 5
                       }}
                     >
@@ -172,29 +167,29 @@ export default function RouteJourney() {
                       width: isCurrent ? 34 : 28,
                       height: isCurrent ? 34 : 28,
                       borderRadius: '50%',
-                      background: isCurrent ? '#e8431f' : isPassed ? '#10b981' : isSkipped ? 'rgba(255,255,255,0.08)' : '#0d1b38',
-                      border: isCurrent ? '2px solid #fff' : isPassed ? '2px solid #10b981' : '2px solid rgba(255,255,255,0.15)',
+                      background: isCurrent ? '#0b2e8a' : isPassed ? '#16a34a' : isSkipped ? '#f1f5f9' : '#ffffff',
+                      border: isCurrent ? '2px solid #0284c7' : isPassed ? '2px solid #16a34a' : '2px solid #cbd5e1',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: '#fff',
+                      color: (isCurrent || isPassed) ? '#fff' : isSkipped ? '#ef4444' : '#64748b',
                       fontSize: 12,
                       fontWeight: 800,
                       cursor: 'pointer',
-                      boxShadow: isCurrent ? '0 0 20px rgba(232,67,31,0.6)' : (isPassed ? '0 0 10px rgba(16,185,129,0.3)' : 'none'),
-                      transition: 'all 0.3s ease',
+                      boxShadow: isCurrent ? '0 0 0 4px rgba(2, 132, 199, 0.2)' : '0 1px 3px rgba(0,0,0,0.05)',
+                      transition: 'all 0.2s ease',
                       zIndex: 3,
                     }}
                   >
-                    {isSkipped ? 'X' : isPassed ? <CheckCircle2 size={14} /> : stop.id}
+                    {isSkipped ? <X size={14} /> : isPassed ? <CheckCircle2 size={14} /> : stop.id}
                   </div>
 
                   {/* Stop Label */}
                   <div style={{ marginTop: 10, textAlign: 'center' }}>
-                    <div style={{ fontSize: 11, fontWeight: isCurrent ? 800 : 600, color: isCurrent ? '#fff' : isPassed ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.4)' }}>
+                    <div style={{ fontSize: 11, fontWeight: isCurrent ? 800 : 600, color: isCurrent ? '#0b2e8a' : isPassed ? '#0f172a' : '#64748b' }}>
                       {stop.name}
                     </div>
-                    <div className="font-mono" style={{ fontSize: 9.5, color: isSkipped ? '#ef4444' : 'rgba(255,255,255,0.3)', marginTop: 2 }}>
+                    <div style={{ fontSize: 10, color: isSkipped ? '#ef4444' : '#94a3b8', fontFamily: 'monospace', marginTop: 2 }}>
                       {isSkipped ? 'SKIPPED' : `(${stop.code})`}
                     </div>
                   </div>
@@ -208,31 +203,31 @@ export default function RouteJourney() {
       {/* Lower Metrics Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 16 }}>
         {/* Capacity Utilization Card */}
-        <div className="glass-card-solid" style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div className="spatial-card" style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <h3 style={{ fontSize: 14, fontWeight: 700, color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <ShieldCheck size={16} color={capacityData?.status_kapasitas?.includes('OVERLOAD') ? '#f43f5e' : '#10b981'} /> Utilisasi Kapasitas Armada B 9910 PCX (Trip 1)
+            <h3 style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <ShieldCheck size={16} color={capacityData?.status_kapasitas?.includes('OVERLOAD') ? '#ef4444' : '#16a34a'} /> Utilisasi Kapasitas Armada B 9910 PCX (Trip 1)
             </h3>
-            <span className={`badge ${capacityData?.status_kapasitas?.includes('OVERLOAD') ? 'badge-danger' : 'badge-emerald'}`}>
-              {capacityData?.status_kapasitas || 'TERISI PENUH (SAFE)'}
+            <span className={`badge ${capacityData?.status_kapasitas?.includes('OVERLOAD') ? 'badge-pink' : 'badge-emerald'}`}>
+              {capacityData?.status_kapasitas || 'NORMAL'}
             </span>
           </div>
 
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>Muatan Aktif Trip 1</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>
+              <span style={{ fontSize: 12, color: '#64748b' }}>Muatan Aktif Trip 1</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>
                 {currentLoad.toLocaleString()} kg / {maxCapacity.toLocaleString()} kg ({loadPercentage}%)
               </span>
             </div>
 
             {/* Gauge Bar */}
-            <div style={{ width: '100%', height: 10, borderRadius: 5, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+            <div style={{ width: '100%', height: 10, borderRadius: 5, background: '#e2e8f0', overflow: 'hidden' }}>
               <div 
                 style={{ 
                   height: '100%', 
                   width: `${loadPercentage}%`, 
-                  background: 'linear-gradient(90deg, #10b981, #38bdf8)',
+                  background: '#10b981',
                   borderRadius: 5,
                   transition: 'width 0.5s ease'
                 }} 
@@ -240,47 +235,40 @@ export default function RouteJourney() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'rgba(255,255,255,0.45)', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 10 }}>
-            <span>Aktivitas Stop: <strong style={{ color: '#fff' }}>{currentStopObj?.name || 'Start'}</strong></span>
-            <span>Sisa Daya Angkut Trip 1: <strong style={{ color: '#10b981' }}>{remainingCapacity.toLocaleString()} kg</strong></span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#64748b', borderTop: '1px solid #f1f5f9', paddingTop: 10 }}>
+            <span>Aktivitas Stop: <strong style={{ color: '#0f172a' }}>{currentStopObj?.name || 'Start'}</strong></span>
+            <span>Sisa Daya Angkut: <strong style={{ color: '#16a34a' }}>{remainingCapacity.toLocaleString()} kg</strong></span>
           </div>
 
           {capacityData?.has_overflow && (
-            <div style={{ background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.25)', borderRadius: 8, padding: '9px 12px', fontSize: 11.5, color: '#38bdf8', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 8, padding: '9px 12px', fontSize: 11.5, color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Info size={14} color="#38bdf8" /> Antrean Melimpah (Trip 2 / Armada Tambahan):
+                <Info size={14} color="#0284c7" /> Antrean Melimpah (Trip 2 / Armada Tambahan):
               </span>
-              <strong style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{capacityData.overflow_queue_kg?.toLocaleString()} kg</strong>
-            </div>
-          )}
-
-          {capacityData?.unweighted_count > 0 && (
-            <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', gap: 6, paddingTop: 2 }}>
-              <Info size={13} color="#f59e0b" />
-              <span>Ada {capacityData.unweighted_count} paket belum ditimbang (0 kg).</span>
+              <strong style={{ fontFamily: 'monospace', fontWeight: 700 }}>{capacityData.overflow_queue_kg?.toLocaleString()} kg</strong>
             </div>
           )}
         </div>
 
         {/* Manifest Cargo Card */}
-        <div className="glass-card-solid" style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div className="spatial-card" style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <h3 style={{ fontSize: 14, fontWeight: 700, color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-              <PackageCheck size={16} color="#3b82f6" /> Manifest Cargo Aktif di Dalam Truk
+            <h3 style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <PackageCheck size={16} color="#0284c7" /> Manifest Cargo Aktif di Dalam Truk
             </h3>
-            <span className="badge badge-blue">{currentLoad > 0 ? `${Math.round(currentLoad / 2.5)} PAKET RESI` : '0 PAKET RESI'}</span>
+            <span className="badge badge-navy">{currentLoad > 0 ? `${Math.round(currentLoad / 2.5)} PAKET RESI` : '0 PAKET RESI'}</span>
           </div>
 
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 80 }}>
             {currentLoad === 0 ? (
-              <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', textAlign: 'center' }}>
+              <div style={{ fontSize: 13, color: '#94a3b8', textAlign: 'center' }}>
                 Truk kosong (Belum ada muatan atau telah dibongkar di SPP Bandung).
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: 8, fontSize: 12 }}>
-                  <span style={{ color: 'rgba(255,255,255,0.7)' }}>MNFST-240724-MILK01</span>
-                  <span style={{ fontWeight: 700, color: '#fff' }}>{currentLoad} kg</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, fontSize: 12 }}>
+                  <span style={{ color: '#475569', fontWeight: 600 }}>MNFST-240724-MILK01</span>
+                  <span style={{ fontWeight: 800, color: '#0f172a' }}>{currentLoad} kg</span>
                 </div>
               </div>
             )}

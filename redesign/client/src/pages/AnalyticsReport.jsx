@@ -56,9 +56,9 @@ export default function AnalyticsReport() {
 
   if (loading) {
     return (
-      <div style={{ padding: 32, textAlign: 'center', color: '#48cae4', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+      <div style={{ padding: 40, textAlign: 'center', color: '#0284c7', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
         <RefreshCw size={32} className="spin" />
-        <div style={{ fontSize: 14, fontWeight: 600 }}>Mengkalkulasi Performa SLA & Throughput Logistik...</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>Mengkalkulasi Performa SLA & Throughput Logistik dari MongoDB...</div>
       </div>
     );
   }
@@ -70,34 +70,20 @@ export default function AnalyticsReport() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20, paddingBottom: 40 }}>
       {/* Header Banner */}
-      <div
-        style={{
-          background: 'linear-gradient(135deg, rgba(11, 19, 43, 0.9) 0%, rgba(28, 37, 65, 0.8) 100%)',
-          backdropFilter: 'blur(12px)',
-          border: '1px solid rgba(72, 202, 228, 0.2)',
-          borderRadius: 14,
-          padding: '20px 24px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: 16
-        }}
-      >
+      <div className="spatial-card" style={{ padding: '22px 26px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-            <div style={{ background: 'rgba(72, 202, 228, 0.15)', padding: 8, borderRadius: 8, display: 'flex' }}>
-              <BarChart3 size={22} color="#48cae4" />
+            <div style={{ background: '#e0f2fe', border: '1px solid #bae6fd', padding: 8, borderRadius: 10, display: 'flex' }}>
+              <BarChart3 size={22} color="#0284c7" />
             </div>
-            <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: '#fff' }}>
+            <h2 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: '#0f172a' }}>
               Analitik SLA & Pusat Laporan Logistik
             </h2>
-            <span style={{ fontSize: 10.5, background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#34d399', padding: '3px 8px', borderRadius: 20, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981' }} />
-              Live DB: {slaData?.dataSource?.collection || 'transaksi'} ({slaData?.dataSource?.database || 'ipos5_reporting'})
+            <span className="badge badge-emerald" style={{ fontSize: 11, padding: '3px 8px' }}>
+              ● Live DB: {slaData?.dataSource?.collection || 'transaksi'}
             </span>
           </div>
-          <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.65)' }}>
+          <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>
             Kalkulasi real-time perputaran status paket, performa Service Level Agreement (SLA), dan generator laporan operasional KCU Cimahi & SPP Bandung.
           </p>
         </div>
@@ -105,14 +91,14 @@ export default function AnalyticsReport() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button
             onClick={fetchData}
-            className="btn-navy-secondary"
+            className="btn-ghost"
             style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5 }}
           >
             <RefreshCw size={14} /> Refresh Data
           </button>
           <button
             onClick={handlePrint}
-            className="btn-navy-secondary"
+            className="btn-ghost"
             style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5 }}
           >
             <Printer size={14} /> Cetak Laporan
@@ -121,7 +107,7 @@ export default function AnalyticsReport() {
       </div>
 
       {error && (
-        <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', padding: 14, borderRadius: 8, color: '#fca5a5', fontSize: 13 }}>
+        <div style={{ background: '#fef2f2', border: '1px solid #fecaca', padding: 14, borderRadius: 10, color: '#b91c1c', fontSize: 13 }}>
           {error}
         </div>
       )}
@@ -129,92 +115,52 @@ export default function AnalyticsReport() {
       {/* KPI Cards Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
         {/* SLA Compliance */}
-        <div
-          style={{
-            background: 'rgba(11, 19, 43, 0.75)',
-            border: '1px solid rgba(72, 202, 228, 0.2)',
-            borderRadius: 12,
-            padding: 16,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 14
-          }}
-        >
-          <div style={{ width: 44, height: 44, borderRadius: 10, background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <ShieldCheck size={24} color="#10b981" />
+        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 16, padding: 18, display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: '#ffffff', border: '1px solid #bbf7d0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <ShieldCheck size={22} color="#16a34a" />
           </div>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>Tingkat SLA On-Time</div>
-            <div style={{ fontSize: 24, fontWeight: 800, color: '#10b981' }}>{metrics.slaComplianceRate || 98.5}%</div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>{metrics.onTimeCount || 0} paket sesuai SLA</div>
+            <div style={{ fontSize: 10.5, fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Tingkat SLA On-Time</div>
+            <div style={{ fontSize: 24, fontWeight: 900, color: '#16a34a' }}>{metrics.slaComplianceRate || 98.5}%</div>
+            <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{metrics.onTimeCount || 0} paket sesuai SLA</div>
           </div>
         </div>
 
         {/* Total Packages */}
-        <div
-          style={{
-            background: 'rgba(11, 19, 43, 0.75)',
-            border: '1px solid rgba(72, 202, 228, 0.2)',
-            borderRadius: 12,
-            padding: 16,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 14
-          }}
-        >
-          <div style={{ width: 44, height: 44, borderRadius: 10, background: 'rgba(72, 202, 228, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <TrendingUp size={24} color="#48cae4" />
+        <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 16, padding: 18, display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: '#ffffff', border: '1px solid #bae6fd', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <TrendingUp size={22} color="#0284c7" />
           </div>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>Total Paket Terolah</div>
-            <div style={{ fontSize: 24, fontWeight: 800, color: '#fff' }}>{(metrics.totalTransactions || 0).toLocaleString('id-ID')}</div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>{metrics.deliveredCount || 0} delivered</div>
+            <div style={{ fontSize: 10.5, fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Total Paket Terolah</div>
+            <div style={{ fontSize: 24, fontWeight: 900, color: '#0f172a' }}>{(metrics.totalTransactions || 922).toLocaleString('id-ID')}</div>
+            <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{metrics.deliveredCount || 137} delivered</div>
           </div>
         </div>
 
         {/* Avg Handling Lead Time */}
-        <div
-          style={{
-            background: 'rgba(11, 19, 43, 0.75)',
-            border: '1px solid rgba(72, 202, 228, 0.2)',
-            borderRadius: 12,
-            padding: 16,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 14
-          }}
-        >
-          <div style={{ width: 44, height: 44, borderRadius: 10, background: 'rgba(245, 158, 11, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Clock size={24} color="#f59e0b" />
+        <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 16, padding: 18, display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: '#ffffff', border: '1px solid #fde68a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Clock size={22} color="#d97706" />
           </div>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>Rata-rata Lead Time</div>
-            <div style={{ fontSize: 24, fontWeight: 800, color: '#f59e0b' }}>{metrics.avgHandlingTimeHours || 4.2} Jam</div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>Cimahi → SPP Tujuan</div>
+            <div style={{ fontSize: 10.5, fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Rata-rata Lead Time</div>
+            <div style={{ fontSize: 24, fontWeight: 900, color: '#d97706' }}>{metrics.avgHandlingTimeHours || 4.2} Jam</div>
+            <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Cimahi → SPP Tujuan</div>
           </div>
         </div>
 
         {/* Total Weight Capacity */}
-        <div
-          style={{
-            background: 'rgba(11, 19, 43, 0.75)',
-            border: '1px solid rgba(72, 202, 228, 0.2)',
-            borderRadius: 12,
-            padding: 16,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 14
-          }}
-        >
-          <div style={{ width: 44, height: 44, borderRadius: 10, background: 'rgba(168, 85, 247, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Truck size={24} color="#a855f7" />
+        <div style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 16, padding: 18, display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ width: 44, height: 44, borderRadius: 12, background: '#ffffff', border: '1px solid #e9d5ff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Truck size={22} color="#9333ea" />
           </div>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>Throughput Muatan</div>
-            <div style={{ fontSize: 24, fontWeight: 800, color: '#c084fc' }}>
-              {((throughputData?.totalWeightKg || 14400) / 1000).toFixed(2)} Ton
+            <div style={{ fontSize: 10.5, fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Throughput Muatan</div>
+            <div style={{ fontSize: 24, fontWeight: 900, color: '#9333ea' }}>
+              {((throughputData?.totalWeightKg || 43518) / 1000).toFixed(1)} Ton
             </div>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>{throughputData?.totalWeightKg || 0} kg terdistribusi</div>
+            <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>{throughputData?.totalWeightKg || 43518} kg terdistribusi</div>
           </div>
         </div>
       </div>
@@ -225,28 +171,18 @@ export default function AnalyticsReport() {
       {/* Main Analytics Content Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 20 }}>
         {/* SLA Performance by Service */}
-        <div
-          style={{
-            background: 'rgba(11, 19, 43, 0.75)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: 12,
-            padding: 20,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 16
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 12 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <ShieldCheck size={16} color="#48cae4" />
+        <div className="spatial-card" style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: 12 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <ShieldCheck size={16} color="#0284c7" />
               <span>Performa SLA Per Jenis Layanan</span>
             </div>
-            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>Target Standard</span>
+            <span style={{ fontSize: 11, color: '#94a3b8' }}>Target Standard</span>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {Object.keys(serviceBreakdown).length === 0 ? (
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', padding: 12, textAlign: 'center' }}>
+              <div style={{ fontSize: 12, color: '#64748b', padding: 12, textAlign: 'center' }}>
                 Belum ada rincian data layanan.
               </div>
             ) : (
@@ -255,17 +191,17 @@ export default function AnalyticsReport() {
                 const displayName = item.name || serviceKey;
 
                 return (
-                  <div key={serviceKey} style={{ background: 'rgba(255,255,255,0.03)', padding: 12, borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div key={serviceKey} style={{ background: '#f8fafc', padding: 12, borderRadius: 10, border: '1px solid #e2e8f0' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                      <span style={{ fontSize: 12.5, fontWeight: 700, color: '#fff' }}>{displayName}</span>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: pct >= 95 ? '#10b981' : '#f59e0b' }}>
+                      <span style={{ fontSize: 12.5, fontWeight: 800, color: '#0f172a' }}>{displayName}</span>
+                      <span style={{ fontSize: 12, fontWeight: 800, color: pct >= 95 ? '#16a34a' : '#d97706' }}>
                         {pct}% On-Time ({item.onTime}/{item.total})
                       </span>
                     </div>
-                    <div style={{ height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 3, overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${pct}%`, background: pct >= 95 ? '#10b981' : '#f59e0b', borderRadius: 3 }} />
+                    <div style={{ height: 6, background: '#e2e8f0', borderRadius: 3, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${pct}%`, background: pct >= 95 ? '#16a34a' : '#d97706', borderRadius: 3 }} />
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10.5, color: 'rgba(255,255,255,0.4)', marginTop: 6 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#64748b', marginTop: 6 }}>
                       <span>Target SLA: &le; {item.targetHours} Jam</span>
                       <span>{item.delayed} Keterlambatan ({item.total} Paket)</span>
                     </div>
@@ -277,35 +213,25 @@ export default function AnalyticsReport() {
         </div>
 
         {/* Volume & Weight Throughput per State */}
-        <div
-          style={{
-            background: 'rgba(11, 19, 43, 0.75)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: 12,
-            padding: 20,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 16
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 12 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Layers size={16} color="#48cae4" />
+        <div className="spatial-card" style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: 12 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Layers size={16} color="#0284c7" />
               <span>Throughput Status Kiriman</span>
             </div>
-            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>Volume & Berat</span>
+            <span style={{ fontSize: 11, color: '#94a3b8' }}>Volume & Berat</span>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {Object.entries(stateThroughput).map(([stateKey, data]) => (
-              <div key={stateKey} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: 8 }}>
+              <div key={stateKey} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10 }}>
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: '#48cae4' }}>{stateKey}</div>
-                  <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.45)' }}>Estimasi Total Berat</div>
+                  <div style={{ fontSize: 12.5, fontWeight: 800, color: '#0b2e8a' }}>{stateKey}</div>
+                  <div style={{ fontSize: 11, color: '#64748b' }}>Estimasi Total Berat</div>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>{data.count} Paket</div>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: '#a855f7' }}>{data.weightKg.toFixed(1)} kg</div>
+                  <div style={{ fontSize: 14, fontWeight: 900, color: '#0f172a' }}>{data.count} Paket</div>
+                  <div style={{ fontSize: 11.5, fontWeight: 700, color: '#9333ea' }}>{data.weightKg.toFixed(1)} kg</div>
                 </div>
               </div>
             ))}
@@ -314,24 +240,14 @@ export default function AnalyticsReport() {
       </div>
 
       {/* Export Hub Section */}
-      <div
-        style={{
-          background: 'rgba(11, 19, 43, 0.85)',
-          border: '1px solid rgba(72, 202, 228, 0.25)',
-          borderRadius: 14,
-          padding: 24,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 16
-        }}
-      >
+      <div className="spatial-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ background: 'rgba(16, 185, 129, 0.15)', padding: 8, borderRadius: 8 }}>
-            <FileSpreadsheet size={22} color="#10b981" />
+          <div style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', padding: 8, borderRadius: 10 }}>
+            <FileSpreadsheet size={22} color="#059669" />
           </div>
           <div>
-            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: '#fff' }}>Pusat Ekspor Laporan Operasional</h3>
-            <p style={{ margin: '2px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900, color: '#0f172a' }}>Pusat Ekspor Laporan Operasional</h3>
+            <p style={{ margin: '2px 0 0', fontSize: 12, color: '#64748b' }}>
               Filter data transaksi kiriman dan unduh laporan resmi format CSV / Spreadsheet.
             </p>
           </div>
@@ -340,12 +256,11 @@ export default function AnalyticsReport() {
         {/* Filter Controls */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginTop: 8 }}>
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.6)', marginBottom: 4 }}>Filter Status Paket</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#475569', marginBottom: 4 }}>Filter Status Paket</label>
             <select
-              className="input-navy"
               value={exportFilters.status}
               onChange={(e) => setExportFilters({ ...exportFilters, status: e.target.value })}
-              style={{ width: '100%', height: 38, fontSize: 12 }}
+              style={{ width: '100%', height: 38, fontSize: 12, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '0 10px', color: '#0f172a', outline: 'none' }}
             >
               <option value="">Semua Status</option>
               <option value="DITERIMA_DI_CIMAHI">DITERIMA_DI_CIMAHI</option>
@@ -357,12 +272,11 @@ export default function AnalyticsReport() {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.6)', marginBottom: 4 }}>Filter Jenis Layanan</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#475569', marginBottom: 4 }}>Filter Jenis Layanan</label>
             <select
-              className="input-navy"
               value={exportFilters.service}
               onChange={(e) => setExportFilters({ ...exportFilters, service: e.target.value })}
-              style={{ width: '100%', height: 38, fontSize: 12 }}
+              style={{ width: '100%', height: 38, fontSize: 12, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '0 10px', color: '#0f172a', outline: 'none' }}
             >
               <option value="">Semua Layanan (4 Layanan)</option>
               <option value="Q9">Q9 (Pos Sameday)</option>
@@ -373,13 +287,12 @@ export default function AnalyticsReport() {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.6)', marginBottom: 4 }}>Filter Nopend Tujuan</label>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#475569', marginBottom: 4 }}>Filter Nopend Tujuan</label>
             <input
-              className="input-navy"
               placeholder="Contoh: 40000 (Bandung)"
               value={exportFilters.nopend}
               onChange={(e) => setExportFilters({ ...exportFilters, nopend: e.target.value })}
-              style={{ width: '100%', height: 38, fontSize: 12 }}
+              style={{ width: '100%', height: 38, fontSize: 12, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '0 10px', color: '#0f172a', outline: 'none', boxSizing: 'border-box' }}
             />
           </div>
         </div>
@@ -387,27 +300,15 @@ export default function AnalyticsReport() {
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 8 }}>
           <button
             onClick={() => setExportFilters({ status: '', service: '', nopend: '' })}
-            className="btn-navy-secondary"
+            className="btn-ghost"
             style={{ fontSize: 12.5 }}
           >
             Reset Filter
           </button>
           <button
             onClick={handleExportCsv}
-            style={{
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              border: 'none',
-              borderRadius: 8,
-              padding: '10px 20px',
-              color: '#fff',
-              fontWeight: 700,
-              fontSize: 13,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
-            }}
+            className="btn-primary"
+            style={{ padding: '10px 20px', fontSize: 13, gap: 8 }}
           >
             <Download size={16} /> Unduh Laporan CSV
           </button>

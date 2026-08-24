@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { 
   Search, MapPin, CheckCircle2, Circle, Clock, Package, Truck, Navigation, 
@@ -6,28 +6,34 @@ import {
   Calendar, CalendarDays, ArrowRight, Layers, FileSpreadsheet,
   AlertCircle, AlertTriangle, ChevronDown, ChevronRight, User, Building2, Weight,
   Car, TrendingUp, Activity, BoxIcon, Timer, AlertOctagon, Info, ArrowUpRight,
-  Printer, History, Sparkles, Pause, Play, SkipForward, SkipBack, RotateCcw
+  Printer, History, Sparkles, Pause, Play, SkipForward, SkipBack, RotateCcw,
+  ListFilter, LayoutGrid, Table, Phone, Gauge, CheckSquare
 } from 'lucide-react';
 import { api } from '../utils/api.js';
 import LiveGpsMapModal from '../components/LiveGpsMapModal.jsx';
 import CsvImportModal from '../components/CsvImportModal.jsx';
 
-const SAMPLE_RESIS = [
-  { code: 'P20260724000001', date: '2026-07-24', label: 'Resi 24 Jul (KCU Cimahi → SPP Bandung)', badge: '24 Jul', badgeClass: 'badge-emerald' },
-  { code: 'P260812000001', date: '2026-08-12', label: 'Resi 12 Aug (B 9910 PCX - 35 Paket)', badge: '12 Aug', badgeClass: 'badge-blue' },
-  { code: 'P20260811000001', date: '2026-08-11', label: 'Resi 11 Aug (B 9910 PCX - 8 Paket)', badge: '11 Aug', badgeClass: 'badge-orange' },
-  { code: 'P20260813000001', date: '2026-08-13', label: 'Resi 13 Aug (B 9910 PCX - 3 Paket)', badge: '13 Aug', badgeClass: 'badge-blue' },
-  { code: 'B 9910 PCX', date: '2026-08-12', label: 'Armada Feeder GrandMax Box', badge: 'Fleet', badgeClass: 'badge-navy' }
-];
-
-// ─── Module-Level Pure Helper Functions (Available everywhere without TDZ) ───
+// ─── Pure Helper Functions ──────────────────────────────────────────────────
 const getTodayWibStr = () => {
   try {
-    return new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Jakarta' });
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Jakarta',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+    return formatter.format(new Date());
   } catch (e) {
-    return new Date().toISOString().slice(0, 10);
+    return new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Jakarta' });
   }
 };
+
+const SAMPLE_RESIS = [
+  { code: 'P260820010001', date: getTodayWibStr(), label: 'Cimahicisangkan → SPP Bandung (B 9910 PCX)', badge: 'Hari Ini (B 9910 PCX)', badgeClass: 'badge-emerald' },
+  { code: 'P260820020001', date: getTodayWibStr(), label: 'Cimindi → SPP Bandung (D 8812 AB)', badge: 'Hari Ini (D 8812 AB)', badgeClass: 'badge-blue' },
+  { code: 'P260820030001', date: getTodayWibStr(), label: 'KCU Asia Afrika → SPP Bandung (B 9945 PCY)', badge: 'Hari Ini (B 9945 PCY)', badgeClass: 'badge-purple' },
+  { code: 'P260812000001', date: '2026-08-12', label: 'Resi 12 Aug (B 9910 PCX)', badge: '12 Aug (Historis)', badgeClass: 'badge-navy' }
+];
 
 const formatDateDisplay = (dateStr) => {
   if (!dateStr || dateStr === '-') return '-';
@@ -48,103 +54,102 @@ const mapStateToBadge = (stateStr) => {
   const s = String(stateStr).toUpperCase();
   if (s.includes('DELIVERED') || s.includes('SELESAI')) return { label: 'DELIVERED', class: 'badge-emerald' };
   if (s.includes('ARRIVED') || s.includes('TIBA')) return { label: 'ARRIVED', class: 'badge-amber' };
-  if (s.includes('TRANSIT') || s.includes('IN_TRANSIT')) return { label: 'IN TRANSIT', class: 'badge-orange' };
+  if (s.includes('TRANSIT') || s.includes('IN_TRANSIT')) return { label: 'IN TRANSIT', class: 'badge-blue' };
   if (s.includes('LOADED') || s.includes('MANIFEST')) return { label: 'LOADED', class: 'badge-blue' };
   return { label: s, class: 'badge-navy' };
-};
-
-const mapStateToBadgeClass = (stateStr) => mapStateToBadge(stateStr).class;
-
-const getCapacityBadge = (status) => {
-  switch (status) {
-    case 'OVER CAPACITY':
-      return { label: 'OVER CAPACITY', color: '#ef4444', bg: 'rgba(239,68,68,0.2)', border: 'rgba(239,68,68,0.5)' };
-    case 'FULL':
-      return { label: 'FULL CAPACITY', color: '#f97316', bg: 'rgba(249,115,22,0.2)', border: 'rgba(249,115,22,0.4)' };
-    case 'NEAR CAPACITY':
-      return { label: 'NEAR CAPACITY', color: '#f59e0b', bg: 'rgba(245,158,11,0.2)', border: 'rgba(245,158,11,0.4)' };
-    default:
-      return { label: 'NORMAL CAPACITY', color: '#10b981', bg: 'rgba(16,185,129,0.2)', border: 'rgba(16,185,129,0.4)' };
-  }
 };
 
 const getCapacityStatusBadge = (status) => {
   switch ((status || '').toUpperCase()) {
     case 'OVER CAPACITY':
-      return { label: '🚨 OVER CAPACITY', color: '#ef4444', bg: 'rgba(239,68,68,0.15)', border: 'rgba(239,68,68,0.5)' };
+      return { label: 'OVER CAPACITY', color: '#ef4444', bg: '#fef2f2', border: '#fca5a5' };
     case 'FULL':
-      return { label: '⚠️ FULL', color: '#f97316', bg: 'rgba(249,115,22,0.15)', border: 'rgba(249,115,22,0.45)' };
+      return { label: 'FULL', color: '#f97316', bg: '#fff7ed', border: '#fdba74' };
     case 'NEAR CAPACITY':
-      return { label: '🔶 NEAR CAPACITY', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.4)' };
+      return { label: 'NEAR CAPACITY', color: '#d97706', bg: '#fffbeb', border: '#fde68a' };
     default:
-      return { label: '✅ NORMAL', color: '#10b981', bg: 'rgba(16,185,129,0.15)', border: 'rgba(16,185,129,0.4)' };
+      return { label: 'NORMAL', color: '#16a34a', bg: '#f0fdf4', border: '#bbf7d0' };
   }
 };
 
 const getWaypointSubLabel = (stop, idx, total) => {
-  if (idx === 0) return '🏁 Titik Awal / Origin';
-  if (idx === total - 1) return '🏆 Titik Akhir / Tujuan';
-  return `📍 Transit Stop #${stop?.seq || idx + 1}`;
+  if (idx === 0) return 'Titik Awal / Origin';
+  if (idx === total - 1) return 'Titik Akhir / Tujuan';
+  return `Transit Stop #${stop?.seq || idx + 1}`;
 };
 
 export default function Checker() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [query, setQuery] = useState(() => searchParams.get('code') || 'P20260724000001');
+
+  // Mode: 'FLEET' vs 'PACKAGE'
+  const [searchMode, setSearchMode] = useState(() => {
+    const code = searchParams.get('code') || '';
+    return code.startsWith('P2') ? 'PACKAGE' : 'FLEET';
+  });
+
+  const [selectedDate, setSelectedDate] = useState(() => {
+    return searchParams.get('date') || getTodayWibStr();
+  });
+
+  const [query, setQuery] = useState(() => searchParams.get('code') || 'B 9910 PCX');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [copied, setCopied] = useState(false);
 
-  const [selectedDate, setSelectedDate] = useState(() => {
-    return searchParams.get('date') || '2026-08-12';
-  });
+  // Fleet list from database
+  const [fleetList, setFleetList] = useState([]);
+  const [fleetLoading, setFleetLoading] = useState(false);
 
-  const lastParamCodeRef = useRef(undefined);
-
-  // Search mode: 'PACKAGE' vs 'VEHICLE'
-  const [searchMode, setSearchMode] = useState('PACKAGE'); 
+  // Bottom cargo display states
   const [cargoSearchTerm, setCargoSearchTerm] = useState('');
   const [expandedDestGroups, setExpandedDestGroups] = useState({});
+  const [cargoViewMode, setCargoViewMode] = useState('GROUPED'); // 'GROUPED' vs 'TABLE'
+  const [showOnlyNewlyLoaded, setShowOnlyNewlyLoaded] = useState(false);
+  const [selectedDestFilter, setSelectedDestFilter] = useState('ALL');
+
+  // Auto-Refresh States
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [autoRefreshInterval, setAutoRefreshInterval] = useState(3000);
+  const [lastSyncTime, setLastSyncTime] = useState('');
+
+  // Modals
   const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
-  const [, setNowTime] = useState(new Date());
 
-  // Simulation and UI filter states
+  // Simulation and waypoint states
   const [isSimulating, setIsSimulating] = useState(false);
   const [simStopSeq, setSimStopSeq] = useState(null);
   const [simSpeed, setSimSpeed] = useState(1800);
   const [selectedStopFilter, setSelectedStopFilter] = useState(null);
-  const [showOnlyNewlyLoaded, setShowOnlyNewlyLoaded] = useState(false);
 
-  // Clock tick for real-time updates
-  useEffect(() => {
-    const clockTick = setInterval(() => setNowTime(new Date()), 1000);
-    return () => clearInterval(clockTick);
+  const lastParamCodeRef = useRef(undefined);
+
+  // Fetch fleet list from database
+  const loadFleetList = useCallback(async (targetDate, showSpinner = true) => {
+    if (showSpinner) setFleetLoading(true);
+    try {
+      const res = await api.getFleetList(targetDate);
+      if (res && res.success && res.data?.fleet) {
+        setFleetList(res.data.fleet);
+      } else {
+        setFleetList([]);
+      }
+    } catch (e) {
+      console.error('Error fetching fleet list:', e);
+      setFleetList([]);
+    } finally {
+      if (showSpinner) setFleetLoading(false);
+    }
   }, []);
 
-  // Simulation timer loop
-  useEffect(() => {
-    if (!isSimulating || !result?.routeStops?.length) return;
-    const interval = setInterval(() => {
-      setSimStopSeq(prev => {
-        const current = prev ?? result.currentStopSeq ?? 1;
-        if (current >= result.routeStops.length) {
-          setIsSimulating(false);
-          return current;
-        }
-        return current + 1;
-      });
-    }, simSpeed);
-    return () => clearInterval(interval);
-  }, [isSimulating, simSpeed, result?.routeStops?.length, result?.currentStopSeq]);
-
-  // ─── Search Package or Vehicle Tracker ─────────────────────────────────────
+  // Main Search / Fetch Package or Vehicle Data from Database
   const handleSearch = useCallback(async (codeToSearch, dateToSearch) => {
     const targetDate = dateToSearch || selectedDate;
     let termToUse = codeToSearch !== undefined ? codeToSearch : query;
 
     if (!termToUse || !termToUse.trim()) {
-      termToUse = targetDate === '2026-08-12' ? 'P260812000001' : (targetDate === '2026-07-24' ? 'P20260724000001' : 'B 9910 PCX');
+      termToUse = searchMode === 'PACKAGE' ? 'P260812000001' : 'B 9910 PCX';
     }
 
     const cleanTerm = termToUse.trim();
@@ -153,106 +158,47 @@ export default function Checker() {
     setSearchParams({ code: cleanTerm, date: targetDate });
     setLoading(true);
     setErrorMsg('');
+    setSimStopSeq(null);
+    setSelectedStopFilter(null);
 
     try {
       const res = await api.getCheckerData(cleanTerm, targetDate);
       if (res.success && res.data) {
         const raw = res.data?.data || res.data || {};
-        const tx = raw.transaction || raw;
-        const milk = raw.milk_run || raw.milkRun || raw;
-
         const isVehicle = res.isVehicleQuery || raw.isVehicleQuery || /^[a-zA-Z]{1,2}\s?\d{1,4}\s?[a-zA-Z]{1,3}$/.test(cleanTerm);
-        const isFutureFlag = res.isFutureDate || raw.isFutureDate || (targetDate > '2026-08-14');
-        const hasData = res.hasData !== undefined ? res.hasData : (raw.hasData !== undefined ? raw.hasData : true);
 
-        if (isFutureFlag) {
-          setResult({
-            isFutureDate: true,
-            targetDateStr: targetDate,
-            connoteCode: cleanTerm,
-            warningMessage: `⚠️ [TANGGAL OPERASIONAL BELUM TIBA]: Tanggal operasional ${formatDateDisplay(targetDate)} merupakan tanggal di masa depan yang belum tiba dan belum memiliki riwayat transaksi/perjalanan armada.`
-          });
-          return;
-        }
-
-        const connoteCode = raw.connoteCode || tx.connote_code || tx.connoteCode || tx.connote?.connote_code || cleanTerm;
-        const bookingCode = raw.bookingCode || tx.bookingCode || tx.connote_booking_code || tx.connote?.connote_booking_code || `BK-${connoteCode}`;
-        const service = raw.service || tx.service || tx.connote_service || tx.connote?.connote_service || 'Pos Reguler';
-        const weight = raw.weightKg ? `${raw.weightKg} kg` : (tx.actualWeight ? `${tx.actualWeight} kg` : (tx.weight ? `${tx.weight} kg` : '1.0 kg'));
-        const stateStr = raw.state || tx.state || tx.connote_state || tx.connote?.connote_state || (isVehicle ? 'IN_TRANSIT' : 'ENTRY');
+        const connoteCode = raw.connoteCode || cleanTerm;
+        const bookingCode = raw.bookingCode || `BK-${connoteCode}`;
+        const service = raw.service || 'Pos Nextday';
+        const weight = raw.weightKg !== undefined ? `${raw.weightKg} kg` : (raw.weight ? `${raw.weight} kg` : '1.0 kg');
+        const stateStr = raw.state || (isVehicle ? 'IN_TRANSIT' : 'ENTRY');
 
         const originObj = raw.origin || {};
-        const originName = typeof originObj === 'string' ? originObj : (originObj.name ? `${originObj.name} (${originObj.nopend || '40511'})` : (tx.originName ? `${tx.originName} (${tx.originNopen || '40511'})` : 'KCU Cimahi (40511)'));
+        const originName = typeof originObj === 'string' ? originObj : (originObj.name ? `${originObj.name} (${originObj.nopend || '40511'})` : 'KCU Cimahi (40511)');
 
         const destObj = raw.destination || {};
-        const destName = typeof destObj === 'string' ? destObj : (destObj.name ? `${destObj.name} (${destObj.nopend || '40400'})` : (tx.receiverAddress || tx.destinationName ? `${tx.receiverAddress || tx.destinationName} (${tx.destinationNopen || '40400'})` : 'Alamat Penerima Kantor 40400 (40400)'));
+        const destName = typeof destObj === 'string' ? destObj : (destObj.name ? `${destObj.name} (${destObj.nopend || '40400'})` : 'SPP Bandung (40400)');
 
-        const senderName = raw.senderName || tx.senderName || tx.connote?.connote_sender_name || 'PT Pos Logistics Store';
-        const receiverName = raw.receiverName || tx.receiverName || tx.connote?.connote_receiver_name || 'SPP Bandung Hub';
-        const createdAt = raw.createdAt || tx.createdAt || tx.connote?.created_at || '2026-07-24';
+        const senderName = raw.senderName || 'PT Pos Logistics Store';
+        const receiverName = raw.receiverName || 'SPP Bandung Hub';
+        const createdAt = raw.createdAt || '2026-08-12';
 
-        const vAssign = raw.vehicleAssignment || {};
-        const vInfo = raw.vehicle || raw.vehicleInfo || vAssign.vehicle_info || null;
-        const vehicleNopol = raw.vehicleNopol || milk.vehicleNopol || vAssign.nopol || vInfo?.nopol || 'B 9910 PCX';
-        const routeId = raw.routeId || milk.routeId || vAssign.route_id || 'RT-MALAM-B9910-PCX';
-        const currentStopSeq = raw.currentStopSeq || milk.currentStopSeq || vAssign.currentStopSeq || 8;
-        const maxCapacityKg = raw.capacity?.max_capacity_kg || milk.maxCapacityKg || vInfo?.maxCapacityKg || (vInfo?.kapasitas_ton ? vInfo.kapasitas_ton * 1000 : 1500);
-        const currentLoadKg = raw.capacity?.current_load_kg || milk.currentLoadKg || 187.6;
-        const utilizationPct = raw.capacity?.utilization_pct || milk.utilizationPct || 13;
-        const capacityStatus = raw.capacity?.status || milk.capacityStatus || 'NORMAL';
+        const vDoc = raw.vehicle || raw.vehicleInfo || {};
+        const vehicleNopol = raw.vehicleNopol || vDoc.nopol || (isVehicle ? cleanTerm : 'B 9910 PCX');
+        const routeId = raw.routeId || raw.journey?.route_id || 'RT-MALAM-B9910-PCX';
+        const currentStopSeq = raw.currentStopSeq || raw.journey?.current_stop_seq || 1;
+        const maxCapacityKg = raw.capacity?.max_capacity_kg || vDoc.max_capacity_kg || 1500;
+        const currentLoadKg = raw.capacity?.current_load_kg !== undefined ? raw.capacity.current_load_kg : (raw.totalCargoWeightKg || 0);
+        const utilizationPct = raw.capacity?.utilization_pct !== undefined ? raw.capacity.utilization_pct : 0;
+        const capacityStatus = raw.capacity?.status || 'NORMAL';
 
-        // Default 8-stop waypoints if routeStops is empty
-        const defaultStops = [
-          { seq: 1, nopen: '40511', officeName: 'KCU Cimahi', etaTime: '10:00 WIB', jarakKm: 5.2, loadAtStopKg: 71.3, utilizationPctAtStop: 5, status: 'PASSED' },
-          { seq: 2, nopen: '40522', officeName: 'KCP Cimahi Selatan', etaTime: '10:12 WIB', jarakKm: 4.8, loadAtStopKg: 146.8, utilizationPctAtStop: 10, status: 'PASSED' },
-          { seq: 3, nopen: '40552', officeName: 'AGEN ARVINET', etaTime: '10:32 WIB', jarakKm: 8.5, loadAtStopKg: 212.1, utilizationPctAtStop: 14, status: 'PASSED' },
-          { seq: 4, nopen: '40553', officeName: 'KCP Padalarang', etaTime: '10:57 WIB', jarakKm: 12.0, loadAtStopKg: 257.4, utilizationPctAtStop: 17, status: 'PASSED' },
-          { seq: 5, nopen: '40115', officeName: 'KCU Bandung', etaTime: '11:15 WIB', jarakKm: 7.0, loadAtStopKg: 250.3, utilizationPctAtStop: 17, status: 'PASSED' },
-          { seq: 6, nopen: '40400', officeName: 'SPP Bandung', etaTime: '11:30 WIB', jarakKm: 5.0, loadAtStopKg: 263.8, utilizationPctAtStop: 18, status: 'PASSED' },
-          { seq: 7, nopen: '40553', officeName: 'KCP Padalarang', etaTime: '11:45 WIB', jarakKm: 5.0, loadAtStopKg: 235.7, utilizationPctAtStop: 16, status: 'PASSED' },
-          { seq: 8, nopen: '40400', officeName: 'SPP Bandung', etaTime: '12:10 WIB', jarakKm: 12.0, loadAtStopKg: 187.6, utilizationPctAtStop: 13, status: 'CURRENT' }
-        ];
-
-        const routeStops = (raw.routeStops && raw.routeStops.length > 0) ? raw.routeStops : (milk.routeStops && milk.routeStops.length > 0 ? milk.routeStops : defaultStops);
-
-        // Timeline formatting
-        let rawEvents = raw.timeline || raw.trackingHistory || tx.trackingHistory || [];
-        if (!rawEvents || rawEvents.length === 0) {
-          rawEvents = [
-            { stage: 'ENTRY', note: `Paket ${connoteCode} dicatat & diterima di loket ${originName}.`, time: `${formatDateDisplay(createdAt)} 08:30 WIB`, location: originName },
-            { stage: 'LOADED', note: `Paket dimuat ke armada truk ${vehicleNopol} (Rute ${routeId}).`, time: `${formatDateDisplay(createdAt)} 16:15 WIB`, location: originName },
-            { stage: 'IN TRANSIT', note: `Armada melintasi titik transit Agen Arvinet & melanjutkan perjalanan ke SPP Bandung.`, time: `${formatDateDisplay(createdAt)} 17:45 WIB`, location: 'AGEN ARVINET' }
-          ];
-        }
-        const timeline = rawEvents.map(e => ({
-          stage: e.stage || e.event_type || 'EVENT',
-          note: e.note || `Status paket: ${e.stage}`,
-          time: e.time ? formatDateDisplay(e.time) : `${formatDateDisplay(createdAt)} 10:00 WIB`,
-          location: e.location || e.office_name || 'KCU Cimahi'
-        }));
-
-        let cargoItems = raw.cargoItems || milk.cargoItems || milk.cargoList || raw.cargo || [];
-        let cargoGrouped = raw.cargoGroupedByDestination || milk.cargoGroupedByDestination || [];
-
-        // Fallback cargo grouping if empty
-        if ((!cargoGrouped || cargoGrouped.length === 0) && cargoItems.length > 0) {
-          const destMap = {};
-          cargoItems.forEach(item => {
-            const dest = item.destination_nopen || item.destinationNopen || '10000';
-            if (!destMap[dest]) {
-              destMap[dest] = { destination_nopen: dest, package_count: 0, total_weight_kg: 0, packages: [] };
-            }
-            destMap[dest].package_count += 1;
-            destMap[dest].total_weight_kg += Number(item.weight_kg || item.weightKg || 1);
-            destMap[dest].packages.push(item);
-          });
-          cargoGrouped = Object.values(destMap);
-        }
+        const routeStops = raw.routeStops || [];
+        const timeline = raw.timeline || [];
+        const cargoItems = raw.cargoItems || [];
+        const cargoGrouped = raw.cargoGroupedByDestination || [];
 
         setResult({
           isVehicleQuery: isVehicle,
-          isFutureDate: isFutureFlag,
-          hasData: hasData,
           connoteCode,
           bookingCode,
           service,
@@ -262,7 +208,7 @@ export default function Checker() {
           destination: destName,
           senderName,
           receiverName,
-          createdAt: formatDateDisplay(createdAt),
+          createdAt,
           vehicleNopol,
           routeId,
           currentStopSeq,
@@ -274,41 +220,81 @@ export default function Checker() {
           timeline,
           cargoItems,
           cargoGroupedByDestination: cargoGrouped,
-          vehicleInfo: vInfo
+          totalCargoCount: raw.totalCargoCount || cargoItems.length
         });
-
-        if (isVehicle) {
-          setSearchMode('VEHICLE');
-        } else {
-          setSearchMode('PACKAGE');
-        }
       } else {
+        setErrorMsg(res.message || 'Data tidak ditemukan di database.');
         setResult(null);
-        setErrorMsg(res?.error?.message || `Data tidak ditemukan untuk "${cleanTerm}".`);
       }
-    } catch (e) {
-      console.error('Checker search error:', e);
+    } catch (err) {
+      console.error('Error fetching checker data:', err);
+      setErrorMsg(err.message || 'Gagal terhubung ke server backend.');
       setResult(null);
-      setErrorMsg(e.message || `Tidak ditemukan data untuk "${cleanTerm}". Silakan periksa kembali query atau tanggal operasional.`);
     } finally {
       setLoading(false);
+      setLastSyncTime(new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     }
-  }, [selectedDate, query, setSearchParams]);
+  }, [selectedDate, query, searchMode, setSearchParams]);
 
+  // Initial Load
   useEffect(() => {
-    const codeParam = searchParams.get('code');
-    const dateParam = searchParams.get('date') || selectedDate;
-    const initialCode = codeParam || 'P20260724000001';
+    loadFleetList(selectedDate);
+    handleSearch(query, selectedDate);
+  }, []);
 
-    if (initialCode !== lastParamCodeRef.current) {
-      lastParamCodeRef.current = initialCode;
-      setQuery(initialCode);
-      if (dateParam && dateParam !== selectedDate) {
-        setSelectedDate(dateParam);
+  // Background Auto-Refresh Polling Hook
+  useEffect(() => {
+    if (!autoRefresh) return;
+    const interval = setInterval(async () => {
+      try {
+        const targetDate = selectedDate;
+        loadFleetList(targetDate, false);
+        const term = query || (searchMode === 'FLEET' ? 'B 9910 PCX' : 'P260812000001');
+        const resData = await api.getCheckerData(term, targetDate);
+        if (resData && resData.success && resData.data) {
+          const raw = resData.data?.data || resData.data || {};
+          setResult(prev => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              currentLoadKg: raw.currentLoadKg ?? raw.capacity?.current_load_kg ?? 0,
+              maxCapacityKg: raw.maxCapacityKg ?? raw.capacity?.max_capacity_kg ?? 1500,
+              utilizationPct: raw.utilizationPct ?? raw.capacity?.utilization_pct ?? 0,
+              totalCargoCount: raw.totalCargoCount ?? (raw.cargoItems || []).length,
+              cargoItems: raw.cargoItems || [],
+              cargoGroupedByDestination: raw.cargoGroupedByDestination || [],
+              routeStops: raw.routeStops || prev.routeStops || []
+            };
+          });
+        }
+        setLastSyncTime(new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      } catch (e) {
+        // silent polling error
       }
-      handleSearch(initialCode, dateParam);
-    }
-  }, [searchParams, handleSearch, selectedDate]);
+    }, autoRefreshInterval);
+
+    return () => clearInterval(interval);
+  }, [autoRefresh, autoRefreshInterval, selectedDate, query, searchMode, loadFleetList]);
+
+  // Simulation interval timer
+  useEffect(() => {
+    if (!isSimulating || !result?.routeStops?.length) return;
+    const total = result.routeStops.length;
+    const timer = setInterval(() => {
+      setSimStopSeq(prev => {
+        const current = prev ?? (result?.currentStopSeq || 1);
+        if (current >= total) {
+          setIsSimulating(false);
+          return total;
+        }
+        return current + 1;
+      });
+    }, simSpeed);
+    return () => clearInterval(timer);
+  }, [isSimulating, result, simSpeed]);
+
+  const activeSeq = simStopSeq !== null ? simStopSeq : (result?.currentStopSeq || 1);
+  const activeStopObj = (result?.routeStops || [])[activeSeq - 1] || {};
 
   const handleCopyCode = (code) => {
     if (!code) return;
@@ -317,206 +303,481 @@ export default function Checker() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const toggleDestGroup = (nopen) => {
+  const toggleDestGroup = (destNopen) => {
     setExpandedDestGroups(prev => ({
       ...prev,
-      [nopen]: !prev[nopen]
+      [destNopen]: prev[destNopen] === false ? true : false
     }));
   };
 
-  // Compute active stop sequence
-  const activeSeq = isSimulating || simStopSeq !== null ? (simStopSeq || 1) : (result?.currentStopSeq || 8);
+  // Filtered Cargo Items
+  const filteredCargoItems = useMemo(() => {
+    if (!result?.cargoItems) return [];
+    let items = result.cargoItems;
 
-  // Filter cargo groups
-  const filteredCargoGroups = (() => {
+    if (showOnlyNewlyLoaded) {
+      items = items.filter(i => i.loaded_at_seq === activeSeq);
+    }
+    if (selectedDestFilter && selectedDestFilter !== 'ALL') {
+      items = items.filter(i => String(i.destination_nopen) === String(selectedDestFilter));
+    }
+    if (selectedStopFilter) {
+      items = items.filter(i => String(i.destination_nopen) === String(selectedStopFilter) || String(i.origin_nopen) === String(selectedStopFilter));
+    }
+    if (cargoSearchTerm.trim()) {
+      const q = cargoSearchTerm.toLowerCase();
+      items = items.filter(i => 
+        (i.connote_code || '').toLowerCase().includes(q) ||
+        (i.receiver_name || '').toLowerCase().includes(q) ||
+        (i.sender_name || '').toLowerCase().includes(q) ||
+        (i.destination_office_name || '').toLowerCase().includes(q) ||
+        (i.service || '').toLowerCase().includes(q)
+      );
+    }
+    return items;
+  }, [result?.cargoItems, showOnlyNewlyLoaded, selectedDestFilter, selectedStopFilter, cargoSearchTerm, activeSeq]);
+
+  // Grouped Cargo
+  const filteredCargoGroups = useMemo(() => {
     if (!result?.cargoGroupedByDestination) return [];
-    let groups = [...result.cargoGroupedByDestination];
-
+    let groups = result.cargoGroupedByDestination;
+    if (selectedDestFilter && selectedDestFilter !== 'ALL') {
+      groups = groups.filter(g => String(g.destination_nopen) === String(selectedDestFilter));
+    }
     if (selectedStopFilter) {
       groups = groups.filter(g => String(g.destination_nopen) === String(selectedStopFilter));
     }
+    return groups;
+  }, [result?.cargoGroupedByDestination, selectedDestFilter, selectedStopFilter]);
 
-    if (cargoSearchTerm && cargoSearchTerm.trim()) {
-      const lower = cargoSearchTerm.toLowerCase().trim();
-      groups = groups.map(g => ({
-        ...g,
-        packages: (g.packages || []).filter(p => 
-          (p.connote_code && p.connote_code.toLowerCase().includes(lower)) ||
-          (p.receiver_name && p.receiver_name.toLowerCase().includes(lower)) ||
-          (p.destination_nopen && String(p.destination_nopen).includes(lower))
-        )
-      })).filter(g => g.packages && g.packages.length > 0);
+  // Dynamically compute tracking timeline based on activeSeq and routeStops
+  const displayTimeline = useMemo(() => {
+    if (!result) return [];
+    const stops = result.routeStops || [];
+    
+    if (stops.length > 0) {
+      const events = [];
+      const stop1 = stops[0] || {};
+      
+      // Stop #1 Event: Package received / entered at origin
+      events.push({
+        stage: 'ENTRY',
+        time: stop1.etaTime || '10:08 WIB',
+        note: `Paket diterima & di-input di Lokasi Asal (${stop1.officeName || result.origin || 'Sangkuriang (Agenpos)'})`,
+        location: stop1.officeName || result.origin || 'KCU Cimahi 40500'
+      });
+
+      // Manifested event
+      events.push({
+        stage: 'IN_MANIFEST',
+        time: stop1.etaTime ? `${stop1.etaTime}` : '10:10 WIB',
+        note: `Dimuat ke manifest armada ${result.vehicleNopol || 'B 9910 PCX'} (Rute: ${result.routeId || 'RT-B9910-CIMAHI'})`,
+        location: stop1.officeName || result.origin || 'KCU Cimahi 40500'
+      });
+
+      // Events for every visited stop up to activeSeq
+      for (let s = 1; s < activeSeq && s < stops.length; s++) {
+        const curStop = stops[s];
+        const isFinal = s === stops.length - 1;
+        
+        if (isFinal) {
+          events.push({
+            stage: 'TIBA_DI_SPP',
+            time: curStop.etaTime || '11:15 WIB',
+            note: `Armada tiba di Sentral Pengolahan Pos (${curStop.officeName}). Proses bongkar muatan (unloading) & gate sorting scanning.`,
+            location: curStop.officeName
+          });
+        } else {
+          events.push({
+            stage: 'IN_TRANSIT',
+            time: curStop.etaTime || `10:${14 + (s - 1) * 10} WIB`,
+            note: `Armada tiba di Stop #${curStop.seq} (${curStop.officeName}). Muatan aktif: ${curStop.loadAtStopKg !== undefined ? curStop.loadAtStopKg : (result.currentLoadKg || 35)} kg (${curStop.utilizationPctAtStop !== undefined ? curStop.utilizationPctAtStop : 2.3}% kapasitas).`,
+            location: curStop.officeName
+          });
+        }
+      }
+
+      return events;
     }
 
-    return groups;
-  })();
-
-  const isDevOrAdminMode = process.env.NODE_ENV !== 'production' || searchParams.get('dev') === 'true' || searchParams.get('dev') === '1';
+    return result.timeline || [];
+  }, [result, activeSeq]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, width: '100%', padding: '0 4px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, width: '100%', paddingBottom: 24 }}>
       
-      {/* ─── 1. TOP HEADER BAR: SEARCH BAR & OPERATIONAL DATE PICKER ─────────────────── */}
-      <div className="glass-card-solid" style={{ padding: 20, borderRadius: 16 }}>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+      {/* ─── 1. TOP CONTROL BAR & SEARCH PANEL ────────────────── */}
+      <div className="spatial-card" style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        
+        {/* Top Switcher Row: Search Modes & Operational Date */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
           
-          {/* Active Mode Tabs: No. Resi vs Plat Kendaraan */}
-          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: 3, border: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
+          {/* Mode Tabs */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f1f5f9', padding: 4, borderRadius: 12, border: '1px solid #e2e8f0' }}>
+            <button
+              onClick={() => {
+                setSearchMode('FLEET');
+                setQuery('B 9910 PCX');
+                handleSearch('B 9910 PCX', selectedDate);
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '7px 14px',
+                borderRadius: 8,
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 12,
+                fontWeight: 800,
+                background: searchMode === 'FLEET' ? '#0b2e8a' : 'transparent',
+                color: searchMode === 'FLEET' ? '#ffffff' : '#475569',
+                boxShadow: searchMode === 'FLEET' ? '0 2px 8px rgba(11, 46, 138, 0.25)' : 'none',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <Truck size={14} /> Pilih Armada Feeder (3 Mobil)
+            </button>
+
             <button
               onClick={() => {
                 setSearchMode('PACKAGE');
-                const defaultResi = selectedDate === '2026-08-12' ? 'P260812000001' : (selectedDate === '2026-07-24' ? 'P20260724000001' : 'P20260811000001');
-                setQuery(defaultResi);
-                handleSearch(defaultResi, selectedDate);
+                setQuery('P260812000001');
+                handleSearch('P260812000001', selectedDate);
               }}
               style={{
-                padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 800, transition: 'all 0.2s',
-                background: searchMode === 'PACKAGE' ? 'rgba(56,189,248,0.25)' : 'transparent',
-                color: searchMode === 'PACKAGE' ? '#38bdf8' : 'rgba(255,255,255,0.4)'
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '7px 14px',
+                borderRadius: 8,
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 12,
+                fontWeight: 800,
+                background: searchMode === 'PACKAGE' ? '#0b2e8a' : 'transparent',
+                color: searchMode === 'PACKAGE' ? '#ffffff' : '#475569',
+                boxShadow: searchMode === 'PACKAGE' ? '0 2px 8px rgba(11, 46, 138, 0.25)' : 'none',
+                transition: 'all 0.15s ease'
               }}
             >
-              <Package size={13} style={{ marginRight: 5, verticalAlign: 'middle' }} />
-              No. Resi
-            </button>
-            <button
-              onClick={() => {
-                setSearchMode('VEHICLE');
-                const defaultFleet = 'B 9910 PCX';
-                setQuery(defaultFleet);
-                handleSearch(defaultFleet, selectedDate);
-              }}
-              style={{
-                padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 800, transition: 'all 0.2s',
-                background: searchMode === 'VEHICLE' ? 'rgba(56,189,248,0.25)' : 'transparent',
-                color: searchMode === 'VEHICLE' ? '#38bdf8' : 'rgba(255,255,255,0.4)'
-              }}
-            >
-              <Truck size={13} style={{ marginRight: 5, verticalAlign: 'middle' }} />
-              Plat Kendaraan
+              <Package size={14} /> Lacak Resi Connote (Paket)
             </button>
           </div>
 
-          {/* Main Search Input */}
-          <div style={{ flex: 1, minWidth: 280, position: 'relative' }}>
-            <Search size={16} color="rgba(255,255,255,0.4)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
-            <input
-              className="input-navy font-mono"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch(query, selectedDate)}
-              placeholder={searchMode === 'PACKAGE' ? "Masukkan nomor resi (contoh: P20260724000001)..." : "Masukkan nomor plat kendaraan (contoh: B 9910 PCX)..."}
-              style={{ paddingLeft: 38, paddingRight: 36, height: 42, fontSize: 13.5 }}
-            />
-            {query && (
+          {/* Operational Date Picker & Auto-Sync Controls */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            
+            {/* Date Picker Capsule */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f8fafc', padding: '6px 14px', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+              <CalendarDays size={15} color="#0284c7" />
+              <span style={{ fontSize: 11, fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Tanggal:</span>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => {
+                  const newDate = e.target.value;
+                  if (!newDate) return;
+                  setSelectedDate(newDate);
+                  const termToSearch = (query && query.trim()) ? query.trim() : (searchMode === 'FLEET' ? 'B 9910 PCX' : 'P260812000001');
+                  loadFleetList(newDate);
+                  handleSearch(termToSearch, newDate);
+                }}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#0f172a',
+                  fontWeight: 800,
+                  fontSize: 12.5,
+                  cursor: 'pointer',
+                  outline: 'none'
+                }}
+              />
+              {selectedDate === getTodayWibStr() && (
+                <span className="badge badge-emerald" style={{ fontSize: 10, padding: '2px 6px' }}>
+                  Hari Ini
+                </span>
+              )}
+            </div>
+
+            {selectedDate !== getTodayWibStr() && (
               <button
                 onClick={() => {
-                  setQuery('');
-                  setResult(null);
-                  setErrorMsg('');
-                  setSearchParams({ code: '', date: selectedDate });
+                  const today = getTodayWibStr();
+                  setSelectedDate(today);
+                  const termToSearch = (query && query.trim()) ? query.trim() : (searchMode === 'FLEET' ? 'B 9910 PCX' : 'P260812000001');
+                  loadFleetList(today);
+                  handleSearch(termToSearch, today);
                 }}
-                style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer' }}
-                title="Reset Pencarian"
+                className="btn-ghost"
+                style={{ height: 36, padding: '0 12px', fontSize: 11.5, fontWeight: 700, gap: 6 }}
+                title="Kembali ke Tanggal Hari Ini"
               >
-                <X size={15} />
+                <Calendar size={13} />
+                Hari Ini
               </button>
             )}
-          </div>
 
-          <button 
-            className="btn-primary" 
-            onClick={() => handleSearch(query, selectedDate)} 
-            disabled={loading}
-            style={{ height: 42, padding: '0 20px', fontWeight: 800, gap: 8 }}
-          >
-            {loading ? <RefreshCw size={15} className="spin" /> : <Search size={15} />}
-            {loading ? 'Mencari...' : 'Lacak Paket'}
-          </button>
-
-          {/* Operational Date Picker (Timezone Asia/Jakarta WIB) */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.04)', padding: '4px 12px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.08)' }}>
-            <CalendarDays size={15} color="#38bdf8" />
-            <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>TANGGAL OPERASIONAL:</span>
-            <input
-              type="date"
-              max="2026-08-14"
-              value={selectedDate}
-              onChange={(e) => {
-                const newDate = e.target.value;
-                setSelectedDate(newDate);
-                const termToSearch = (query && query.trim()) ? query.trim() : (newDate === '2026-08-12' ? 'P260812000001' : (newDate === '2026-07-24' ? 'P20260724000001' : 'B 9910 PCX'));
-                handleSearch(termToSearch, newDate);
-              }}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: '#fff',
-                fontWeight: 800,
-                fontSize: 12.5,
-                colorScheme: 'dark',
-                cursor: 'pointer'
-              }}
-            />
-          </div>
-
-          {/* CSV Import Tool Button */}
-          {isDevOrAdminMode && (
+            {/* CSV Import Button */}
             <button
               onClick={() => setIsCsvModalOpen(true)}
-              style={{
-                height: 42, padding: '0 14px', borderRadius: 10, border: '1px solid rgba(56,189,248,0.3)',
-                background: 'rgba(56,189,248,0.1)', color: '#38bdf8', fontWeight: 700, fontSize: 12, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: 6
-              }}
+              className="btn-ghost"
+              style={{ height: 36, padding: '0 12px', fontSize: 11.5, fontWeight: 700, gap: 6 }}
             >
-              <FileSpreadsheet size={15} />
-              Tool Testing: Import CSV
+              <FileSpreadsheet size={14} />
+              Import CSV
             </button>
-          )}
 
-          <button
-            onClick={() => handleSearch(query, selectedDate)}
-            style={{ height: 42, width: 42, borderRadius: 10, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            title="Refresh Data Operasional"
-          >
-            <RefreshCw size={15} className={loading ? 'spin' : ''} />
-          </button>
-        </div>
+            {/* Auto-Refresh Control */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              background: autoRefresh ? '#ecfdf5' : '#f8fafc',
+              padding: '4px 10px',
+              borderRadius: 10,
+              border: `1px solid ${autoRefresh ? '#a7f3d0' : '#e2e8f0'}`,
+              height: 36
+            }}>
+              <button
+                type="button"
+                onClick={() => setAutoRefresh(!autoRefresh)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: autoRefresh ? '#059669' : '#64748b',
+                  fontSize: 11.5,
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: 0
+                }}
+                title={autoRefresh ? 'Klik untuk jeda Auto-Refresh' : 'Klik untuk aktifkan Auto-Refresh'}
+              >
+                <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: autoRefresh ? '#10b981' : '#94a3b8' }} />
+                <span>Auto-Sync {autoRefresh ? 'ON' : 'OFF'}</span>
+              </button>
 
-        {/* Quick Test Samples */}
-        <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            SAMPEL RESI UJI DATABASE:
-          </span>
-          {SAMPLE_RESIS.map((s) => (
+              {autoRefresh && (
+                <select
+                  value={autoRefreshInterval}
+                  onChange={(e) => setAutoRefreshInterval(Number(e.target.value))}
+                  style={{
+                    background: '#ffffff',
+                    border: '1px solid #a7f3d0',
+                    color: '#059669',
+                    fontSize: 11,
+                    fontWeight: 800,
+                    borderRadius: 6,
+                    padding: '2px 4px',
+                    cursor: 'pointer',
+                    outline: 'none'
+                  }}
+                >
+                  <option value={2000}>2s</option>
+                  <option value={3000}>3s</option>
+                  <option value={5000}>5s</option>
+                  <option value={10000}>10s</option>
+                </select>
+              )}
+
+              {lastSyncTime && autoRefresh && (
+                <span style={{ fontSize: 10, color: '#64748b', marginLeft: 2 }}>
+                  {lastSyncTime.slice(3)}
+                </span>
+              )}
+            </div>
+
+            {/* Manual Refresh Button */}
             <button
-              key={s.code}
               onClick={() => {
-                if (s.date) setSelectedDate(s.date);
-                handleSearch(s.code, s.date || selectedDate);
+                loadFleetList(selectedDate);
+                handleSearch(query, selectedDate);
               }}
               className="btn-ghost"
-              style={{ padding: '4px 10px', fontSize: 11, borderRadius: 6, gap: 6 }}
+              style={{ height: 36, width: 36, padding: 0, justifyContent: 'center' }}
+              title="Refresh Manual Sekarang"
             >
-              <span className="font-mono" style={{ color: '#6ba3f0', fontWeight: 700 }}>{s.code}</span>
-              <span className={`badge ${s.badgeClass}`} style={{ fontSize: 9, padding: '1px 6px' }}>
-                {s.badge}
-              </span>
+              <RefreshCw size={14} className={loading || fleetLoading ? 'spin' : ''} />
             </button>
-          ))}
+          </div>
         </div>
+
+        {/* ── FLEET SELECTOR LIST (SHOWN IN FLEET MODE) ── */}
+        {searchMode === 'FLEET' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: '#0b2e8a', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <ListFilter size={15} color="#0284c7" /> DAFTAR ARMADA KENDARAAN AKTIF DI DATABASE ({fleetList.length} ARMADA):
+              </div>
+              <span style={{ fontSize: 11, color: '#64748b' }}>
+                Klik armada untuk memuat data tracking rute, kapasitas, dan muatan connote
+              </span>
+            </div>
+
+            {/* Visual Vehicle Card List */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+              gap: 12
+            }}>
+              {fleetList.map((v) => {
+                const isSelected = result?.vehicleNopol === v.nopol;
+                const hasCargo = (v.total_cargo_count || 0) > 0;
+                return (
+                  <div
+                    key={v.nopol}
+                    onClick={() => {
+                      setQuery(v.nopol);
+                      handleSearch(v.nopol, selectedDate);
+                    }}
+                    style={{
+                      background: isSelected ? 'rgba(2, 132, 199, 0.14)' : 'var(--bg-card)',
+                      border: isSelected ? '2px solid var(--primary-blue)' : '1px solid var(--border-light)',
+                      borderRadius: 14,
+                      padding: '14px 16px',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      boxShadow: isSelected ? '0 4px 14px rgba(2, 132, 199, 0.2)' : '0 1px 3px rgba(0, 0, 0, 0.05)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 8
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected) e.currentTarget.style.borderColor = 'var(--primary-blue)';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) e.currentTarget.style.borderColor = 'var(--border-light)';
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{
+                          width: 32, height: 32, borderRadius: 8,
+                          background: isSelected ? 'rgba(2, 132, 199, 0.25)' : 'var(--bg-workspace)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center'
+                        }}>
+                          <Truck size={16} color={isSelected ? 'var(--primary-blue)' : 'var(--text-secondary)'} />
+                        </div>
+                        <span style={{ fontSize: 14, fontWeight: 900, color: isSelected ? 'var(--primary-blue)' : 'var(--text-primary)', fontFamily: 'monospace' }}>
+                          {v.nopol}
+                        </span>
+                      </div>
+                      <span className={v.journey_status === 'IN_PROGRESS' ? 'badge badge-amber' : 'badge badge-emerald'} style={{ fontSize: 10, padding: '2px 8px' }}>
+                        {v.journey_status || 'READY'}
+                      </span>
+                    </div>
+
+                    <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', fontWeight: 600, lineHeight: 1.3 }}>
+                      {v.nama_kendaraan}
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8, borderTop: '1px solid var(--border-light)', fontSize: 11 }}>
+                      <span style={{ color: hasCargo ? 'var(--accent-emerald)' : 'var(--text-muted)', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <Package size={13} /> {v.total_cargo_count || 0} Paket ({v.current_load_kg || 0} kg)
+                      </span>
+                      <span style={{ color: 'var(--text-muted)' }}>
+                        Kapasitas: {v.max_capacity_kg || 1500} kg
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── RESI SEARCH (SHOWN IN PACKAGE MODE) ── */}
+        {searchMode === 'PACKAGE' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, minWidth: 280, position: 'relative' }}>
+                <Search size={16} color="var(--text-muted)" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch(query, selectedDate)}
+                  placeholder="Masukkan nomor resi connote (contoh: P260812000001)..."
+                  style={{
+                    width: '100%',
+                    height: 42,
+                    paddingLeft: 40,
+                    paddingRight: 36,
+                    fontSize: 13.5,
+                    borderRadius: 10,
+                    border: '1px solid var(--border-light)',
+                    background: 'var(--bg-workspace)',
+                    color: 'var(--text-primary)',
+                    fontFamily: 'monospace',
+                    boxSizing: 'border-box'
+                  }}
+                />
+                {query && (
+                  <button
+                    onClick={() => {
+                      setQuery('');
+                      setResult(null);
+                      setErrorMsg('');
+                      setSearchParams({ code: '', date: selectedDate });
+                    }}
+                    style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                    title="Reset Pencarian"
+                  >
+                    <X size={15} />
+                  </button>
+                )}
+              </div>
+
+              <button 
+                className="btn-primary" 
+                onClick={() => handleSearch(query, selectedDate)} 
+                disabled={loading}
+                style={{ height: 42, padding: '0 20px', fontWeight: 800, gap: 8 }}
+              >
+                {loading ? <RefreshCw size={15} className="spin" /> : <Search size={15} />}
+                {loading ? 'Mencari...' : 'Lacak Resi Paket'}
+              </button>
+            </div>
+
+            {/* Quick Test Samples */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', paddingTop: 8, borderTop: '1px solid var(--border-light)' }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                SAMPEL RESI DATABASE:
+              </span>
+              {SAMPLE_RESIS.map((s) => (
+                <button
+                  key={s.code}
+                  onClick={() => {
+                    if (s.date) setSelectedDate(s.date);
+                    handleSearch(s.code, s.date || selectedDate);
+                  }}
+                  className="btn-ghost"
+                  style={{ padding: '4px 10px', fontSize: 11, borderRadius: 6, gap: 6 }}
+                >
+                  <span style={{ color: 'var(--primary-blue)', fontWeight: 700, fontFamily: 'monospace' }}>{s.code}</span>
+                  <span className={`badge ${s.badgeClass}`} style={{ fontSize: 9, padding: '1px 6px' }}>
+                    {s.badge}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
       </div>
 
-      {/* ─── ERROR STATE / NO DATA FOUND ────────────────── */}
+      {/* ─── ERROR STATE ────────────────── */}
       {errorMsg && (
-        <div className="glass-card-solid" style={{ padding: 24, borderRadius: 16, borderLeft: '4px solid #ef4444', background: 'rgba(239,68,68,0.08)' }}>
+        <div className="spatial-card" style={{ padding: 20, borderLeft: '4px solid #ef4444', background: 'rgba(239, 68, 68, 0.1)' }}>
           <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
             <AlertCircle size={24} color="#ef4444" style={{ flexShrink: 0, marginTop: 2 }} />
-            <div style={{ flex: 1 }}>
-              <h4 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#fca5a5' }}>
+            <div>
+              <h4 style={{ margin: 0, fontSize: 14, fontWeight: 800, color: '#ef4444' }}>
                 DATA TIDAK DITEMUKAN
               </h4>
-              <p style={{ margin: '6px 0 0', fontSize: 13, color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>
+              <p style={{ margin: '4px 0 0', fontSize: 12.5, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
                 {errorMsg}
               </p>
             </div>
@@ -524,85 +785,64 @@ export default function Checker() {
         </div>
       )}
 
-      {/* ─── WARNING: FUTURE OPERATIONAL DATE ────────────────── */}
-      {result && (selectedDate > '2026-08-14' || result.isFutureDate) && (
-        <div style={{
-          background: 'rgba(15, 23, 42, 0.75)',
-          border: '1.5px solid rgba(245, 158, 11, 0.4)',
-          borderRadius: 20,
-          padding: '48px 32px',
-          textAlign: 'center',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 16,
-          boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
-          backdropFilter: 'blur(10px)',
-          minHeight: 320
-        }}>
-          <div style={{
-            width: 64, height: 64, borderRadius: '50%',
-            background: 'rgba(245, 158, 11, 0.15)', border: '2px solid rgba(245, 158, 11, 0.5)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }}>
-            <AlertTriangle size={32} color="#f59e0b" />
-          </div>
-
-          <div style={{ maxWidth: 640 }}>
-            <h3 style={{ fontSize: 18, fontWeight: 900, color: '#f59e0b', marginBottom: 8, letterSpacing: '0.02em', textTransform: 'uppercase' }}>
-              ⚠️ PERINGATAN: TANGGAL MASA DEPAN
-            </h3>
-            <p style={{ fontSize: 13.5, color: 'rgba(255,255,255,0.88)', lineHeight: 1.6, margin: '0 0 16px 0' }}>
-              {result.warningMessage || `Tanggal operasional yang Anda pilih (${formatDateDisplay(selectedDate)}) merupakan tanggal di masa depan. Belum ada transaksi yang muncul dikarenakan tanggal tersebut belum terjadi.`}
-            </p>
-            <button
-              className="btn-primary"
-              onClick={() => {
-                setSelectedDate('2026-08-12');
-                handleSearch(query || 'P260812000001', '2026-08-12');
-              }}
-              style={{ padding: '10px 24px', fontWeight: 800, fontSize: 13, gap: 8 }}
-            >
-              <CalendarDays size={16} />
-              Pilih Tanggal Operasional Aktif (12 Ags 2026)
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ─── NORMAL MAIN DASHBOARD CONTENT (WHEN VALID DATA EXISTS) ────────────────── */}
-      {result && !(selectedDate > '2026-08-14' || result.isFutureDate) && (
+      {/* ─── MAIN DASHBOARD CONTENT (WHEN VALID DATA EXISTS) ────────────────── */}
+      {result && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
           {/* 2. SECTION: 4 SUMMARY STATS CARDS */}
           {(() => {
             const stops = result.routeStops || [];
-            const totalStops = stops.length;
-            const activeStopObj = stops[activeSeq - 1] || {};
-            const totalCargo = (result.cargoItems || []).length || 35;
-            const totalWeight = (result.cargoItems || []).reduce((s, i) => s + (i.weight_kg || 0), 0).toFixed(1) || '587.9';
-            const utilPct = activeStopObj.utilizationPctAtStop ?? result.utilizationPct ?? 13;
+            const totalStopsCount = stops.length || 5;
+            const activeStop = stops[activeSeq - 1] || {};
+            const totalCargo = (result.cargoItems || []).length || result.totalCargoCount || 0;
+            const totalWeight = (result.cargoItems || []).reduce((s, i) => s + (i.weight_kg || 0), 0).toFixed(1);
+            
+            const stopLoad = activeStop.loadAtStopKg !== undefined ? activeStop.loadAtStopKg : result.currentLoadKg;
+            const utilPct = activeStop.utilizationPctAtStop !== undefined ? activeStop.utilizationPctAtStop : result.utilizationPct;
             const capColor = utilPct >= 100 ? '#ef4444' : utilPct >= 85 ? '#f59e0b' : '#10b981';
+
             const cards = [
-              { icon: Package, color: '#38bdf8', label: 'TOTAL PAKET DI KENDARAAN', value: `${totalCargo} pcs`, sub: `${totalWeight} kg total muatan` },
+              { icon: Package, color: '#0284c7', label: 'TOTAL PAKET DI KENDARAAN', value: `${totalCargo} pcs`, sub: `${totalWeight} kg total muatan` },
               { icon: Truck, color: '#f59e0b', label: 'KENDARAAN BEROPERASI', value: result.vehicleNopol || 'B 9910 PCX', sub: `Rute: ${result.routeId || 'RT-MALAM-B9910-PCX'}` },
-              { icon: Activity, color: capColor, label: `UTILISASI KAP. STOP #${activeSeq}`, value: `${utilPct}%`, sub: `${activeStopObj.loadAtStopKg ?? result.currentLoadKg ?? 187.6} / ${result.maxCapacityKg || 1500} kg` },
-              { icon: MapPin, color: '#a78bfa', label: 'PROGRESS RUTE', value: `${activeSeq} / ${totalStops} Stop`, sub: activeStopObj.officeName ? `Sekarang: ${activeStopObj.officeName}` : 'In Progress' },
+              { icon: Activity, color: capColor, label: `UTILISASI KAPASITAS STOP #${activeSeq}`, value: `${utilPct}%`, sub: `${stopLoad} / ${result.maxCapacityKg || 1500} kg` },
+              { icon: MapPin, color: '#a855f7', label: 'PROGRESS RUTE SAAT INI', value: `Stop #${activeSeq} dari ${totalStopsCount}`, sub: activeStop.officeName ? activeStop.officeName : 'In Progress' },
             ];
+
             return (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
                 {cards.map((c, i) => {
                   const Icon = c.icon;
                   return (
-                    <div key={i} style={{ background: 'rgba(255,255,255,0.04)', border: `1px solid ${c.color}33`, borderRadius: 14, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14 }}>
-                      <div style={{ width: 40, height: 40, borderRadius: 10, background: `${c.color}18`, border: `1px solid ${c.color}44`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <Icon size={18} color={c.color} />
+                    <div
+                      key={i}
+                      className="spatial-card"
+                      style={{
+                        padding: '16px 18px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 14,
+                        borderRadius: 16
+                      }}
+                    >
+                      <div style={{
+                        width: 44, height: 44, borderRadius: 12,
+                        background: 'var(--bg-workspace)',
+                        border: '1px solid var(--border-light)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        flexShrink: 0
+                      }}>
+                        <Icon size={20} color={c.color} />
                       </div>
                       <div>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>{c.label}</div>
-                        <div style={{ fontSize: 16, fontWeight: 900, color: '#fff', fontFamily: i === 1 ? 'monospace' : 'inherit' }}>{c.value}</div>
-                        <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>{c.sub}</div>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>
+                          {c.label}
+                        </div>
+                        <div style={{ fontSize: 17, fontWeight: 900, color: 'var(--text-primary)', fontFamily: i === 1 ? 'monospace' : 'inherit' }}>
+                          {c.value}
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
+                          {c.sub}
+                        </div>
                       </div>
                     </div>
                   );
@@ -613,44 +853,44 @@ export default function Checker() {
 
           {/* 3. SECTION: PACKAGE TRACKING OVERVIEW CARD (IF RESI SEARCHED) */}
           {result.connoteCode && !result.isVehicleQuery && (
-            <div className="glass-card-solid" style={{ padding: 20, borderRadius: 16 }}>
+            <div className="spatial-card" style={{ padding: 22 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14 }}>
                 <div>
-                  <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
-                    PACKAGE TRACKING OVERVIEW &nbsp;•&nbsp; <span style={{ color: '#38bdf8' }}>KONTEKS TANGGAL: {formatDateDisplay(selectedDate)}</span>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
+                    PACKAGE TRACKING OVERVIEW &nbsp;•&nbsp; <span style={{ color: 'var(--primary-blue)' }}>KONTEKS TANGGAL: {formatDateDisplay(selectedDate)}</span>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <h2 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: '#fff', fontFamily: 'monospace' }}>
+                    <h2 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: 'var(--text-primary)', fontFamily: 'monospace' }}>
                       {result.connoteCode}
                     </h2>
-                    <button onClick={() => handleCopyCode(result.connoteCode)} className="btn-ghost" style={{ padding: '2px 8px', fontSize: 11, gap: 4 }}>
+                    <button onClick={() => handleCopyCode(result.connoteCode)} className="btn-ghost" style={{ padding: '3px 8px', fontSize: 11, gap: 4 }}>
                       {copied ? <Check size={13} color="#10b981" /> : <Copy size={13} />} Copy Resi
                     </button>
-                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontFamily: 'monospace' }}>
+                    <span style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'monospace' }}>
                       Booking: {result.bookingCode}
                     </span>
                   </div>
                 </div>
 
-                <span className={mapStateToBadge(result.state).class} style={{ fontSize: 12, padding: '4px 12px', fontWeight: 800 }}>
+                <span className={mapStateToBadge(result.state).class} style={{ fontSize: 12, padding: '5px 14px', fontWeight: 800 }}>
                   {mapStateToBadge(result.state).label}
                 </span>
               </div>
 
               {/* Spec Details 6-Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginTop: 18, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--border-light)' }}>
                 {[
-                  { label: 'LAYANAN PENGIRIMAN', value: result.service, color: '#38bdf8', icon: Package },
-                  { label: 'BERAT PAKET', value: result.weight, color: '#fff', icon: Weight },
-                  { label: 'KANTOR ASAL (ORIGIN)', value: result.origin, color: '#10b981', icon: MapPin },
-                  { label: 'KANTOR TUJUAN (DEST)', value: result.destination, color: '#ff7b59', icon: MapPin },
-                  { label: 'PENGIRIM / PENERIMA', value: `${result.senderName} → ${result.receiverName}`, color: 'rgba(255,255,255,0.9)', icon: User },
-                  { label: 'TANGGAL INPUT PAKET', value: result.createdAt, color: 'rgba(255,255,255,0.7)', icon: Calendar },
+                  { label: 'LAYANAN PENGIRIMAN', value: result.service || 'Pos Nextday', color: '#0284c7', icon: Package },
+                  { label: 'BERAT PAKET', value: result.weight || '1.0 kg', color: 'var(--text-primary)', icon: Weight },
+                  { label: 'KANTOR ASAL (ORIGIN)', value: result.origin || 'KCU Cimahi 40500', color: '#10b981', icon: MapPin },
+                  { label: 'KANTOR TUJUAN (DEST)', value: result.destination || 'SPP Bandung 40400', color: '#f97316', icon: MapPin },
+                  { label: 'PENGIRIM / PENERIMA', value: `${result.senderName || 'Pengirim'} ➔ ${result.receiverName || 'Penerima'}`, color: 'var(--text-primary)', icon: User },
+                  { label: 'TANGGAL INPUT PAKET', value: result.createdAt ? (typeof result.createdAt === 'string' ? result.createdAt : new Date(result.createdAt).toLocaleString('id-ID')) : '-', color: 'var(--text-muted)', icon: Calendar },
                 ].map((item) => {
                   const IconComp = item.icon;
                   return (
-                    <div key={item.label} style={{ background: 'rgba(255,255,255,0.03)', padding: '12px 14px', borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)' }}>
-                      <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div key={item.label} style={{ background: 'var(--bg-workspace)', padding: '12px 14px', borderRadius: 12, border: '1px solid var(--border-light)' }}>
+                      <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
                         <IconComp size={12} color={item.color} /> {item.label}
                       </div>
                       <div style={{ fontSize: 12.5, fontWeight: 800, color: item.color }}>
@@ -664,20 +904,20 @@ export default function Checker() {
           )}
 
           {/* 4. SECTION: TRACKING TIMELINE (DATABASE EVENT HISTORY) */}
-          {result.timeline && result.timeline.length > 0 && !result.isVehicleQuery && (
-            <div className="glass-card-solid" style={{ padding: 22, borderRadius: 18, border: '1px solid rgba(255,255,255,0.08)' }}>
+          {displayTimeline && displayTimeline.length > 0 && (
+            <div className="spatial-card" style={{ padding: 22 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, flexWrap: 'wrap', gap: 10 }}>
-                <div style={{ fontSize: 13, fontWeight: 800, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Clock size={16} color="#38bdf8" /> TRACKING TIMELINE (EVENT LOG DARI DATABASE)
+                <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--primary-blue)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Clock size={16} color="var(--primary-blue)" /> TRACKING TIMELINE (EVENT LOG DARI DATABASE)
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span className="font-mono" style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>
-                    {result.timeline.length} Event Tercatat
+                  <span style={{ fontSize: 11, color: '#10b981', fontWeight: 800 }}>
+                    ● {displayTimeline.length} Event Tercatat (Stop #{activeSeq} Aktif)
                   </span>
                   <button
                     onClick={() => window.print()}
                     className="btn-ghost"
-                    style={{ padding: '4px 10px', fontSize: 11, borderRadius: 8, gap: 5, color: '#a78bfa', borderColor: 'rgba(167,139,250,0.4)' }}
+                    style={{ padding: '4px 10px', fontSize: 11, gap: 5 }}
                   >
                     <Printer size={13} /> Cetak Laporan
                   </button>
@@ -686,42 +926,44 @@ export default function Checker() {
 
               {/* Stepper List */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {result.timeline.map((event, idx) => {
-                  const isLast = idx === result.timeline.length - 1;
+                {displayTimeline.map((event, idx) => {
+                  const isLast = idx === displayTimeline.length - 1;
                   const eventStageUp = String(event.stage || '').toUpperCase();
                   const dotColor = isLast ? '#10b981'
                     : eventStageUp.includes('DELIVERED') ? '#10b981'
-                    : eventStageUp.includes('TRANSIT') || eventStageUp.includes('IN_TRANSIT') ? '#f59e0b'
-                    : eventStageUp.includes('LOADED') ? '#38bdf8'
-                    : '#6b7280';
+                    : eventStageUp.includes('TRANSIT') ? '#0284c7'
+                    : eventStageUp.includes('LOADED') ? '#0284c7'
+                    : '#94a3b8';
                   return (
                     <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: 14, position: 'relative' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                         <div
                           style={{
-                            width: 30, height: 30, borderRadius: '50%',
-                            background: isLast ? `linear-gradient(135deg, ${dotColor}, #2460b0)` : 'rgba(255,255,255,0.06)',
+                            width: 28, height: 28, borderRadius: '50%',
+                            background: isLast ? dotColor : 'var(--bg-workspace)',
                             border: `2px solid ${dotColor}`,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: '#fff', fontWeight: 800, fontSize: 11, flexShrink: 0,
-                            boxShadow: isLast ? `0 0 12px ${dotColor}55` : 'none'
+                            color: isLast ? '#ffffff' : dotColor,
+                            fontWeight: 800, fontSize: 11, flexShrink: 0
                           }}
                         >
                           {idx + 1}
                         </div>
-                        {idx < result.timeline.length - 1 && (
-                          <div style={{ width: 2, height: 28, background: `${dotColor}33`, margin: '4px 0' }} />
+                        {idx < displayTimeline.length - 1 && (
+                          <div style={{ width: 2, height: 28, background: 'var(--border-light)', margin: '4px 0' }} />
                         )}
                       </div>
-                      <div style={{ flex: 1, background: 'rgba(255,255,255,0.03)', padding: 12, borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div style={{ flex: 1, background: isLast ? 'rgba(16, 185, 129, 0.12)' : 'var(--bg-workspace)', padding: 12, borderRadius: 10, border: isLast ? '1px solid rgba(52, 211, 153, 0.3)' : '1px solid var(--border-light)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <span className={mapStateToBadge(event.stage).class} style={{ fontSize: 10, padding: '2px 8px' }}>
                             {mapStateToBadge(event.stage).label || event.stage}
                           </span>
-                          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>{event.time}</span>
+                          <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>{event.time}</span>
                         </div>
-                        <div style={{ fontSize: 12.5, fontWeight: 700, color: '#fff', marginTop: 6 }}>{event.note}</div>
-                        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>📍 Lokasi: {event.location}</div>
+                        <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text-primary)', marginTop: 6 }}>{event.note}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <MapPin size={12} color="#64748b" /> Lokasi: {event.location}
+                        </div>
                       </div>
                     </div>
                   );
@@ -730,54 +972,54 @@ export default function Checker() {
             </div>
           )}
 
-          {/* 5. SECTION: CURRENT VEHICLE JOURNEY & VEHICLE CAPACITY GAUGE (SIDE-BY-SIDE) */}
+          {/* 5. SECTION: CURRENT VEHICLE JOURNEY & VEHICLE CAPACITY GAUGE */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 16 }}>
             
             {/* 5A. CURRENT VEHICLE JOURNEY CARD */}
-            <div className="glass-card-solid" style={{ padding: 22, borderRadius: 18, border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div className="spatial-card" style={{ padding: 22, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Truck size={16} color="#38bdf8" /> CURRENT VEHICLE JOURNEY
+                  <div style={{ fontSize: 12, fontWeight: 800, color: '#0b2e8a', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Truck size={16} color="#0284c7" /> CURRENT VEHICLE JOURNEY
                   </div>
-                  <span className="badge-orange" style={{ fontSize: 10.5, padding: '3px 8px' }}>
+                  <span className="badge badge-amber" style={{ fontSize: 10.5, padding: '3px 8px' }}>
                     IN_PROGRESS
                   </span>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
-                  <div style={{ width: 48, height: 48, borderRadius: 12, background: 'rgba(232,67,31,0.15)', border: '1px solid rgba(232,67,31,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Truck size={24} color="#e8431f" />
+                  <div style={{ width: 48, height: 48, borderRadius: 12, background: '#e0f2fe', border: '1px solid #bae6fd', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Truck size={24} color="#0284c7" />
                   </div>
                   <div>
-                    <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', fontFamily: 'monospace' }}>
+                    <div style={{ fontSize: 18, fontWeight: 900, color: '#0f172a', fontFamily: 'monospace' }}>
                       {result.vehicleNopol || 'B 9910 PCX'}
                     </div>
-                    <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.5)' }}>
-                      Rute: {result.routeId || 'RT-MALAM-B9910-PCX'}
+                    <div style={{ fontSize: 11.5, color: '#64748b' }}>
+                      Rute: {result.routeId || 'RT-MALAM-B9910-PCX'} &nbsp;•&nbsp; Driver: {result.vehicleInfo?.driver || 'Ahmad Supriadi'}
                     </div>
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, background: 'rgba(255,255,255,0.02)', padding: 14, borderRadius: 12, border: '1px solid rgba(255,255,255,0.05)', marginBottom: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, background: '#f8fafc', padding: 14, borderRadius: 12, border: '1px solid #e2e8f0', marginBottom: 16 }}>
                   <div>
-                    <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase' }}>Stop Sequence Aktif:</div>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: '#fff', marginTop: 2 }}>Stop #{activeSeq} dari {(result.routeStops || []).length || 8}</div>
+                    <div style={{ fontSize: 10.5, color: '#64748b', textTransform: 'uppercase' }}>Stop Sequence:</div>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', marginTop: 2 }}>Stop #{activeSeq} dari {(result.routeStops || []).length || 5}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase' }}>Stop Saat Ini:</div>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: '#38bdf8', marginTop: 2 }}>{result.routeStops?.[activeSeq - 1]?.officeName || 'SPP Bandung'}</div>
+                    <div style={{ fontSize: 10.5, color: '#64748b', textTransform: 'uppercase' }}>Stop Saat Ini:</div>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: '#0284c7', marginTop: 2 }}>{activeStopObj.officeName || 'SPP Bandung'}</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase' }}>Estimasi Tiba (ETA):</div>
-                    <div style={{ fontSize: 12.5, fontWeight: 800, color: '#fbbf24', marginTop: 2 }}>
-                      {result.routeStops?.[activeSeq - 1]?.etaTime || '12:10 WIB'} <span style={{ fontSize: 10, color: '#10b981' }}>⏱ 15m 50s lagi</span>
+                    <div style={{ fontSize: 10.5, color: '#64748b', textTransform: 'uppercase' }}>Estimasi Tiba (ETA):</div>
+                    <div style={{ fontSize: 12.5, fontWeight: 800, color: '#d97706', marginTop: 2, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      {activeStopObj.etaTime || '10:00 WIB'} <span style={{ fontSize: 10, color: '#16a34a', display: 'inline-flex', alignItems: 'center', gap: 2 }}><Clock size={10} /> On Schedule</span>
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase' }}>Stop Berikutnya:</div>
-                    <div style={{ fontSize: 12.5, fontWeight: 800, color: '#a78bfa', marginTop: 2 }}>
-                      {result.routeStops?.[activeSeq]?.officeName || 'SPP Bandung (Terminal Akhir)'}
+                    <div style={{ fontSize: 10.5, color: '#64748b', textTransform: 'uppercase' }}>Stop Berikutnya:</div>
+                    <div style={{ fontSize: 12.5, fontWeight: 800, color: '#7c3aed', marginTop: 2 }}>
+                      {result.routeStops?.[activeSeq]?.officeName || (result.routeStops?.[result.routeStops.length - 1]?.officeName ? `${result.routeStops[result.routeStops.length - 1].officeName} (Terminal Akhir)` : 'SPP Bandung (Terminal Akhir)')}
                     </div>
                   </div>
                 </div>
@@ -786,27 +1028,26 @@ export default function Checker() {
               <button
                 className="btn-primary"
                 onClick={() => setIsMapModalOpen(true)}
-                style={{ width: '100%', height: 42, fontSize: 13, fontWeight: 800, borderRadius: 12, justifyContent: 'center', gap: 8, background: 'linear-gradient(135deg, #e8431f, #f97316)' }}
+                style={{ width: '100%', height: 42, fontSize: 13, fontWeight: 800, borderRadius: 12, justifyContent: 'center', gap: 8 }}
               >
-                <Navigation size={15} /> Lihat Telemetri Radar GPS 📡
+                <Navigation size={15} /> Lihat Telemetri Radar GPS
               </button>
             </div>
 
             {/* 5B. VEHICLE CAPACITY GAUGE CARD */}
             {(() => {
-              const activeStopObj = result.routeStops?.[activeSeq - 1] || {};
-              const activeLoadKg = activeStopObj.loadAtStopKg !== undefined ? activeStopObj.loadAtStopKg : (result.currentLoadKg || 187.6);
-              const activeUtilPct = activeStopObj.utilizationPctAtStop !== undefined ? activeStopObj.utilizationPctAtStop : (result.utilizationPct || 13);
+              const activeLoadKg = activeStopObj.loadAtStopKg !== undefined ? activeStopObj.loadAtStopKg : result.currentLoadKg;
+              const activeUtilPct = activeStopObj.utilizationPctAtStop !== undefined ? activeStopObj.utilizationPctAtStop : result.utilizationPct;
               const activeCapStatus = activeStopObj.capacityStatusAtStop || result.capacityStatus || 'NORMAL';
               const capInfo = getCapacityStatusBadge(activeCapStatus);
               const maxCap = result.maxCapacityKg || 1500;
               const availKg = Math.max(0, maxCap - activeLoadKg);
 
               return (
-                <div className="glass-card-solid" style={{ padding: 22, borderRadius: 18, border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <div className="spatial-card" style={{ padding: 22, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                      <div style={{ fontSize: 12, fontWeight: 800, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ fontSize: 12, fontWeight: 800, color: '#0b2e8a', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 8 }}>
                         <Zap size={16} color={capInfo.color} /> VEHICLE CAPACITY GAUGE (STOP #{activeSeq})
                       </div>
                       <span 
@@ -824,9 +1065,9 @@ export default function Checker() {
                       </span>
                     </div>
 
-                    <div style={{ background: 'rgba(6,13,31,0.6)', padding: 16, borderRadius: 14, border: '1px solid rgba(255,255,255,0.06)', marginBottom: 14 }}>
+                    <div style={{ background: '#f8fafc', padding: 16, borderRadius: 14, border: '1px solid #e2e8f0', marginBottom: 14 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', fontWeight: 700 }}>
+                        <span style={{ fontSize: 12, color: '#64748b', fontWeight: 700 }}>
                           Penggunaan Muatan (Utilitas Stop #{activeSeq}):
                         </span>
                         <span style={{ fontSize: 18, fontWeight: 900, color: capInfo.color }}>
@@ -835,32 +1076,32 @@ export default function Checker() {
                       </div>
 
                       {/* Progress Bar Gauge */}
-                      <div style={{ width: '100%', height: 10, borderRadius: 10, background: 'rgba(255,255,255,0.08)', overflow: 'hidden', marginBottom: 10 }}>
+                      <div style={{ width: '100%', height: 10, borderRadius: 10, background: '#e2e8f0', overflow: 'hidden', marginBottom: 10 }}>
                         <div style={{
                           width: `${Math.min(100, activeUtilPct)}%`,
                           height: '100%',
                           borderRadius: 10,
-                          background: `linear-gradient(90deg, ${capInfo.color}, #6366f1)`,
+                          background: capInfo.color,
                           transition: 'width 0.4s ease'
                         }} />
                       </div>
 
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, fontSize: 11.5 }}>
                         <div>
-                          <span style={{ color: 'rgba(255,255,255,0.45)' }}>Beban di Stop Ini:</span>
-                          <div style={{ fontWeight: 800, color: '#fff', fontSize: 13 }}>{activeLoadKg} kg</div>
+                          <span style={{ color: '#64748b' }}>Beban di Stop Ini:</span>
+                          <div style={{ fontWeight: 800, color: '#0f172a', fontSize: 13 }}>{activeLoadKg} kg</div>
                         </div>
                         <div>
-                          <span style={{ color: 'rgba(255,255,255,0.45)' }}>Max Capacity:</span>
-                          <div style={{ fontWeight: 800, color: '#fff', fontSize: 13 }}>{maxCap} kg</div>
+                          <span style={{ color: '#64748b' }}>Kapasitas Maksimal:</span>
+                          <div style={{ fontWeight: 800, color: '#0f172a', fontSize: 13 }}>{maxCap} kg</div>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div style={{ fontSize: 11.5, color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12, borderTop: '1px solid #f1f5f9' }}>
                     <span>Kapasitas Tersedia:</span>
-                    <strong style={{ color: '#10b981', fontSize: 13 }}>{availKg.toFixed(1)} kg sisa</strong>
+                    <strong style={{ color: '#16a34a', fontSize: 13 }}>{availKg.toFixed(1)} kg sisa</strong>
                   </div>
                 </div>
               );
@@ -868,27 +1109,16 @@ export default function Checker() {
 
           </div>
 
-          {/* 6. SECTION: MULTI-STOP ROUTE JOURNEY (8 WAYPOINTS DATABASE) */}
-          <div 
-            className="glass-card-solid" 
-            style={{ 
-              padding: 24, 
-              borderRadius: 20, 
-              border: '1px solid rgba(56,189,248,0.25)',
-              background: 'linear-gradient(135deg, rgba(13,27,56,0.95), rgba(6,13,31,0.98))',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-              position: 'relative',
-              overflow: 'hidden'
-            }}
-          >
+          {/* 6. SECTION: MULTI-STOP ROUTE JOURNEY (DYNAMIC WAYPOINTS FROM DATABASE) */}
+          <div className="spatial-card" style={{ padding: 24, position: 'relative' }}>
             {/* Top Bar with Title & Simulation Toolbar */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 14 }}>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 900, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Navigation size={17} color="#38bdf8" /> MULTI-STOP ROUTE JOURNEY ({(result.routeStops || []).length} WAYPOINTS DATABASE)
+                <div style={{ fontSize: 13, fontWeight: 900, color: '#0b2e8a', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Navigation size={17} color="#0284c7" /> MULTI-STOP ROUTE JOURNEY ({(result.routeStops || []).length} WAYPOINTS DATABASE)
                 </div>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 3 }}>
-                  Lintasan armada {result.vehicleNopol || 'B 9910 PCX'} — Klik waypoint untuk memfilter muatan paket
+                <div style={{ fontSize: 11, color: '#64748b', marginTop: 3 }}>
+                  Lintasan armada {result.vehicleNopol || 'B 9910 PCX'} — Klik waypoint untuk memfilter muatan resi di bawah
                 </div>
               </div>
 
@@ -897,13 +1127,13 @@ export default function Checker() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 8,
-                background: 'rgba(6,13,31,0.8)',
+                background: '#f8fafc',
                 padding: '6px 12px',
                 borderRadius: 12,
-                border: '1px solid rgba(56,189,248,0.3)'
+                border: '1px solid #e2e8f0'
               }}>
-                <span style={{ fontSize: 10.5, fontWeight: 800, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em', marginRight: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <Sparkles size={13} color="#38bdf8" /> Mode Simulasi Rute:
+                <span style={{ fontSize: 10.5, fontWeight: 800, color: '#0284c7', textTransform: 'uppercase', letterSpacing: '0.05em', marginRight: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Sparkles size={13} color="#0284c7" /> Mode Simulasi:
                 </span>
 
                 <button
@@ -917,22 +1147,11 @@ export default function Checker() {
                       setIsSimulating(true);
                     }
                   }}
-                  style={{
-                    padding: '4px 10px',
-                    fontSize: 11,
-                    fontWeight: 800,
-                    borderRadius: 6,
-                    border: 'none',
-                    cursor: 'pointer',
-                    background: isSimulating ? '#f59e0b' : '#0284c7',
-                    color: '#fff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 4
-                  }}
+                  className="btn-primary"
+                  style={{ padding: '4px 10px', fontSize: 11, gap: 4 }}
                 >
                   {isSimulating ? <Pause size={12} /> : <Play size={12} />}
-                  {isSimulating ? 'Pause' : 'Simulasi Demo ▶'}
+                  {isSimulating ? 'Pause' : 'Simulasi ▶'}
                 </button>
 
                 <button
@@ -941,7 +1160,7 @@ export default function Checker() {
                     setSimStopSeq(prev => Math.min((result.routeStops || []).length, (prev ?? activeSeq) + 1));
                   }}
                   className="btn-ghost"
-                  style={{ padding: '3px 8px', fontSize: 11, borderRadius: 6, color: 'rgba(255,255,255,0.7)' }}
+                  style={{ padding: '3px 8px', fontSize: 11 }}
                   title="Maju 1 Stop"
                 >
                   <SkipForward size={12} /> Next
@@ -953,7 +1172,7 @@ export default function Checker() {
                     setSimStopSeq(prev => Math.max(1, (prev ?? activeSeq) - 1));
                   }}
                   className="btn-ghost"
-                  style={{ padding: '3px 8px', fontSize: 11, borderRadius: 6, color: 'rgba(255,255,255,0.7)' }}
+                  style={{ padding: '3px 8px', fontSize: 11 }}
                   title="Mundur 1 Stop"
                 >
                   <SkipBack size={12} /> Prev
@@ -966,122 +1185,37 @@ export default function Checker() {
                     setSelectedStopFilter(null);
                   }}
                   className="btn-ghost"
-                  style={{ padding: '3px 8px', fontSize: 11, borderRadius: 6, color: '#f87171', borderColor: 'rgba(239,68,68,0.3)' }}
+                  style={{ padding: '3px 8px', fontSize: 11, color: '#ef4444' }}
                   title="Reset ke Posisi Live DB"
                 >
                   <RotateCcw size={12} /> Reset
                 </button>
-
-                {/* Speed Multipliers */}
-                <div style={{ display: 'flex', gap: 2, marginLeft: 4 }}>
-                  {[
-                    { label: '1x', ms: 2200 },
-                    { label: '2x', ms: 1400 },
-                    { label: '4x', ms: 700 }
-                  ].map(s => (
-                    <button
-                      key={s.label}
-                      onClick={() => setSimSpeed(s.ms)}
-                      style={{
-                        padding: '2px 6px',
-                        fontSize: 10,
-                        fontWeight: 800,
-                        borderRadius: 4,
-                        border: 'none',
-                        cursor: 'pointer',
-                        background: simSpeed === s.ms ? 'rgba(56,189,248,0.35)' : 'rgba(255,255,255,0.06)',
-                        color: simSpeed === s.ms ? '#38bdf8' : 'rgba(255,255,255,0.5)'
-                      }}
-                    >
-                      {s.label}
-                    </button>
-                  ))}
-                </div>
               </div>
             </div>
 
-            {/* Simulation Status Info Bar */}
-            {(simStopSeq !== null || isSimulating) && (
-              <div style={{
-                background: 'rgba(56,189,248,0.1)',
-                border: '1px solid rgba(56,189,248,0.3)',
-                padding: '8px 14px',
-                borderRadius: 10,
-                fontSize: 11.5,
-                color: '#38bdf8',
-                marginBottom: 20,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span className="pulse" style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#38bdf8' }} />
-                  <strong>Simulasi Bergerak:</strong> Armada {result.vehicleNopol} berada di Waypoint #{activeSeq} ({(result.routeStops || [])[activeSeq - 1]?.officeName || ''})
-                </div>
-                <button
-                  onClick={() => {
-                    setIsSimulating(false);
-                    setSimStopSeq(null);
-                    setSelectedStopFilter(null);
-                  }}
-                  style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: 11, textDecoration: 'underline' }}
-                >
-                  Kembali ke Data Live DB ✕
-                </button>
-              </div>
-            )}
-
             {/* Waypoint Track Horizontal Layout */}
-            <div style={{ position: 'relative', width: '100%', paddingTop: 40, paddingBottom: 10 }}>
+            <div style={{ position: 'relative', width: '100%', paddingTop: 30, paddingBottom: 10 }}>
               
-              {/* Floating Animated Vehicle Marker Above Current Stop */}
-              <div style={{
-                position: 'absolute',
-                top: 0,
-                left: `${Math.min(94, Math.max(3, ((activeSeq - 0.5) / ((result.routeStops || []).length || 1)) * 100))}%`,
-                transform: 'translateX(-50%)',
-                transition: 'all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                zIndex: 10
-              }}>
-                <div style={{
-                  background: 'linear-gradient(135deg, #e8431f, #f97316)',
-                  padding: '4px 10px',
-                  borderRadius: 20,
-                  boxShadow: '0 0 20px rgba(232,67,31,0.8), 0 4px 12px rgba(0,0,0,0.5)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  color: '#fff',
-                  fontSize: 10.5,
-                  fontWeight: 900,
-                  whiteSpace: 'nowrap',
-                  border: '1px solid rgba(255,255,255,0.4)'
-                }}>
-                  <Truck size={13} color="#fff" className={isSimulating ? 'pulse-fast' : ''} />
-                  <span>{result.vehicleNopol || 'B 9910 PCX'} (Stop #{activeSeq})</span>
-                </div>
-              </div>
-
               {/* Connected Stepper Line & Waypoint Nodes */}
               <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.max(1, (result.routeStops || []).length)}, 1fr)`, gap: 4, width: '100%', position: 'relative' }}>
                 
                 {/* Underlying Track Progress Line */}
                 <div style={{
                   position: 'absolute',
-                  top: 24,
+                  top: 22,
                   left: `${100 / (Math.max(1, (result.routeStops || []).length) * 2)}%`,
                   right: `${100 / (Math.max(1, (result.routeStops || []).length) * 2)}%`,
                   height: 4,
-                  background: 'rgba(255,255,255,0.1)',
+                  background: '#e2e8f0',
                   borderRadius: 2,
                   zIndex: 1
                 }}>
                   <div style={{
                     width: `${Math.min(100, Math.max(0, ((activeSeq - 1) / Math.max(1, (result.routeStops || []).length - 1)) * 100))}%`,
                     height: '100%',
-                    background: 'linear-gradient(90deg, #10b981, #38bdf8, #e8431f)',
+                    background: '#0284c7',
                     borderRadius: 2,
-                    transition: 'width 0.6s ease'
+                    transition: 'width 0.5s ease'
                   }} />
                 </div>
 
@@ -1090,25 +1224,22 @@ export default function Checker() {
                   const isPassed = stop.seq < activeSeq;
                   const isSelected = selectedStopFilter === stop.nopen;
 
-                  let nodeBg = 'rgba(15,23,42,0.9)';
-                  let nodeBorder = 'rgba(255,255,255,0.15)';
-                  let nodeColor = 'rgba(255,255,255,0.5)';
-                  let nodeGlow = 'none';
+                  let nodeBg = '#ffffff';
+                  let nodeBorder = '#cbd5e1';
+                  let nodeColor = '#64748b';
 
                   if (isPassed) {
-                    nodeBg = '#10b981';
-                    nodeBorder = '#10b981';
-                    nodeColor = '#fff';
+                    nodeBg = '#16a34a';
+                    nodeBorder = '#16a34a';
+                    nodeColor = '#ffffff';
                   } else if (isCurrent) {
-                    nodeBg = '#e8431f';
-                    nodeBorder = '#38bdf8';
-                    nodeColor = '#fff';
-                    nodeGlow = '0 0 20px rgba(232,67,31,0.9), 0 0 10px rgba(56,189,248,0.7)';
+                    nodeBg = '#0b2e8a';
+                    nodeBorder = '#0284c7';
+                    nodeColor = '#ffffff';
                   }
 
                   if (isSelected) {
-                    nodeBorder = '#38bdf8';
-                    nodeGlow = '0 0 20px rgba(56,189,248,0.9)';
+                    nodeBorder = '#0284c7';
                   }
 
                   return (
@@ -1132,38 +1263,38 @@ export default function Checker() {
                       {/* Waypoint Circle Button */}
                       <div
                         style={{
-                          width: 44,
-                          height: 44,
+                          width: 42,
+                          height: 42,
                           borderRadius: '50%',
                           background: nodeBg,
                           border: `3px solid ${nodeBorder}`,
-                          boxShadow: nodeGlow,
+                          boxShadow: isCurrent ? '0 0 0 4px rgba(2, 132, 199, 0.2)' : '0 2px 6px rgba(15, 23, 42, 0.05)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           color: nodeColor,
                           fontWeight: 900,
                           fontSize: 13,
-                          transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                          transform: isCurrent ? 'scale(1.15)' : 'scale(1)'
+                          transition: 'all 0.2s ease',
+                          transform: isCurrent ? 'scale(1.1)' : 'scale(1)'
                         }}
                       >
                         {isPassed ? <CheckCircle2 size={18} color="#fff" /> : stop.seq}
                       </div>
 
-                      {/* Waypoint Name & Distinct Sublabel */}
+                      {/* Waypoint Name & Sublabel */}
                       <div style={{ textAlign: 'center', width: '100%', padding: '0 2px' }}>
                         <div style={{
                           fontSize: 11,
                           fontWeight: isCurrent || isSelected ? 900 : 700,
-                          color: isSelected ? '#38bdf8' : isCurrent ? '#ff7b59' : isPassed ? '#fff' : 'rgba(255,255,255,0.6)',
+                          color: isSelected ? '#0284c7' : isCurrent ? '#0b2e8a' : '#334155',
                           lineHeight: 1.25,
                           marginBottom: 2,
                           wordBreak: 'break-word'
                         }}>
                           {stop.officeName}
                         </div>
-                        <div style={{ fontSize: 9.5, color: '#38bdf8', fontWeight: 700, marginTop: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3 }}>
+                        <div style={{ fontSize: 9.5, color: '#0284c7', fontWeight: 700, marginTop: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3 }}>
                           <Clock size={10} /> {stop.etaTime || '10:00 WIB'}
                           {stop.jarakKm ? ` (${stop.jarakKm} km)` : ''}
                         </div>
@@ -1176,23 +1307,22 @@ export default function Checker() {
                             fontWeight: 800,
                             padding: '2px 6px',
                             borderRadius: 4,
-                            background: stop.utilizationPctAtStop > 100 ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.06)',
-                            border: `1px solid ${stop.utilizationPctAtStop > 100 ? 'rgba(239,68,68,0.5)' : 'rgba(255,255,255,0.1)'}`,
-                            color: stop.utilizationPctAtStop > 100 ? '#ef4444' : stop.utilizationPctAtStop >= 90 ? '#f97316' : '#10b981'
+                            background: stop.utilizationPctAtStop > 100 ? '#fef2f2' : '#f8fafc',
+                            border: `1px solid ${stop.utilizationPctAtStop > 100 ? '#fca5a5' : '#e2e8f0'}`,
+                            color: stop.utilizationPctAtStop > 100 ? '#ef4444' : stop.utilizationPctAtStop >= 90 ? '#d97706' : '#16a34a',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 3
                           }}>
-                            📦 {stop.loadAtStopKg} kg ({stop.utilizationPctAtStop}%)
+                            <Package size={10} /> {stop.loadAtStopKg} kg ({stop.utilizationPctAtStop}%)
                           </div>
                         )}
-
-                        <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', fontWeight: 600, marginTop: 2 }}>
-                          {getWaypointSubLabel(stop, sIdx, (result.routeStops || []).length)}
-                        </div>
                       </div>
 
                       {/* Status Badge */}
                       <span 
-                        className={`badge ${isPassed ? 'badge-emerald' : isCurrent ? 'badge-orange' : 'badge-navy'}`} 
-                        style={{ fontSize: 8.5, padding: '1px 7px', fontWeight: 800, marginTop: 4 }}
+                        className={`badge ${isPassed ? 'badge-emerald' : isCurrent ? 'badge-amber' : 'badge-navy'}`} 
+                        style={{ fontSize: 8.5, padding: '1px 7px', fontWeight: 800, marginTop: 2 }}
                       >
                         {isPassed ? 'PASSED' : isCurrent ? 'CURRENT' : 'UPCOMING'}
                       </span>
@@ -1203,78 +1333,113 @@ export default function Checker() {
             </div>
           </div>
 
-          {/* 7. SECTION: PACKAGES INSIDE VEHICLE (GROUPED BY DESTINATION STOP) */}
-          <div className="glass-card-solid" style={{ padding: 22, borderRadius: 18, border: '1px solid rgba(255,255,255,0.08)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, flexWrap: 'wrap', gap: 12 }}>
+          {/* 7. SECTION: PACKAGES INSIDE VEHICLE (CARGO MANIFEST TABLE) */}
+          <div className="spatial-card" style={{ padding: 22 }}>
+            
+            {/* Header & Controls */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, flexWrap: 'wrap', gap: 14 }}>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 800, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Layers size={16} color="#38bdf8" /> PACKAGES INSIDE VEHICLE (GROUPED BY DESTINATION STOP)
+                <div style={{ fontSize: 13, fontWeight: 900, color: '#0b2e8a', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Layers size={17} color="#0284c7" /> DAFTAR RESI YANG DIAMBIL MOBIL {result.vehicleNopol} ({filteredCargoItems.length} PAKET TERDAFTAR)
                 </div>
-                <div style={{ fontSize: 11, color: '#10b981', marginTop: 2, fontWeight: 700 }}>
-                  🚚 Real-time Cargo Milk Run: Muatan fisik di dalam armada {result.vehicleNopol} saat berada di Stop #{activeSeq} ({(result.routeStops || [])[activeSeq - 1]?.officeName || ''})
+                <div style={{ fontSize: 11, color: '#16a34a', marginTop: 3, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <Truck size={13} color="#16a34a" /> Real-time Cargo Milk Run: Muatan fisik di dalam armada {result.vehicleNopol} pada Stop #{activeSeq} ({(result.routeStops || [])[activeSeq - 1]?.officeName || ''})
                 </div>
               </div>
 
-              {/* Filter Cargo Input & Mode Switch */}
+              {/* View Switchers & Controls */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(255,255,255,0.04)', padding: 3, borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)' }}>
+                
+                {/* Mode Filter: Semua vs Dimuat di Stop Ini */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#f1f5f9', padding: 3, borderRadius: 8, border: '1px solid #e2e8f0' }}>
                   <button
                     onClick={() => setShowOnlyNewlyLoaded(false)}
                     style={{
-                      padding: '4px 10px',
+                      padding: '5px 12px',
                       fontSize: 11,
                       fontWeight: 800,
                       borderRadius: 6,
                       border: 'none',
                       cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      background: !showOnlyNewlyLoaded ? 'rgba(56,189,248,0.25)' : 'transparent',
-                      color: !showOnlyNewlyLoaded ? '#38bdf8' : 'rgba(255,255,255,0.4)'
+                      background: !showOnlyNewlyLoaded ? '#0b2e8a' : 'transparent',
+                      color: !showOnlyNewlyLoaded ? '#ffffff' : '#64748b'
                     }}
                   >
-                    🚚 Semua Muatan di Mobil (Akumulatif)
+                    Semua Resi ({(result.cargoItems || []).length})
                   </button>
                   <button
                     onClick={() => setShowOnlyNewlyLoaded(true)}
                     style={{
-                      padding: '4px 10px',
+                      padding: '5px 12px',
                       fontSize: 11,
                       fontWeight: 800,
                       borderRadius: 6,
                       border: 'none',
                       cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      background: showOnlyNewlyLoaded ? 'rgba(245,158,11,0.25)' : 'transparent',
-                      color: showOnlyNewlyLoaded ? '#f59e0b' : 'rgba(255,255,255,0.4)'
+                      background: showOnlyNewlyLoaded ? '#0b2e8a' : 'transparent',
+                      color: showOnlyNewlyLoaded ? '#ffffff' : '#64748b'
                     }}
                   >
-                    📦 Baru Dimuat di Stop #{activeSeq}
+                    Stop #{activeSeq}
                   </button>
                 </div>
 
-                {selectedStopFilter && (
+                {/* View Mode Switcher: Accordion vs Detailed Table */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 2, background: '#f1f5f9', padding: 3, borderRadius: 8, border: '1px solid #e2e8f0' }}>
                   <button
-                    onClick={() => setSelectedStopFilter(null)}
-                    className="btn-ghost"
-                    style={{ padding: '4px 10px', fontSize: 11, borderRadius: 6, color: '#38bdf8', borderColor: 'rgba(56,189,248,0.3)', gap: 4 }}
+                    onClick={() => setCargoViewMode('GROUPED')}
+                    style={{
+                      padding: '5px 10px',
+                      fontSize: 11,
+                      fontWeight: 800,
+                      borderRadius: 6,
+                      border: 'none',
+                      cursor: 'pointer',
+                      background: cargoViewMode === 'GROUPED' ? '#0b2e8a' : 'transparent',
+                      color: cargoViewMode === 'GROUPED' ? '#ffffff' : '#64748b',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4
+                    }}
                   >
-                    Filter Stop: {selectedStopFilter} <X size={12} />
+                    <LayoutGrid size={13} /> Kategori Tujuan
                   </button>
-                )}
-                <div style={{ position: 'relative', width: 220 }}>
-                  <Search size={13} color="rgba(255,255,255,0.4)" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
+                  <button
+                    onClick={() => setCargoViewMode('TABLE')}
+                    style={{
+                      padding: '5px 10px',
+                      fontSize: 11,
+                      fontWeight: 800,
+                      borderRadius: 6,
+                      border: 'none',
+                      cursor: 'pointer',
+                      background: cargoViewMode === 'TABLE' ? '#0b2e8a' : 'transparent',
+                      color: cargoViewMode === 'TABLE' ? '#ffffff' : '#64748b',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4
+                    }}
+                  >
+                    <Table size={13} /> Tabel Lengkap
+                  </button>
+                </div>
+
+                {/* Search in cargo list */}
+                <div style={{ position: 'relative', width: 180 }}>
+                  <Search size={13} color="#94a3b8" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
                   <input
                     value={cargoSearchTerm}
                     onChange={(e) => setCargoSearchTerm(e.target.value)}
-                    placeholder="Cari resi / stop..."
-                    style={{ width: '100%', height: 32, paddingLeft: 28, paddingRight: 10, fontSize: 11, borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff' }}
+                    placeholder="Cari resi / nama..."
+                    style={{ width: '100%', height: 32, paddingLeft: 28, paddingRight: 10, fontSize: 11, borderRadius: 8, background: '#ffffff', border: '1px solid #cbd5e1', color: '#0f172a', boxSizing: 'border-box' }}
                   />
                 </div>
+
               </div>
             </div>
 
-            {/* Destination Group Cards */}
-            {filteredCargoGroups.length > 0 ? (
+            {/* ── VIEW MODE 1: GROUPED ACCORDION VIEW ── */}
+            {cargoViewMode === 'GROUPED' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {filteredCargoGroups.map((grp) => {
                   const isExpanded = expandedDestGroups[grp.destination_nopen] !== false;
@@ -1282,13 +1447,12 @@ export default function Checker() {
                     <div 
                       key={grp.destination_nopen}
                       style={{
-                        background: 'rgba(255,255,255,0.02)',
-                        border: '1px solid rgba(255,255,255,0.06)',
+                        background: '#ffffff',
+                        border: '1px solid #e2e8f0',
                         borderRadius: 14,
                         overflow: 'hidden'
                       }}
                     >
-                      {/* Destination Header Accordion */}
                       <div
                         onClick={() => toggleDestGroup(grp.destination_nopen)}
                         style={{
@@ -1297,92 +1461,138 @@ export default function Checker() {
                           justifyContent: 'space-between',
                           alignItems: 'center',
                           cursor: 'pointer',
-                          background: 'rgba(255,255,255,0.03)'
+                          background: '#f8fafc'
                         }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          {isExpanded ? <ChevronDown size={16} color="#38bdf8" /> : <ChevronRight size={16} color="rgba(255,255,255,0.4)" />}
-                          <span style={{ fontSize: 13, fontWeight: 900, color: '#fff' }}>
-                            Nopen {grp.destination_nopen}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                          {isExpanded ? <ChevronDown size={16} color="#0284c7" /> : <ChevronRight size={16} color="#94a3b8" />}
+                          <span style={{ fontSize: 13, fontWeight: 900, color: '#0f172a', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <Building2 size={14} color="#0284c7" /> {grp.destination_office_name || `Kantor Tujuan ${grp.destination_nopen}`}
                           </span>
-                          <span className="badge-navy" style={{ fontSize: 10, padding: '2px 8px' }}>
+                          <span style={{ fontSize: 11, color: '#64748b', fontFamily: 'monospace' }}>
+                            (Nopen: {grp.destination_nopen})
+                          </span>
+                          <span className="badge badge-navy" style={{ fontSize: 10, padding: '2px 8px' }}>
                             {grp.package_count || (grp.packages || []).length} PAKET • {(grp.total_weight_kg || 0).toFixed(1)} KG
                           </span>
                         </div>
-                        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
-                          {isExpanded ? 'Tutup' : 'Buka Detail'}
+                        <span style={{ fontSize: 11, color: '#0284c7', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                          {isExpanded ? <>Tutup <ChevronDown size={12} style={{ transform: 'rotate(180deg)' }} /></> : <>Buka Rincian <ChevronDown size={12} /></>}
                         </span>
                       </div>
 
-                      {/* Package Grid Cards inside Destination */}
                       {isExpanded && (
-                        <div style={{ padding: 14, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 10, background: 'rgba(0,0,0,0.15)' }}>
-                          {(grp.packages || []).map((pkg, pIdx) => (
-                            <div
-                              key={pIdx}
-                              onClick={() => {
-                                setQuery(pkg.connote_code);
-                                handleSearch(pkg.connote_code, selectedDate);
-                              }}
-                              style={{
-                                background: 'rgba(255,255,255,0.03)',
-                                border: '1px solid rgba(255,255,255,0.06)',
-                                borderRadius: 10,
-                                padding: '10px 12px',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s',
-                              }}
-                              onMouseEnter={(e) => e.currentTarget.style.borderColor = 'rgba(56,189,248,0.5)'}
-                              onMouseLeave={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)'}
-                            >
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span className="font-mono" style={{ fontSize: 11, fontWeight: 800, color: '#38bdf8' }}>
-                                  {pkg.connote_code}
-                                </span>
-                                <span style={{ fontSize: 11, fontWeight: 900, color: '#fff' }}>
-                                  {pkg.weight_kg} kg
-                                </span>
-                              </div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6, fontSize: 10, color: 'rgba(255,255,255,0.5)' }}>
-                                <span>Dimuat di Stop #{pkg.loaded_at_seq || 1}</span>
-                                <span>Tujuan: {pkg.destination_nopen || grp.destination_nopen}</span>
-                              </div>
-                            </div>
-                          ))}
+                        <div style={{ padding: '8px 16px 16px', overflowX: 'auto' }}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11.5 }}>
+                            <thead>
+                              <tr style={{ borderBottom: '1px solid #e2e8f0', textAlign: 'left', color: '#64748b' }}>
+                                <th style={{ padding: '8px 6px' }}>NO RESI</th>
+                                <th style={{ padding: '8px 6px' }}>LAYANAN</th>
+                                <th style={{ padding: '8px 6px' }}>BERAT</th>
+                                <th style={{ padding: '8px 6px' }}>PENGIRIM / PENERIMA</th>
+                                <th style={{ padding: '8px 6px' }}>STATUS</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {(grp.packages || []).map((pkg) => (
+                                <tr key={pkg.connote_code} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                  <td style={{ padding: '8px 6px', fontWeight: 800, fontFamily: 'monospace', color: '#0b2e8a' }}>
+                                    {pkg.connote_code}
+                                  </td>
+                                  <td style={{ padding: '8px 6px', color: '#475569' }}>
+                                    {pkg.service}
+                                  </td>
+                                  <td style={{ padding: '8px 6px', fontWeight: 700, color: '#0f172a' }}>
+                                    {formatWeight(pkg.weight_kg)}
+                                  </td>
+                                  <td style={{ padding: '8px 6px', color: '#334155' }}>
+                                    {pkg.sender_name || 'Pengirim'} <ArrowRight size={11} style={{ display: 'inline', margin: '0 3px', color: '#64748b' }} /> <strong>{pkg.receiver_name || 'Penerima'}</strong>
+                                  </td>
+                                  <td style={{ padding: '8px 6px' }}>
+                                    <span className={mapStateToBadge(pkg.state).class} style={{ fontSize: 9.5, padding: '2px 7px' }}>
+                                      {mapStateToBadge(pkg.state).label}
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
                         </div>
                       )}
                     </div>
                   );
                 })}
               </div>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '24px 0', color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>
-                Tidak ada kargo yang sesuai dengan filter stop atau pencarian ini.
+            )}
+
+            {/* ── VIEW MODE 2: FLAT TABLE VIEW ── */}
+            {cargoViewMode === 'TABLE' && (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                  <thead>
+                    <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', textAlign: 'left', color: '#64748b' }}>
+                      <th style={{ padding: '10px 12px' }}>NO RESI CONNOTE</th>
+                      <th style={{ padding: '10px 12px' }}>LAYANAN</th>
+                      <th style={{ padding: '10px 12px' }}>BERAT</th>
+                      <th style={{ padding: '10px 12px' }}>ASAL (ORIGIN)</th>
+                      <th style={{ padding: '10px 12px' }}>TUJUAN (DEST)</th>
+                      <th style={{ padding: '10px 12px' }}>STATUS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredCargoItems.map((item) => (
+                      <tr key={item.connote_code} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '10px 12px', fontWeight: 800, fontFamily: 'monospace', color: '#0b2e8a' }}>
+                          {item.connote_code}
+                        </td>
+                        <td style={{ padding: '10px 12px', color: '#475569' }}>
+                          {item.service}
+                        </td>
+                        <td style={{ padding: '10px 12px', fontWeight: 700, color: '#0f172a' }}>
+                          {formatWeight(item.weight_kg)}
+                        </td>
+                        <td style={{ padding: '10px 12px', color: '#334155' }}>
+                          {item.origin_office_name || `Nopen ${item.origin_nopen}`}
+                        </td>
+                        <td style={{ padding: '10px 12px', color: '#334155' }}>
+                          {item.destination_office_name || `Nopen ${item.destination_nopen}`}
+                        </td>
+                        <td style={{ padding: '10px 12px' }}>
+                          <span className={mapStateToBadge(item.state).class} style={{ fontSize: 9.5, padding: '2px 8px' }}>
+                            {mapStateToBadge(item.state).label}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
+
           </div>
 
         </div>
       )}
 
-      {/* Live Radar GPS Modal */}
+      {/* Modals */}
       {isMapModalOpen && (
         <LiveGpsMapModal
           isOpen={isMapModalOpen}
           onClose={() => setIsMapModalOpen(false)}
           vehicleNopol={result?.vehicleNopol || 'B 9910 PCX'}
-          routeId={result?.routeId || 'RT-MALAM-B9910-PCX'}
-          currentStopSeq={activeSeq}
           routeStops={result?.routeStops || []}
+          currentStopSeq={activeSeq}
         />
       )}
 
-      {/* CSV Import Modal */}
       {isCsvModalOpen && (
         <CsvImportModal
           isOpen={isCsvModalOpen}
-          onClose={() => setIsCsvModalOpen(false)}
-          onSuccess={() => handleSearch(query, selectedDate)}
+          onClose={() => {
+            setIsCsvModalOpen(false);
+            loadFleetList(selectedDate);
+            handleSearch(query, selectedDate);
+          }}
         />
       )}
 

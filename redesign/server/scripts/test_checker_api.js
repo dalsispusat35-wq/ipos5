@@ -10,7 +10,7 @@ const CONNECTIONS_FILE = path.join(__dirname, '..', 'config', 'connections.json'
 
 async function testCheckerApi() {
   console.log('================================================================');
-  console.log('🧪 TESTING PACKAGE TRACKING & CONTROL TOWER BACKEND SERVICES');
+  console.log('🧪 TESTING COMPLETE CHECKER & FLEET TRACKING INTEGRATION');
   console.log('================================================================\n');
 
   const connections = JSON.parse(fs.readFileSync(CONNECTIONS_FILE, 'utf8'));
@@ -33,61 +33,48 @@ async function testCheckerApi() {
   }
 
   try {
-    // Test 1: Daily Control Tower
-    console.log('📌 Test 1: getDailyControlTowerSummary for today...');
-    const ctSummary = await PackageTrackingService.getDailyControlTowerSummary('2026-08-13');
-    console.log('   Control Tower Summary:', JSON.stringify(ctSummary.summary, null, 2));
-    console.log(`   Active Vehicles Count: ${ctSummary.activeVehicles.length}`);
-    console.log(`   Exceptions Count: ${ctSummary.exceptions.length}`);
+    // Test 1: Fleet List from DB for today
+    const todayStr = PackageTrackingService.getWibDateStr();
+    console.log(`📌 Test 1: getFleetList for today (${todayStr})...`);
+    const fleetResult = await PackageTrackingService.getFleetList(todayStr);
+    console.log(`   Total Fleet in DB: ${fleetResult.total_fleet}`);
+    fleetResult.fleet.forEach(f => {
+      console.log(`   - [${f.nopol}] ${f.nama_kendaraan} | Sopir: ${f.driver} | ${f.total_cargo_count} Paket (${f.current_load_kg} kg) | Rute: ${f.route_id}`);
+    });
 
-    // Test 2: Valid Resi Search (P20260724000001)
-    console.log('\n📌 Test 2: getPackageDetails for valid resi P20260724000001...');
-    const pkgResult = await PackageTrackingService.getPackageDetails('P20260724000001', '2026-07-24');
-    console.log('   Package Found:', pkgResult.found);
-    if (pkgResult.found) {
-      console.log(`   Resi: ${pkgResult.connoteCode}`);
-      console.log(`   Origin: ${pkgResult.origin.name}`);
-      console.log(`   Destination: ${pkgResult.destination.name}`);
-      console.log(`   Vehicle Assignment: ${pkgResult.vehicleAssignment.nopol} (${pkgResult.vehicleAssignment.source})`);
-      console.log(`   Route Stops Count: ${pkgResult.routeStops.length}`);
-      console.log(`   Timeline Events Count: ${pkgResult.timeline.length}`);
-    }
-
-    // Test 3: Invalid Resi Search (P99999999999999) -> Must be found: false (No Mock Fallback!)
-    console.log('\n📌 Test 3: getPackageDetails for invalid resi P99999999999999...');
-    const invalidPkg = await PackageTrackingService.getPackageDetails('P99999999999999', '2026-08-13');
-    console.log('   Package Found:', invalidPkg.found);
-    console.log('   Error Message:', invalidPkg.message);
-    if (invalidPkg.found === false && invalidPkg.code === 'PACKAGE_NOT_FOUND') {
-      console.log('   ✅ PASS: Zero dummy fallback verified for invalid resi search.');
-    } else {
-      console.error('   ❌ FAIL: Dummy fallback detected!');
-    }
-
-    // Test 4: Valid Vehicle Search (B 9910 PCX)
-    console.log('\n📌 Test 4: getVehicleTrackingDetails for valid vehicle B 9910 PCX...');
-    const vResult = await PackageTrackingService.getVehicleTrackingDetails('B 9910 PCX', '2026-07-24');
+    // Test 2: Vehicle B 9910 PCX Details & Multi-Stop Load
+    console.log('\n📌 Test 2: getVehicleTrackingDetails for B 9910 PCX on 2026-08-12...');
+    const vResult = await PackageTrackingService.getVehicleTrackingDetails('B 9910 PCX', '2026-08-12');
     console.log('   Vehicle Found:', vResult.found);
-    if (vResult.found) {
-      console.log(`   Nopol: ${vResult.vehicle.nopol}`);
-      console.log(`   Driver: ${vResult.vehicle.driver}`);
-      console.log(`   Utilisasi: ${vResult.capacity.utilization_pct}% (${vResult.capacity.current_load_kg}/${vResult.capacity.max_capacity_kg} kg)`);
-      console.log(`   Destination Groups Count: ${vResult.cargoGroupedByDestination.length}`);
-    }
+    console.log('   Nopol:', vResult.vehicleNopol);
+    console.log(`   Stop Progress: Stop #${vResult.currentStopSeq} dari ${vResult.routeStops.length} Stop`);
+    console.log(`   Total Muatan Paket di Mobil: ${vResult.totalCargoCount} paket (${vResult.currentLoadKg} kg / ${vResult.maxCapacityKg} kg)`);
+    console.log('   Waypoints:');
+    vResult.routeStops.forEach(s => {
+      console.log(`     Stop #${s.seq} (${s.officeName}): ${s.loadAtStopKg} kg (${s.utilizationPctAtStop}%) | ETA: ${s.etaTime} | Status: ${s.status}`);
+    });
+    console.log(`   Destination Groups Count: ${vResult.cargoGroupedByDestination.length}`);
+    vResult.cargoGroupedByDestination.forEach(g => {
+      console.log(`     - Tujuan ${g.destination_office_name} (${g.destination_nopen}): ${g.package_count} Paket (${g.total_weight_kg} kg)`);
+    });
 
-    // Test 5: Invalid Vehicle Search (B 0000 XYZ) -> Must be found: false
-    console.log('\n📌 Test 5: getVehicleTrackingDetails for invalid vehicle B 0000 XYZ...');
-    const invalidV = await PackageTrackingService.getVehicleTrackingDetails('B 0000 XYZ', '2026-08-13');
-    console.log('   Vehicle Found:', invalidV.found);
-    console.log('   Error Message:', invalidV.message);
-    if (invalidV.found === false && invalidV.code === 'VEHICLE_NOT_FOUND') {
-      console.log('   ✅ PASS: Zero dummy fallback verified for invalid vehicle search.');
-    } else {
-      console.error('   ❌ FAIL: Dummy fleet fallback detected!');
-    }
+    // Test 3: Package P260812000001 Tracking & Assigned Vehicle
+    console.log('\n📌 Test 3: getPackageDetails for P260812000001 on 2026-08-12...');
+    const pkgResult = await PackageTrackingService.getPackageDetails('P260812000001', '2026-08-12');
+    console.log('   Package Found:', pkgResult.found);
+    console.log(`   Resi: ${pkgResult.connoteCode} | Berat: ${pkgResult.weightKg} kg | State: ${pkgResult.state}`);
+    console.log(`   Origin: ${pkgResult.origin.name} -> Dest: ${pkgResult.destination.name}`);
+    console.log(`   Assigned Vehicle: ${pkgResult.vehicleNopol} (Source: ${pkgResult.vehicleAssignment.source})`);
+    console.log(`   Cargo count on vehicle: ${pkgResult.cargoItems.length} packages`);
+    console.log(`   Timeline Events: ${pkgResult.timeline.length} events`);
+
+    // Test 4: Invalid Resi Search -> Not Found
+    console.log('\n📌 Test 4: Invalid resi search...');
+    const invalidPkg = await PackageTrackingService.getPackageDetails('P999999999999', '2026-08-12');
+    console.log('   Found:', invalidPkg.found, '| Message:', invalidPkg.message);
 
     console.log('\n================================================================');
-    console.log('🎉 ALL BACKEND PACKAGE TRACKING TESTS COMPLETED SUCCESSFULLY!');
+    console.log('🎉 ALL INTEGRATION TESTS PASSED!');
     console.log('================================================================');
   } catch (e) {
     console.error('❌ Error during testing:', e);

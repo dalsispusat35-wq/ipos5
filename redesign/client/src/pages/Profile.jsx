@@ -141,7 +141,6 @@ export default function Profile() {
     e.preventDefault();
     const updatedUser = { ...currentUser, ...profileForm };
 
-    // Update local state & sessionStorage immediately
     setCurrentUser(updatedUser);
     sessionStorage.setItem('ipos5_user', JSON.stringify(updatedUser));
     localStorage.setItem('ipos5_user', JSON.stringify(updatedUser));
@@ -262,13 +261,13 @@ export default function Profile() {
   const getRoleBadge = (role) => {
     switch (role) {
       case 'SUPER_ADMIN':
-        return <span className="badge badge-orange">SUPER ADMIN</span>;
+        return <span className="badge badge-navy">SUPER ADMIN</span>;
       case 'SUPERVISOR':
         return <span className="badge badge-emerald">SUPERVISOR</span>;
       case 'DISPATCHER':
         return <span className="badge badge-blue">DISPATCHER</span>;
       default:
-        return <span className="badge" style={{ background: 'rgba(255,255,255,0.1)', color: '#fff' }}>OPERATOR</span>;
+        return <span className="badge" style={{ background: '#f1f5f9', color: '#64748b' }}>OPERATOR</span>;
     }
   };
 
@@ -288,15 +287,14 @@ export default function Profile() {
         <div style={{
           padding: '12px 18px',
           borderRadius: 12,
-          background: alertMsg.type === 'error' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-          border: `1px solid ${alertMsg.type === 'error' ? 'rgba(239, 68, 68, 0.4)' : 'rgba(16, 185, 129, 0.4)'}`,
-          color: alertMsg.type === 'error' ? '#fca5a5' : '#6ee7b7',
+          background: alertMsg.type === 'error' ? '#fef2f2' : '#f0fdf4',
+          border: `1px solid ${alertMsg.type === 'error' ? '#fecaca' : '#bbf7d0'}`,
+          color: alertMsg.type === 'error' ? '#b91c1c' : '#16a34a',
           fontSize: 13.5,
-          fontWeight: 600,
+          fontWeight: 700,
           display: 'flex',
           alignItems: 'center',
           gap: 10,
-          animation: 'modalSlideUp 0.2s ease'
         }}>
           {alertMsg.type === 'error' ? <AlertCircle size={18} /> : <CheckCircle2 size={18} />}
           <span>{alertMsg.text}</span>
@@ -304,38 +302,16 @@ export default function Profile() {
       )}
 
       {/* Profile Header Banner */}
-      <div 
-        className="glass-card-solid"
-        style={{
-          padding: '24px 28px',
-          position: 'relative',
-          overflow: 'hidden',
-          background: 'linear-gradient(135deg, rgba(13,27,56,0.95), rgba(6,13,31,0.98))',
-          borderRadius: 16
-        }}
-      >
-        <div 
-          style={{
-            position: 'absolute',
-            top: -40,
-            right: -40,
-            width: 220,
-            height: 220,
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(232,67,31,0.18) 0%, transparent 70%)',
-            pointerEvents: 'none',
-          }}
-        />
-
+      <div className="spatial-card" style={{ padding: '24px 28px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
           <div
             style={{
               width: 76,
               height: 76,
               borderRadius: '50%',
-              background: 'linear-gradient(135deg, #e8431f, #2460b0)',
-              border: '3px solid rgba(255,255,255,0.2)',
-              boxShadow: '0 4px 20px rgba(232,67,31,0.35)',
+              background: '#0b2e8a',
+              border: '3px solid #e0f2fe',
+              boxShadow: '0 4px 12px rgba(11, 46, 138, 0.2)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -355,21 +331,23 @@ export default function Profile() {
 
           <div style={{ flex: 1, minWidth: 240 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4, flexWrap: 'wrap' }}>
-              <h2 style={{ fontSize: 22, fontWeight: 800, color: '#fff', margin: 0 }}>
+              <h2 style={{ fontSize: 22, fontWeight: 900, color: '#0f172a', margin: 0 }}>
                 {currentUser.name || 'Super Administrator IT'}
               </h2>
               {getRoleBadge(currentUser.role)}
-              <span className="badge badge-emerald">Aktif Sesi 🟢</span>
+              <span className="badge badge-emerald" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <CheckCircle2 size={12} /> Aktif Sesi
+              </span>
             </div>
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', marginTop: 6 }}>
+            <div style={{ fontSize: 13, color: '#64748b', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', marginTop: 6 }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Building2 size={14} color="#e8431f" /> {currentUser.branch || 'KCU Cimahi (40511)'}
+                <Building2 size={14} color="#0284c7" /> {currentUser.branch || 'KCU Cimahi (40511)'}
               </span>
               <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Mail size={14} color="#10b981" /> {currentUser.email || 'admin@posindonesia.co.id'}
+                <Mail size={14} color="#16a34a" /> {currentUser.email || 'admin@posindonesia.co.id'}
               </span>
               <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <Phone size={14} color="#3b82f6" /> NIP: {currentUser.nip || '994051101'}
+                <Phone size={14} color="#0b2e8a" /> NIP: {currentUser.nip || '994051101'}
               </span>
             </div>
           </div>
@@ -389,7 +367,7 @@ export default function Profile() {
         </div>
 
         {/* Tab Navigation */}
-        <div style={{ display: 'flex', gap: 20, marginTop: 24, borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 2, overflowX: 'auto' }}>
+        <div style={{ display: 'flex', gap: 20, marginTop: 24, borderBottom: '1px solid #e2e8f0', paddingBottom: 2, overflowX: 'auto' }}>
           {[
             { id: 'overview', label: 'Ringkasan User', icon: <User size={15} /> },
             { id: 'users_crud', label: 'Kelola Pengguna (CRUD)', icon: <Users size={15} /> },
@@ -402,10 +380,10 @@ export default function Profile() {
               style={{
                 background: 'none',
                 border: 'none',
-                borderBottom: activeTab === tab.id ? '2.5px solid #e8431f' : '2.5px solid transparent',
+                borderBottom: activeTab === tab.id ? '2.5px solid #0b2e8a' : '2.5px solid transparent',
                 padding: '8px 4px 12px 4px',
-                color: activeTab === tab.id ? '#e8431f' : 'rgba(255,255,255,0.5)',
-                fontWeight: activeTab === tab.id ? 700 : 500,
+                color: activeTab === tab.id ? '#0b2e8a' : '#64748b',
+                fontWeight: activeTab === tab.id ? 800 : 500,
                 fontSize: 13.5,
                 cursor: 'pointer',
                 display: 'flex',
@@ -424,50 +402,50 @@ export default function Profile() {
       {/* TAB 1: OVERVIEW */}
       {activeTab === 'overview' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
-          <div className="glass-card" style={{ padding: 22 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 800, color: '#fff', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Building2 size={17} color="#e8431f" /> Otoritas & Detail Kantor
+          <div className="spatial-card" style={{ padding: 22 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Building2 size={17} color="#0284c7" /> Otoritas & Detail Kantor
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>Kantor Utama</span>
-                <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{currentUser.branch || 'KCU Cimahi 40511'}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 10, borderBottom: '1px solid #f1f5f9' }}>
+                <span style={{ fontSize: 13, color: '#64748b' }}>Kantor Utama</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{currentUser.branch || 'KCU Cimahi 40511'}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>Regional Hub</span>
-                <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>Regional III Bandung</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 10, borderBottom: '1px solid #f1f5f9' }}>
+                <span style={{ fontSize: 13, color: '#64748b' }}>Regional Hub</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>Regional III Bandung</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>Akses Otoritas</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: 10, borderBottom: '1px solid #f1f5f9' }}>
+                <span style={{ fontSize: 13, color: '#64748b' }}>Akses Otoritas</span>
                 {getRoleBadge(currentUser.role)}
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>Status Operasional</span>
-                <span style={{ fontSize: 13, fontWeight: 600, color: '#10b981' }}>Shift Active · Full Dispatcher</span>
+                <span style={{ fontSize: 13, color: '#64748b' }}>Status Operasional</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#16a34a' }}>Shift Active · Full Dispatcher</span>
               </div>
             </div>
           </div>
 
-          <div className="glass-card" style={{ padding: 22 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 800, color: '#fff', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Award size={17} color="#10b981" /> Pencapaian Operasional System
+          <div className="spatial-card" style={{ padding: 22 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Award size={17} color="#16a34a" /> Pencapaian Operasional System
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div style={{ background: 'rgba(255,255,255,0.03)', padding: 14, borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)' }}>
-                <div style={{ fontSize: 24, fontWeight: 800, color: '#fff' }}>1,482</div>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>Manifest Diproses</div>
+              <div style={{ background: '#f8fafc', padding: 14, borderRadius: 10, border: '1px solid #e2e8f0' }}>
+                <div style={{ fontSize: 24, fontWeight: 900, color: '#0f172a' }}>1,482</div>
+                <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Manifest Diproses</div>
               </div>
-              <div style={{ background: 'rgba(255,255,255,0.03)', padding: 14, borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)' }}>
-                <div style={{ fontSize: 24, fontWeight: 800, color: '#10b981' }}>99.9%</div>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>Akurasi Dispatch</div>
+              <div style={{ background: '#f0fdf4', padding: 14, borderRadius: 10, border: '1px solid #bbf7d0' }}>
+                <div style={{ fontSize: 24, fontWeight: 900, color: '#16a34a' }}>99.9%</div>
+                <div style={{ fontSize: 11, color: '#16a34a', marginTop: 2 }}>Akurasi Dispatch</div>
               </div>
-              <div style={{ background: 'rgba(255,255,255,0.03)', padding: 14, borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)' }}>
-                <div style={{ fontSize: 24, fontWeight: 800, color: '#f59e0b' }}>342</div>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>Perjalanan Fleet</div>
+              <div style={{ background: '#fffbeb', padding: 14, borderRadius: 10, border: '1px solid #fde68a' }}>
+                <div style={{ fontSize: 24, fontWeight: 900, color: '#d97706' }}>342</div>
+                <div style={{ fontSize: 11, color: '#d97706', marginTop: 2 }}>Perjalanan Fleet</div>
               </div>
-              <div style={{ background: 'rgba(255,255,255,0.03)', padding: 14, borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)' }}>
-                <div style={{ fontSize: 24, fontWeight: 800, color: '#38bdf8' }}>100%</div>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>Integritas Database</div>
+              <div style={{ background: '#f0f9ff', padding: 14, borderRadius: 10, border: '1px solid #bae6fd' }}>
+                <div style={{ fontSize: 24, fontWeight: 900, color: '#0284c7' }}>100%</div>
+                <div style={{ fontSize: 11, color: '#0284c7', marginTop: 2 }}>Integritas Database</div>
               </div>
             </div>
           </div>
@@ -476,13 +454,13 @@ export default function Profile() {
 
       {/* TAB 2: USER MANAGEMENT (CRUD) */}
       {activeTab === 'users_crud' && (
-        <div className="glass-card" style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div className="spatial-card" style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
             <div>
-              <h3 style={{ fontSize: 16, fontWeight: 800, color: '#fff', margin: 0 }}>
+              <h3 style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: 0 }}>
                 Manajemen Pengguna Sistem IPOS5
               </h3>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>
+              <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
                 Tambah, edit profil, atur hak akses role, dan kelola daftar akun sistem.
               </div>
             </div>
@@ -511,19 +489,28 @@ export default function Profile() {
           <div style={{ maxWidth: 360, width: '100%' }}>
             <input
               type="text"
-              className="input-navy"
               placeholder="Cari berdasarkan nama, username, atau role..."
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
-              style={{ width: '100%', fontSize: 13 }}
+              style={{
+                width: '100%',
+                height: 38,
+                padding: '0 12px',
+                borderRadius: 8,
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                color: '#0f172a',
+                fontSize: 13,
+                outline: 'none'
+              }}
             />
           </div>
 
           {/* Users Table */}
-          <div style={{ overflowX: 'auto', borderRadius: 12, border: '1px solid rgba(255,255,255,0.08)' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 13 }}>
+          <div style={{ overflowX: 'auto', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 12.5 }}>
               <thead>
-                <tr style={{ background: 'rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)' }}>
+                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b', fontWeight: 700 }}>
                   <th style={{ padding: '12px 16px' }}>Pengguna</th>
                   <th style={{ padding: '12px 16px' }}>Role Otoritas</th>
                   <th style={{ padding: '12px 16px' }}>Email & NIP</th>
@@ -534,20 +521,20 @@ export default function Profile() {
               <tbody>
                 {filteredUsers.length === 0 ? (
                   <tr>
-                    <td colSpan={5} style={{ padding: 24, textAlign: 'center', color: 'rgba(255,255,255,0.4)' }}>
+                    <td colSpan={5} style={{ padding: 24, textAlign: 'center', color: '#94a3b8' }}>
                       {loadingUsers ? 'Memuat daftar pengguna...' : 'Tidak ada data pengguna yang cocok.'}
                     </td>
                   </tr>
                 ) : (
                   filteredUsers.map((u) => (
-                    <tr key={u.username} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', transition: 'background 0.2s' }}>
+                    <tr key={u.username} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s' }}>
                       <td style={{ padding: '12px 16px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <div style={{
                             width: 34,
                             height: 34,
                             borderRadius: '50%',
-                            background: 'linear-gradient(135deg, #e8431f, #2460b0)',
+                            background: '#0b2e8a',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -558,19 +545,19 @@ export default function Profile() {
                             {u.name ? u.name.slice(0, 2).toUpperCase() : 'US'}
                           </div>
                           <div>
-                            <div style={{ fontWeight: 700, color: '#fff' }}>{u.name || u.username}</div>
-                            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>@{u.username}</div>
+                            <div style={{ fontWeight: 800, color: '#0f172a' }}>{u.name || u.username}</div>
+                            <div style={{ fontSize: 11, color: '#94a3b8', fontFamily: 'monospace' }}>@{u.username}</div>
                           </div>
                         </div>
                       </td>
                       <td style={{ padding: '12px 16px' }}>
                         {getRoleBadge(u.role)}
                       </td>
-                      <td style={{ padding: '12px 16px', color: 'rgba(255,255,255,0.8)' }}>
+                      <td style={{ padding: '12px 16px', color: '#475569' }}>
                         <div>{u.email || `${u.username}@posindonesia.co.id`}</div>
-                        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>NIP: {u.nip || '-'}</div>
+                        <div style={{ fontSize: 11, color: '#94a3b8', fontFamily: 'monospace' }}>NIP: {u.nip || '-'}</div>
                       </td>
-                      <td style={{ padding: '12px 16px', color: 'rgba(255,255,255,0.7)' }}>
+                      <td style={{ padding: '12px 16px', color: '#475569' }}>
                         {u.branch || 'KCU Cimahi (40511)'}
                       </td>
                       <td style={{ padding: '12px 16px', textAlign: 'right' }}>
@@ -587,7 +574,7 @@ export default function Profile() {
                             <button
                               className="btn-ghost"
                               onClick={() => setUserToDelete(u)}
-                              style={{ padding: '6px 10px', fontSize: 11, color: '#fca5a5', borderColor: 'rgba(239,68,68,0.3)', minHeight: 32 }}
+                              style={{ padding: '6px 10px', fontSize: 11, color: '#ef4444', minHeight: 32 }}
                               title="Hapus User"
                             >
                               <Trash2 size={13} /> Hapus
@@ -606,42 +593,39 @@ export default function Profile() {
 
       {/* TAB 3: SECURITY & PASSWORD */}
       {activeTab === 'security' && (
-        <div className="glass-card" style={{ padding: 24, maxWidth: 560 }}>
-          <h3 style={{ fontSize: 15, fontWeight: 800, color: '#fff', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Key size={17} color="#f59e0b" /> Ubah Password Akun (@{currentUser.username})
+        <div className="spatial-card" style={{ padding: 24, maxWidth: 560 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Key size={17} color="#0284c7" /> Ubah Password Akun (@{currentUser.username})
           </h3>
           <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div>
-              <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', display: 'block', marginBottom: 6 }}>Password Saat Ini</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 6 }}>Password Saat Ini</label>
               <input 
                 type="password" 
-                className="input-navy" 
                 placeholder="Masukkan password saat ini..." 
                 value={passwordForm.currentPassword}
                 onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
-                style={{ width: '100%' }}
+                style={{ width: '100%', height: 38, padding: '0 12px', borderRadius: 8, background: '#f8fafc', border: '1px solid #e2e8f0', color: '#0f172a', outline: 'none', boxSizing: 'border-box' }}
               />
             </div>
             <div>
-              <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', display: 'block', marginBottom: 6 }}>Password Baru</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 6 }}>Password Baru</label>
               <input 
                 type="password" 
-                className="input-navy" 
                 placeholder="Masukkan password baru..." 
                 value={passwordForm.newPassword}
                 onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                style={{ width: '100%' }}
+                style={{ width: '100%', height: 38, padding: '0 12px', borderRadius: 8, background: '#f8fafc', border: '1px solid #e2e8f0', color: '#0f172a', outline: 'none', boxSizing: 'border-box' }}
               />
             </div>
             <div>
-              <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', display: 'block', marginBottom: 6 }}>Konfirmasi Password Baru</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 6 }}>Konfirmasi Password Baru</label>
               <input 
                 type="password" 
-                className="input-navy" 
                 placeholder="Ketik ulang password baru..." 
                 value={passwordForm.confirmPassword}
                 onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-                style={{ width: '100%' }}
+                style={{ width: '100%', height: 38, padding: '0 12px', borderRadius: 8, background: '#f8fafc', border: '1px solid #e2e8f0', color: '#0f172a', outline: 'none', boxSizing: 'border-box' }}
               />
             </div>
             <button type="submit" className="btn-primary" style={{ alignSelf: 'flex-start', marginTop: 6, gap: 6 }}>
@@ -653,15 +637,15 @@ export default function Profile() {
 
       {/* TAB 4: AUDIT TRAIL LOGS */}
       {activeTab === 'activity' && (
-        <div className="glass-card" style={{ padding: 22 }}>
-          <h3 style={{ fontSize: 15, fontWeight: 800, color: '#fff', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Clock size={17} color="#3b82f6" /> Audit Log Aktivitas Pengguna
+        <div className="spatial-card" style={{ padding: 22 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 800, color: '#0f172a', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Clock size={17} color="#0284c7" /> Audit Log Aktivitas Pengguna
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {[
               { id: 1, action: 'User login sukses sebagai SUPER_ADMIN', time: '5 menit lalu' },
-              { id: 2, action: 'Melakukan pencarian resi P2607150025574 di Package Tracking', time: '18 menit lalu' },
-              { id: 3, action: 'Menjalankan simulasi GPS Radar Live Tracking rute Milk Run', time: '42 menit lalu' },
+              { id: 2, action: 'Melakukan pencarian resi di Package Tracking', time: '18 menit lalu' },
+              { id: 3, action: 'Menjalankan simulasi rute Milk Run', time: '42 menit lalu' },
               { id: 4, action: 'Pembaruan data master kendaraan armada B 9910 PCX', time: '2 jam lalu' }
             ].map(log => (
               <div 
@@ -671,16 +655,16 @@ export default function Profile() {
                   alignItems: 'center', 
                   justifyContent: 'space-between', 
                   padding: '12px 16px', 
-                  background: 'rgba(255,255,255,0.025)', 
-                  border: '1px solid rgba(255,255,255,0.06)',
+                  background: '#f8fafc', 
+                  border: '1px solid #e2e8f0',
                   borderRadius: 10 
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#e8431f' }} />
-                  <span style={{ fontSize: 13, color: '#fff', fontWeight: 500 }}>{log.action}</span>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#0284c7' }} />
+                  <span style={{ fontSize: 13, color: '#0f172a', fontWeight: 600 }}>{log.action}</span>
                 </div>
-                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', fontFamily: 'monospace' }}>{log.time}</span>
+                <span style={{ fontSize: 11, color: '#94a3b8', fontFamily: 'monospace' }}>{log.time}</span>
               </div>
             ))}
           </div>
@@ -690,110 +674,29 @@ export default function Profile() {
       {/* MODAL: EDIT PROFIL AKUN SAAT INI */}
       {isEditProfileModalOpen && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: 500 }}>
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: 16, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Edit3 size={18} color="#e8431f" /> Edit Profil Saya
+          <div className="modal-content" style={{ maxWidth: 500, background: '#ffffff', color: '#0f172a' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: 16, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Edit3 size={18} color="#0284c7" /> Edit Profil Saya
               </h3>
               <button className="btn-ghost" onClick={() => setIsEditProfileModalOpen(false)} style={{ padding: 4 }}><X size={16} /></button>
             </div>
             <form onSubmit={handleSaveProfile} style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
-              
-              {/* Photo Profile Upload & Presets Section */}
-              <div style={{
-                padding: 16,
-                background: 'rgba(255,255,255,0.03)',
-                borderRadius: 12,
-                border: '1px solid rgba(255,255,255,0.08)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 16,
-                flexWrap: 'wrap'
-              }}>
-                <div style={{
-                  width: 64,
-                  height: 64,
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #e8431f, #2460b0)',
-                  border: '2px solid rgba(255,255,255,0.2)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 20,
-                  fontWeight: 900,
-                  color: '#fff',
-                  flexShrink: 0,
-                  overflow: 'hidden',
-                  position: 'relative'
-                }}>
-                  {profileForm.avatar ? (
-                    <img src={profileForm.avatar} alt="Preview Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    profileForm.name ? profileForm.name.slice(0, 2).toUpperCase() : 'AD'
-                  )}
-                </div>
-
-                <div style={{ flex: 1, minWidth: 200, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <label style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>
-                    Foto Profil / Avatar Pengguna
-                  </label>
-                  
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    <label 
-                      className="btn-ghost" 
-                      style={{ 
-                        padding: '6px 12px', 
-                        fontSize: 11, 
-                        cursor: 'pointer', 
-                        display: 'inline-flex', 
-                        alignItems: 'center', 
-                        gap: 6,
-                        background: 'rgba(232, 67, 31, 0.15)',
-                        borderColor: 'rgba(232, 67, 31, 0.4)',
-                        color: '#fff'
-                      }}
-                    >
-                      📷 Upload Foto
-                      <input 
-                        type="file" 
-                        accept="image/*" 
-                        onChange={handleAvatarFileUpload} 
-                        style={{ display: 'none' }} 
-                      />
-                    </label>
-
-                    {profileForm.avatar && (
-                      <button 
-                        type="button" 
-                        className="btn-ghost" 
-                        onClick={() => setProfileForm(prev => ({ ...prev, avatar: '' }))}
-                        style={{ padding: '6px 10px', fontSize: 11, color: '#fca5a5', borderColor: 'rgba(239,68,68,0.3)' }}
-                      >
-                        Hapus Foto
-                      </button>
-                    )}
-                  </div>
-                  <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.4)' }}>
-                    Pilih file gambar dari komputer (JPG/PNG, max 5MB).
-                  </div>
-                </div>
-              </div>
-
               <div>
-                <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', display: 'block', marginBottom: 4 }}>Nama Lengkap</label>
-                <input type="text" className="input-navy" value={profileForm.name} onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })} required style={{ width: '100%' }} />
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Nama Lengkap</label>
+                <input type="text" value={profileForm.name} onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })} required style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }} />
               </div>
               <div>
-                <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', display: 'block', marginBottom: 4 }}>Email Pos</label>
-                <input type="email" className="input-navy" value={profileForm.email} onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })} required style={{ width: '100%' }} />
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Email Pos</label>
+                <input type="email" value={profileForm.email} onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })} required style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }} />
               </div>
               <div>
-                <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', display: 'block', marginBottom: 4 }}>NIP Pegawai</label>
-                <input type="text" className="input-navy" value={profileForm.nip} onChange={(e) => setProfileForm({ ...profileForm, nip: e.target.value })} required style={{ width: '100%' }} />
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>NIP Pegawai</label>
+                <input type="text" value={profileForm.nip} onChange={(e) => setProfileForm({ ...profileForm, nip: e.target.value })} required style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }} />
               </div>
               <div>
-                <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', display: 'block', marginBottom: 4 }}>Kantor Penugasan</label>
-                <input type="text" className="input-navy" value={profileForm.branch} onChange={(e) => setProfileForm({ ...profileForm, branch: e.target.value })} required style={{ width: '100%' }} />
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Kantor Penugasan</label>
+                <input type="text" value={profileForm.branch} onChange={(e) => setProfileForm({ ...profileForm, branch: e.target.value })} required style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }} />
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
                 <button type="button" className="btn-ghost" onClick={() => setIsEditProfileModalOpen(false)}>Batal</button>
@@ -807,46 +710,46 @@ export default function Profile() {
       {/* MODAL: TAMBAH PENGGUNA BARU */}
       {isCreateUserModalOpen && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: 520 }}>
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: 16, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Plus size={18} color="#10b981" /> Tambah Pengguna Sistem Baru
+          <div className="modal-content" style={{ maxWidth: 520, background: '#ffffff', color: '#0f172a' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: 16, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Plus size={18} color="#16a34a" /> Tambah Pengguna Sistem Baru
               </h3>
               <button className="btn-ghost" onClick={() => setIsCreateUserModalOpen(false)} style={{ padding: 4 }}><X size={16} /></button>
             </div>
             <form onSubmit={handleCreateUser} style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
-                  <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', display: 'block', marginBottom: 4 }}>Username</label>
-                  <input type="text" className="input-navy" placeholder="misal: petrus" value={newUserForm.username} onChange={(e) => setNewUserForm({ ...newUserForm, username: e.target.value })} required style={{ width: '100%' }} />
+                  <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Username</label>
+                  <input type="text" placeholder="misal: petrus" value={newUserForm.username} onChange={(e) => setNewUserForm({ ...newUserForm, username: e.target.value })} required style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }} />
                 </div>
                 <div>
-                  <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', display: 'block', marginBottom: 4 }}>Password Default</label>
-                  <input type="password" className="input-navy" placeholder="Password..." value={newUserForm.password} onChange={(e) => setNewUserForm({ ...newUserForm, password: e.target.value })} required style={{ width: '100%' }} />
+                  <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Password Default</label>
+                  <input type="password" placeholder="Password..." value={newUserForm.password} onChange={(e) => setNewUserForm({ ...newUserForm, password: e.target.value })} required style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }} />
                 </div>
               </div>
               <div>
-                <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', display: 'block', marginBottom: 4 }}>Nama Lengkap</label>
-                <input type="text" className="input-navy" placeholder="misal: Petrus Kurniawan" value={newUserForm.name} onChange={(e) => setNewUserForm({ ...newUserForm, name: e.target.value })} required style={{ width: '100%' }} />
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Nama Lengkap</label>
+                <input type="text" placeholder="misal: Petrus Kurniawan" value={newUserForm.name} onChange={(e) => setNewUserForm({ ...newUserForm, name: e.target.value })} required style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }} />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
-                  <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', display: 'block', marginBottom: 4 }}>Role Otoritas</label>
-                  <select className="input-navy" value={newUserForm.role} onChange={(e) => setNewUserForm({ ...newUserForm, role: e.target.value })} style={{ width: '100%' }}>
-                    <option value="SUPER_ADMIN" style={{ background: '#0b1830' }}>SUPER_ADMIN</option>
-                    <option value="SUPERVISOR" style={{ background: '#0b1830' }}>SUPERVISOR</option>
-                    <option value="DISPATCHER" style={{ background: '#0b1830' }}>DISPATCHER</option>
-                    <option value="OPERATOR" style={{ background: '#0b1830' }}>OPERATOR</option>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Role Otoritas</label>
+                  <select value={newUserForm.role} onChange={(e) => setNewUserForm({ ...newUserForm, role: e.target.value })} style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }}>
+                    <option value="SUPER_ADMIN">SUPER_ADMIN</option>
+                    <option value="SUPERVISOR">SUPERVISOR</option>
+                    <option value="DISPATCHER">DISPATCHER</option>
+                    <option value="OPERATOR">OPERATOR</option>
                   </select>
                 </div>
                 <div>
-                  <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', display: 'block', marginBottom: 4 }}>NIP Pegawai</label>
-                  <input type="text" className="input-navy" placeholder="994051199" value={newUserForm.nip} onChange={(e) => setNewUserForm({ ...newUserForm, nip: e.target.value })} style={{ width: '100%' }} />
+                  <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>NIP Pegawai</label>
+                  <input type="text" placeholder="994051199" value={newUserForm.nip} onChange={(e) => setNewUserForm({ ...newUserForm, nip: e.target.value })} style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }} />
                 </div>
               </div>
               <div>
-                <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', display: 'block', marginBottom: 4 }}>Kantor Penugasan</label>
-                <input type="text" className="input-navy" placeholder="KCU Cimahi (40511)" value={newUserForm.branch} onChange={(e) => setNewUserForm({ ...newUserForm, branch: e.target.value })} style={{ width: '100%' }} />
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Kantor Penugasan</label>
+                <input type="text" placeholder="KCU Cimahi (40511)" value={newUserForm.branch} onChange={(e) => setNewUserForm({ ...newUserForm, branch: e.target.value })} style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }} />
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
                 <button type="button" className="btn-ghost" onClick={() => setIsCreateUserModalOpen(false)}>Batal</button>
@@ -860,34 +763,34 @@ export default function Profile() {
       {/* MODAL: EDIT USER DARI TABEL */}
       {isEditUserModalOpen && userToEdit && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: 500 }}>
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: 16, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Edit3 size={18} color="#38bdf8" /> Edit User @{userToEdit.username}
+          <div className="modal-content" style={{ maxWidth: 500, background: '#ffffff', color: '#0f172a' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: 16, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Edit3 size={18} color="#0284c7" /> Edit User @{userToEdit.username}
               </h3>
               <button className="btn-ghost" onClick={() => setIsEditUserModalOpen(false)} style={{ padding: 4 }}><X size={16} /></button>
             </div>
             <form onSubmit={handleSaveEditUser} style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
-                <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', display: 'block', marginBottom: 4 }}>Nama Lengkap</label>
-                <input type="text" className="input-navy" value={editUserForm.name} onChange={(e) => setEditUserForm({ ...editUserForm, name: e.target.value })} required style={{ width: '100%' }} />
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Nama Lengkap</label>
+                <input type="text" value={editUserForm.name} onChange={(e) => setEditUserForm({ ...editUserForm, name: e.target.value })} required style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }} />
               </div>
               <div>
-                <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', display: 'block', marginBottom: 4 }}>Role Otoritas</label>
-                <select className="input-navy" value={editUserForm.role} onChange={(e) => setEditUserForm({ ...editUserForm, role: e.target.value })} style={{ width: '100%' }}>
-                  <option value="SUPER_ADMIN" style={{ background: '#0b1830' }}>SUPER_ADMIN</option>
-                  <option value="SUPERVISOR" style={{ background: '#0b1830' }}>SUPERVISOR</option>
-                  <option value="DISPATCHER" style={{ background: '#0b1830' }}>DISPATCHER</option>
-                  <option value="OPERATOR" style={{ background: '#0b1830' }}>OPERATOR</option>
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Role Otoritas</label>
+                <select value={editUserForm.role} onChange={(e) => setEditUserForm({ ...editUserForm, role: e.target.value })} style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }}>
+                  <option value="SUPER_ADMIN">SUPER_ADMIN</option>
+                  <option value="SUPERVISOR">SUPERVISOR</option>
+                  <option value="DISPATCHER">DISPATCHER</option>
+                  <option value="OPERATOR">OPERATOR</option>
                 </select>
               </div>
               <div>
-                <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', display: 'block', marginBottom: 4 }}>Email</label>
-                <input type="email" className="input-navy" value={editUserForm.email} onChange={(e) => setEditUserForm({ ...editUserForm, email: e.target.value })} style={{ width: '100%' }} />
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Email</label>
+                <input type="email" value={editUserForm.email} onChange={(e) => setEditUserForm({ ...editUserForm, email: e.target.value })} style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }} />
               </div>
               <div>
-                <label style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', display: 'block', marginBottom: 4 }}>Kantor Penugasan</label>
-                <input type="text" className="input-navy" value={editUserForm.branch} onChange={(e) => setEditUserForm({ ...editUserForm, branch: e.target.value })} style={{ width: '100%' }} />
+                <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>Kantor Penugasan</label>
+                <input type="text" value={editUserForm.branch} onChange={(e) => setEditUserForm({ ...editUserForm, branch: e.target.value })} style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }} />
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 10 }}>
                 <button type="button" className="btn-ghost" onClick={() => setIsEditUserModalOpen(false)}>Batal</button>
@@ -901,14 +804,14 @@ export default function Profile() {
       {/* MODAL: KONFIRMASI HAPUS USER */}
       {userToDelete && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: 440, padding: 24, textAlignment: 'center' }}>
+          <div className="modal-content" style={{ maxWidth: 440, padding: 24, textAlign: 'center', background: '#ffffff', color: '#0f172a' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Trash2 size={24} color="#ef4444" />
               </div>
-              <h3 style={{ margin: 0, fontSize: 18, color: '#fff' }}>Hapus Pengguna?</h3>
-              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', margin: 0, textAlign: 'center' }}>
-                Apakah Anda yakin ingin menghapus akun <strong style={{ color: '#fff' }}>@{userToDelete.username}</strong> ({userToDelete.name})? Tindakan ini tidak dapat dibatalkan.
+              <h3 style={{ margin: 0, fontSize: 18, color: '#0f172a' }}>Hapus Pengguna?</h3>
+              <p style={{ fontSize: 13, color: '#64748b', margin: 0, textAlign: 'center' }}>
+                Apakah Anda yakin ingin menghapus akun <strong style={{ color: '#0f172a' }}>@{userToDelete.username}</strong> ({userToDelete.name})? Tindakan ini tidak dapat dibatalkan.
               </p>
               <div style={{ display: 'flex', gap: 12, width: '100%', marginTop: 12 }}>
                 <button className="btn-ghost" onClick={() => setUserToDelete(null)} style={{ flex: 1, justifyContent: 'center' }}>Batal</button>

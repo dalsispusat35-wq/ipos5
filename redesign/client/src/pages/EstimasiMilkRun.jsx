@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { 
   Truck, MapPin, ArrowRight, RotateCcw, Package, Scale, Clock, 
   ChevronRight, ChevronLeft, Filter, Search, ArrowUpDown, CheckCircle2, AlertCircle,
-  FileText, User, Mail, Phone, Building, Tag, ShieldCheck, Camera, PenTool, Globe, Play, Pause, RefreshCw
+  FileText, User, Mail, Phone, Building, Tag, ShieldCheck, Camera, PenTool, Globe, Play, Pause, RefreshCw,
+  Info
 } from 'lucide-react';
 
 // Embedded Responsive & Animation CSS Styles
@@ -10,11 +11,6 @@ const RESPONSIVE_STYLES = `
   @keyframes wheelSpin {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
-  }
-  @keyframes pulseGlow {
-    0% { filter: drop-shadow(0 0 6px rgba(56,189,248,0.5)); }
-    50% { filter: drop-shadow(0 0 16px rgba(56,189,248,0.9)); }
-    100% { filter: drop-shadow(0 0 6px rgba(56,189,248,0.5)); }
   }
   .spinning-wheel {
     animation: wheelSpin 1.2s linear infinite;
@@ -25,7 +21,6 @@ const RESPONSIVE_STYLES = `
   }
   .truck-hover-card:hover {
     transform: translateY(-4px) scale(1.03);
-    filter: drop-shadow(0 8px 20px rgba(56,189,248,0.5)) !important;
   }
   .filter-pill {
     padding: 6px 14px;
@@ -33,23 +28,22 @@ const RESPONSIVE_STYLES = `
     font-size: 12px;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.15s ease;
     border: 1px solid transparent;
   }
   .filter-pill.active {
-    background: rgba(56,189,248,0.18);
-    border-color: rgba(56,189,248,0.5);
-    color: #38bdf8;
-    box-shadow: 0 0 12px rgba(56,189,248,0.25);
+    background: #0b2e8a;
+    border-color: #0284c7;
+    color: #ffffff;
   }
   .filter-pill.inactive {
-    background: rgba(255,255,255,0.04);
-    border-color: rgba(255,255,255,0.08);
-    color: rgba(255,255,255,0.5);
+    background: #f8fafc;
+    border-color: #e2e8f0;
+    color: #64748b;
   }
   .filter-pill.inactive:hover {
-    background: rgba(255,255,255,0.08);
-    color: #fff;
+    background: #e2e8f0;
+    color: #0f172a;
   }
   @media (max-width: 768px) {
     .responsive-header-row {
@@ -68,7 +62,6 @@ const RESPONSIVE_STYLES = `
 
 // Custom Cargo Truck Component that renders cargo height based on weight with animations
 function CargoTruckVisual({ weight, maxWeight = 600, packagesCount, isSelected, isMoving, onClick, currentStopName }) {
-  // Height scale: 0 when empty, max 50px when loaded (natural proportion)
   const ratio = Math.min(1, weight / maxWeight);
   const boxHeight = weight === 0 ? 0 : Math.max(14, Math.round(ratio * 50));
   
@@ -81,7 +74,6 @@ function CargoTruckVisual({ weight, maxWeight = 600, packagesCount, isSelected, 
         flexDirection: 'column',
         alignItems: 'center',
         cursor: 'pointer',
-        filter: isSelected ? 'drop-shadow(0 0 16px rgba(56,189,248,0.9))' : 'none',
       }}
       title={`Beban Aktif: ${weight} kg | ${packagesCount} paket di ${currentStopName} (Klik untuk detail manifest)`}
     >
@@ -89,28 +81,29 @@ function CargoTruckVisual({ weight, maxWeight = 600, packagesCount, isSelected, 
       <div style={{
         fontSize: 11.5,
         fontWeight: 800,
-        color: weight > 0 ? '#38bdf8' : '#cbd5e1',
-        background: weight > 0 ? 'rgba(6,13,31,0.95)' : 'rgba(15,23,42,0.9)',
-        border: `1.5px solid ${weight > 0 ? '#38bdf8' : 'rgba(255,255,255,0.2)'}`,
+        color: weight > 0 ? '#0b2e8a' : '#64748b',
+        background: '#ffffff',
+        border: `1.5px solid ${weight > 0 ? '#0284c7' : '#e2e8f0'}`,
         padding: '3px 12px',
         borderRadius: 14,
         marginBottom: 4,
         whiteSpace: 'nowrap',
-        boxShadow: '0 4px 14px rgba(0,0,0,0.6)',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
         display: 'flex',
         alignItems: 'center',
         gap: 6
       }}>
         {weight === 0 ? (
-          <span>🚚 Truk Kosong (Awal Rute)</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <Truck size={12} color="#64748b" /> Truk Kosong (Awal Rute)
+          </span>
         ) : (
           <>
             <span style={{ 
               width: 7, 
               height: 7, 
               borderRadius: '50%', 
-              background: isMoving ? '#34d399' : '#38bdf8', 
-              boxShadow: isMoving ? '0 0 10px #34d399' : '0 0 8px #38bdf8' 
+              background: isMoving ? '#16a34a' : '#0284c7', 
             }} />
             <span>{weight} kg · {packagesCount} pkt</span>
           </>
@@ -121,76 +114,62 @@ function CargoTruckVisual({ weight, maxWeight = 600, packagesCount, isSelected, 
       <div style={{ height: 85, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}>
         <svg width="115" height="85" viewBox="0 0 115 85" fill="none" xmlns="http://www.w3.org/2000/svg">
           {/* Ground Line Shadow */}
-          <ellipse cx="55" cy="77" rx="45" ry="3.5" fill="rgba(0,0,0,0.5)" />
+          <ellipse cx="55" cy="77" rx="45" ry="3.5" fill="rgba(0,0,0,0.08)" />
 
           {/* Animated Wheels */}
           <g className={isMoving ? 'spinning-wheel' : ''} style={{ transformOrigin: '30px 71px' }}>
-            <circle cx="30" cy="71" r="7.5" fill="#0f172a" stroke="#38bdf8" strokeWidth="2.5" />
-            <circle cx="30" cy="71" r="3" fill="#38bdf8" />
-            <line x1="30" y1="63.5" x2="30" y2="78.5" stroke="#38bdf8" strokeWidth="1" />
-            <line x1="22.5" y1="71" x2="37.5" y2="71" stroke="#38bdf8" strokeWidth="1" />
+            <circle cx="30" cy="71" r="7.5" fill="#0f172a" stroke="#0284c7" strokeWidth="2.5" />
+            <circle cx="30" cy="71" r="3" fill="#0284c7" />
+            <line x1="30" y1="63.5" x2="30" y2="78.5" stroke="#0284c7" strokeWidth="1" />
+            <line x1="22.5" y1="71" x2="37.5" y2="71" stroke="#0284c7" strokeWidth="1" />
           </g>
 
           <g className={isMoving ? 'spinning-wheel' : ''} style={{ transformOrigin: '80px 71px' }}>
-            <circle cx="80" cy="71" r="7.5" fill="#0f172a" stroke="#38bdf8" strokeWidth="2.5" />
-            <circle cx="80" cy="71" r="3" fill="#38bdf8" />
-            <line x1="80" y1="63.5" x2="80" y2="78.5" stroke="#38bdf8" strokeWidth="1" />
-            <line x1="72.5" y1="71" x2="87.5" y2="71" stroke="#38bdf8" strokeWidth="1" />
+            <circle cx="80" cy="71" r="7.5" fill="#0f172a" stroke="#0284c7" strokeWidth="2.5" />
+            <circle cx="80" cy="71" r="3" fill="#0284c7" />
+            <line x1="80" y1="63.5" x2="80" y2="78.5" stroke="#0284c7" strokeWidth="1" />
+            <line x1="72.5" y1="71" x2="87.5" y2="71" stroke="#0284c7" strokeWidth="1" />
           </g>
 
           {/* Truck Chassis / Base Frame */}
-          <rect x="14" y="65" width="78" height="4" rx="1" fill="#475569" />
+          <rect x="14" y="65" width="78" height="4" rx="1" fill="#64748b" />
 
           {/* Driver Cabin (Front Right) */}
-          <path d="M 72 44 L 86 44 Q 92 44 94 50 L 98 60 Q 99 65 94 65 L 72 65 Z" fill="#0284c7" stroke="#38bdf8" strokeWidth="1.5" />
+          <path d="M 72 44 L 86 44 Q 92 44 94 50 L 98 60 Q 99 65 94 65 L 72 65 Z" fill="#0b2e8a" stroke="#0284c7" strokeWidth="1.5" />
           {/* Cabin Window */}
           <path d="M 76 47 L 85 47 Q 88 47 90 51 L 91 56 L 76 56 Z" fill="#bae6fd" opacity="0.9" />
-          {/* Headlight (Pulsing when moving) */}
-          <rect x="95" y="58" width="3" height="4" rx="1" fill="#fef08a" />
-          {isMoving && (
-            <polygon points="98,56 112,50 112,66 98,62" fill="rgba(254,240,138,0.25)" />
-          )}
+          {/* Headlight */}
+          <rect x="95" y="58" width="3" height="4" rx="1" fill="#f59e0b" />
 
-          {/* Cargo Box Mounted on Top (Dynamic Height according to Weight) */}
+          {/* Cargo Box Mounted on Top */}
           {boxHeight > 0 && (
             <g>
-              {/* Main Cargo Box */}
               <rect 
                 x="16" 
                 y={65 - boxHeight} 
                 width="55" 
                 height={boxHeight} 
                 rx="3" 
-                fill="url(#boxGradientActiveSingle)"
-                stroke="#38bdf8" 
+                fill="#0284c7"
+                stroke="#0b2e8a" 
                 strokeWidth="1.8" 
               />
-              {/* Cargo Door Seam */}
-              <line x1="43.5" y1={65 - boxHeight + 3} x2="43.5" y2={64} stroke="rgba(255,255,255,0.35)" strokeWidth="1" strokeDasharray="2 2" />
-              {/* POS Indonesia Logo / Indicator Badge on Cargo */}
+              <line x1="43.5" y1={65 - boxHeight + 3} x2="43.5" y2={64} stroke="rgba(255,255,255,0.4)" strokeWidth="1" strokeDasharray="2 2" />
               {boxHeight >= 22 && (
                 <g>
-                  <rect x="24" y={65 - boxHeight + 6} width="15" height="10" rx="2" fill="rgba(232,67,31,0.9)" />
+                  <rect x="24" y={65 - boxHeight + 6} width="15" height="10" rx="2" fill="#e8431f" />
                   <text x="31.5" y={65 - boxHeight + 13} fontSize="6" fontWeight="bold" fill="#ffffff" textAnchor="middle">POS</text>
                 </g>
               )}
             </g>
           )}
-
-          {/* Gradients */}
-          <defs>
-            <linearGradient id="boxGradientActiveSingle" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#38bdf8" />
-              <stop offset="100%" stopColor="#0369a1" />
-            </linearGradient>
-          </defs>
         </svg>
       </div>
     </div>
   );
 }
 
-// Full 4 Dummy Routes Data
+// 4 Routes Data
 const DUMMY_ROUTES = [
   {
     id: 'RUTE-01',
@@ -205,10 +184,7 @@ const DUMMY_ROUTES = [
     progressPct: 75,
     eta: '14:30 WIB',
     stops: [
-      { 
-        id: 'S0', name: 'Start (Truck Kosong)', code: 'AWAL', time: '08:00', weight: 0, packages: 0,
-        manifest: null 
-      },
+      { id: 'S0', name: 'Start (Truck Kosong)', code: 'AWAL', time: '08:00', weight: 0, packages: 0, manifest: null },
       { 
         id: 'S1', name: 'KCU Cimahi', code: '40500', time: '09:15', weight: 120, packages: 45,
         manifest: {
@@ -245,10 +221,7 @@ const DUMMY_ROUTES = [
           photo1: 'https://images.unsplash.com/photo-1580674684081-7617fbf3d745?auto=format&fit=crop&w=400&q=80', photo2: 'https://images.unsplash.com/photo-1553413077-190dd305871c?auto=format&fit=crop&w=400&q=80', tandatangan: 'Digital Dispatch Sign', kordinat: '-6.91455, 107.58112'
         }
       },
-      { 
-        id: 'S4', name: 'SPP Bandung', code: '40400', time: '14:30 (EST)', weight: 420, packages: 145,
-        manifest: null
-      }
+      { id: 'S4', name: 'SPP Bandung', code: '40400', time: '14:30 (EST)', weight: 420, packages: 145, manifest: null }
     ]
   },
   {
@@ -416,10 +389,9 @@ export default function EstimasiMilkRun() {
   const [routes] = useState(DUMMY_ROUTES);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('PLATE_ASC');
-  const [statusFilter, setStatusFilter] = useState('ALL'); // ALL, EN_ROUTE, LOADING, SCHEDULED
+  const [statusFilter, setStatusFilter] = useState('ALL');
   const [selectedManifest, setSelectedManifest] = useState(null);
 
-  // Active stop index for each route
   const [activeStopMap, setActiveStopMap] = useState({
     'RUTE-01': 3,
     'RUTE-02': 2,
@@ -427,11 +399,9 @@ export default function EstimasiMilkRun() {
     'RUTE-04': 1
   });
 
-  // Auto Simulation State (Play / Pause for each route)
   const [playingRouteId, setPlayingRouteId] = useState(null);
   const [isGlobalPlaying, setIsGlobalPlaying] = useState(false);
 
-  // Auto Drive Interval simulation effect
   useEffect(() => {
     let interval = null;
     if (isGlobalPlaying || playingRouteId) {
@@ -454,7 +424,6 @@ export default function EstimasiMilkRun() {
     };
   }, [isGlobalPlaying, playingRouteId, routes]);
 
-  // Sorting and filtering handler
   const getFilteredAndSortedRoutes = () => {
     let result = [...routes];
 
@@ -513,41 +482,38 @@ export default function EstimasiMilkRun() {
   const grandTotalWeight = routes.reduce((acc, r) => acc + r.totalWeightKg, 0).toFixed(1);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, color: '#fff' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, color: '#0f172a' }}>
       <style>{RESPONSIVE_STYLES}</style>
 
       {/* Top Header Card */}
-      <div 
-        className="glass-card-solid gradient-border-card" 
-        style={{ padding: '22px 26px', background: 'linear-gradient(135deg, rgba(13,27,56,0.95), rgba(6,13,31,0.95))' }}
-      >
+      <div className="spatial-card" style={{ padding: '22px 26px' }}>
         <div className="responsive-header-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
               <div 
                 style={{ 
-                  width: 34, 
-                  height: 34, 
-                  borderRadius: 9, 
-                  background: 'rgba(56,189,248,0.15)', 
-                  border: '1px solid rgba(56,189,248,0.3)',
+                  width: 36, 
+                  height: 36, 
+                  borderRadius: 10, 
+                  background: '#e0f2fe', 
+                  border: '1px solid #bae6fd',
                   display: 'flex', 
                   alignItems: 'center', 
                   justifyContent: 'center' 
                 }}
               >
-                <Truck size={20} color="#38bdf8" />
+                <Truck size={20} color="#0284c7" />
               </div>
-              <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: 0, letterSpacing: '-0.01em' }}>
-                Estimasi(Dummy) (Visualisasi Kargo Truk & Manifest 4 Rute)
+              <h2 style={{ fontSize: 20, fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: '-0.02em' }}>
+                Simulasi Milk Run & Telemetri Truk (4 Rute)
               </h2>
             </div>
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 4 }}>
-              <span>Total Armada Berjalan: <strong style={{ color: '#38bdf8' }}>4 Mobil Box</strong></span>
-              <span style={{ color: 'rgba(255,255,255,0.2)' }}>|</span>
-              <span>Total Beban: <strong style={{ color: '#34d399' }}>{grandTotalWeight} Kg</strong></span>
-              <span style={{ color: 'rgba(255,255,255,0.2)' }}>|</span>
-              <span>Total Paket Muatan: <strong style={{ color: '#fbbf24' }}>{grandTotalPackages} Paket</strong></span>
+            <div style={{ fontSize: 13, color: '#64748b', display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 4 }}>
+              <span>Total Armada: <strong style={{ color: '#0b2e8a' }}>4 Mobil Box</strong></span>
+              <span style={{ color: '#cbd5e1' }}>|</span>
+              <span>Total Beban: <strong style={{ color: '#16a34a' }}>{grandTotalWeight} Kg</strong></span>
+              <span style={{ color: '#cbd5e1' }}>|</span>
+              <span>Total Muatan: <strong style={{ color: '#d97706' }}>{grandTotalPackages} Paket</strong></span>
             </div>
           </div>
 
@@ -557,20 +523,14 @@ export default function EstimasiMilkRun() {
             {/* Global Auto Simulation Play/Pause Button */}
             <button
               onClick={toggleGlobalPlay}
+              className={isGlobalPlaying ? "btn-ghost" : "btn-primary"}
               style={{
-                background: isGlobalPlaying ? 'rgba(232,67,31,0.2)' : 'rgba(56,189,248,0.18)',
-                border: `1px solid ${isGlobalPlaying ? 'rgba(232,67,31,0.5)' : 'rgba(56,189,248,0.4)'}`,
-                color: isGlobalPlaying ? '#ff6b4a' : '#38bdf8',
                 borderRadius: 10,
                 padding: '8px 16px',
-                fontWeight: 700,
                 fontSize: 12.5,
-                cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 8,
-                boxShadow: isGlobalPlaying ? '0 0 14px rgba(232,67,31,0.4)' : '0 0 12px rgba(56,189,248,0.25)',
-                transition: 'all 0.25s'
               }}
             >
               {isGlobalPlaying ? <Pause size={16} /> : <Play size={16} />}
@@ -579,37 +539,36 @@ export default function EstimasiMilkRun() {
 
             {/* Search Filter */}
             <div style={{ position: 'relative', width: 200 }}>
-              <Search size={14} color="rgba(255,255,255,0.4)" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
+              <Search size={14} color="#94a3b8" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }} />
               <input 
-                className="input-navy"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cari Plat / Mobil..."
-                style={{ paddingLeft: 30, fontSize: 12.5 }}
+                style={{ paddingLeft: 30, fontSize: 12.5, width: '100%', height: 38, borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', outline: 'none', boxSizing: 'border-box' }}
               />
             </div>
 
             {/* Sorting Control */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.05)', padding: '6px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)' }}>
-              <ArrowUpDown size={14} color="#38bdf8" />
-              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', whiteSpace: 'nowrap' }}>Urutkan:</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f8fafc', padding: '6px 12px', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+              <ArrowUpDown size={14} color="#0284c7" />
+              <span style={{ fontSize: 12, color: '#64748b', whiteSpace: 'nowrap', fontWeight: 600 }}>Urutkan:</span>
               <select 
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: '#fff',
+                  color: '#0f172a',
                   fontSize: 12.5,
-                  fontWeight: 600,
+                  fontWeight: 700,
                   cursor: 'pointer',
                   outline: 'none'
                 }}
               >
-                <option value="PLATE_ASC" style={{ background: '#0b1830' }}>Plat Mobil (A - Z)</option>
-                <option value="WEIGHT_DESC" style={{ background: '#0b1830' }}>Total Berat (Terberat)</option>
-                <option value="PACKAGES_DESC" style={{ background: '#0b1830' }}>Total Paket (Terbanyak)</option>
-                <option value="PROGRESS_DESC" style={{ background: '#0b1830' }}>Progress SLA (Terjauh)</option>
+                <option value="PLATE_ASC">Plat Mobil (A - Z)</option>
+                <option value="WEIGHT_DESC">Total Berat (Terberat)</option>
+                <option value="PACKAGES_DESC">Total Paket (Terbanyak)</option>
+                <option value="PROGRESS_DESC">Progress SLA (Terjauh)</option>
               </select>
             </div>
 
@@ -617,7 +576,7 @@ export default function EstimasiMilkRun() {
         </div>
 
         {/* Interactive Filter Pills */}
-        <div style={{ display: 'flex', gap: 8, marginTop: 16, pt: 12, borderTop: '1px solid rgba(255,255,255,0.06)', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 8, marginTop: 16, paddingTop: 12, borderTop: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
           <button onClick={() => setStatusFilter('ALL')} className={`filter-pill ${statusFilter === 'ALL' ? 'active' : 'inactive'}`}>
             Semua Rute ({routes.length})
           </button>
@@ -640,83 +599,74 @@ export default function EstimasiMilkRun() {
           const currentStop = route.stops[currentStopIndex] || route.stops[0];
           const isRouteSimulating = isGlobalPlaying || playingRouteId === route.id;
           
-          // Calculate percentage position of the 1 single truck along the node track
           const truckPercentPos = (currentStopIndex / (route.stops.length - 1)) * 82 + 9;
 
           return (
             <div 
               key={route.id}
-              className="glass-card"
+              className="spatial-card"
               style={{
                 padding: '22px 26px',
                 borderRadius: 16,
-                background: 'rgba(10,22,46,0.85)',
-                border: '1px solid rgba(255,255,255,0.09)',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 18
               }}
             >
               {/* Route Card Header */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, borderBottom: '1px solid #f1f5f9', paddingBottom: 14 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                   <div style={{
                     padding: '6px 14px',
                     borderRadius: 8,
-                    background: 'linear-gradient(135deg, rgba(232,67,31,0.25), rgba(232,67,31,0.08))',
-                    border: '1px solid rgba(232,67,31,0.4)',
-                    fontWeight: 800,
+                    background: 'var(--bg-workspace)',
+                    border: '1px solid var(--border-light)',
+                    fontWeight: 900,
                     fontSize: 14.5,
-                    color: '#ff6b4a',
-                    letterSpacing: '0.05em'
+                    color: 'var(--primary-blue)',
+                    letterSpacing: '0.05em',
+                    fontFamily: 'monospace'
                   }}>
                     {route.plateNumber}
                   </div>
                   <div>
-                    <div style={{ fontSize: 16.5, fontWeight: 700, color: '#fff' }}>
-                      {route.truckName} <span style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.45)', fontWeight: 400 }}>({route.driver})</span>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)' }}>
+                      {route.truckName} <span style={{ fontSize: 12.5, color: 'var(--text-secondary)', fontWeight: 500 }}>({route.driver})</span>
                     </div>
-                    <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>
-                      Kapasitas Maksimal: <strong style={{ color: '#cbd5e1' }}>{route.maxCapacityKg} Kg</strong>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
+                      Kapasitas Maksimal: <strong style={{ color: 'var(--text-primary)' }}>{route.maxCapacityKg} Kg</strong>
                     </div>
                   </div>
                 </div>
 
-                {/* Summary Badges: Total Paket, Total Berat, ETA & Step Controls */}
+                {/* Summary Badges */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(56,189,248,0.1)', border: '1px solid rgba(56,189,248,0.25)', padding: '5px 12px', borderRadius: 8 }}>
-                    <Package size={14} color="#38bdf8" />
-                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>Total Paket:</span>
-                    <strong style={{ fontSize: 13, color: '#38bdf8' }}>{route.totalPackages} pkt</strong>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--bg-workspace)', border: '1px solid var(--border-light)', padding: '5px 12px', borderRadius: 8 }}>
+                    <Package size={14} color="#0284c7" />
+                    <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Total Paket:</span>
+                    <strong style={{ fontSize: 13, color: 'var(--primary-blue)' }}>{route.totalPackages} pkt</strong>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.25)', padding: '5px 12px', borderRadius: 8 }}>
-                    <Scale size={14} color="#34d399" />
-                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>Total Berat:</span>
-                    <strong style={{ fontSize: 13, color: '#34d399' }}>{route.totalWeightKg} Kg</strong>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--bg-workspace)', border: '1px solid var(--border-light)', padding: '5px 12px', borderRadius: 8 }}>
+                    <Scale size={14} color="#10b981" />
+                    <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Total Berat:</span>
+                    <strong style={{ fontSize: 13, color: '#10b981' }}>{route.totalWeightKg} Kg</strong>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.25)', padding: '5px 12px', borderRadius: 8 }}>
-                    <Clock size={14} color="#fbbf24" />
-                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>Estimasi (ETA):</span>
-                    <strong style={{ fontSize: 13, color: '#fbbf24' }}>{route.eta}</strong>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--bg-workspace)', border: '1px solid var(--border-light)', padding: '5px 12px', borderRadius: 8 }}>
+                    <Clock size={14} color="#f59e0b" />
+                    <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Estimasi:</span>
+                    <strong style={{ fontSize: 13, color: '#f59e0b' }}>{route.eta}</strong>
                   </div>
 
-                  {/* Step Buttons for moving the single truck */}
+                  {/* Step Buttons */}
                   <div style={{ display: 'flex', gap: 4, marginLeft: 6 }}>
                     <button
                       onClick={() => toggleRoutePlay(route.id)}
+                      className={isRouteSimulating ? "btn-primary" : "btn-ghost"}
                       style={{
-                        background: isRouteSimulating ? 'rgba(232,67,31,0.2)' : 'rgba(56,189,248,0.15)',
-                        border: `1px solid ${isRouteSimulating ? 'rgba(232,67,31,0.4)' : 'rgba(56,189,248,0.3)'}`,
-                        color: isRouteSimulating ? '#ff6b4a' : '#38bdf8',
-                        borderRadius: 6,
                         padding: '4px 10px',
-                        cursor: 'pointer',
                         fontSize: 12,
-                        fontWeight: 700,
-                        display: 'flex',
-                        alignItems: 'center',
                         gap: 4
                       }}
                       title="Simulasi Perjalanan Rute Ini"
@@ -728,17 +678,11 @@ export default function EstimasiMilkRun() {
                     <button
                       disabled={currentStopIndex === 0}
                       onClick={() => handleSetStopIndex(route.id, currentStopIndex - 1, route.stops[currentStopIndex - 1], false)}
+                      className="btn-ghost"
                       style={{
-                        background: currentStopIndex === 0 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)',
-                        border: '1px solid rgba(255,255,255,0.12)',
-                        color: currentStopIndex === 0 ? 'rgba(255,255,255,0.2)' : '#fff',
-                        borderRadius: 6,
                         padding: '4px 8px',
-                        cursor: currentStopIndex === 0 ? 'default' : 'pointer',
                         fontSize: 12,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 2
+                        opacity: currentStopIndex === 0 ? 0.4 : 1
                       }}
                       title="Mundurkan Truk ke Stop Sebelumnya"
                     >
@@ -747,18 +691,11 @@ export default function EstimasiMilkRun() {
                     <button
                       disabled={currentStopIndex === route.stops.length - 1}
                       onClick={() => handleSetStopIndex(route.id, currentStopIndex + 1, route.stops[currentStopIndex + 1], false)}
+                      className="btn-primary"
                       style={{
-                        background: currentStopIndex === route.stops.length - 1 ? 'rgba(255,255,255,0.03)' : 'rgba(2,132,199,0.25)',
-                        border: `1px solid ${currentStopIndex === route.stops.length - 1 ? 'rgba(255,255,255,0.12)' : 'rgba(56,189,248,0.5)'}`,
-                        color: currentStopIndex === route.stops.length - 1 ? 'rgba(255,255,255,0.2)' : '#38bdf8',
-                        borderRadius: 6,
                         padding: '4px 10px',
-                        cursor: currentStopIndex === route.stops.length - 1 ? 'default' : 'pointer',
                         fontSize: 12,
-                        fontWeight: 700,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 2
+                        opacity: currentStopIndex === route.stops.length - 1 ? 0.4 : 1
                       }}
                       title="Jalankan Truk ke Stop Berikutnya"
                     >
@@ -770,18 +707,18 @@ export default function EstimasiMilkRun() {
 
               {/* Progress Bar Container */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#64748b' }}>
                   <span>Status Posisi Truk Terbaru</span>
-                  <span style={{ color: '#38bdf8', fontWeight: 700 }}>
-                    Stop {currentStopIndex + 1} dari {route.stops.length}: <strong style={{ color: '#fff' }}>{currentStop.name}</strong>
+                  <span style={{ color: '#0b2e8a', fontWeight: 800 }}>
+                    Stop {currentStopIndex + 1} dari {route.stops.length}: <strong style={{ color: '#0f172a' }}>{currentStop.name}</strong>
                   </span>
                 </div>
-                <div style={{ width: '100%', height: 6, background: 'rgba(255,255,255,0.08)', borderRadius: 3, overflow: 'hidden' }}>
+                <div style={{ width: '100%', height: 6, background: '#f1f5f9', borderRadius: 3, overflow: 'hidden' }}>
                   <div 
                     style={{ 
                       width: `${(currentStopIndex / (route.stops.length - 1)) * 100}%`, 
                       height: '100%', 
-                      background: 'linear-gradient(90deg, #0284c7, #38bdf8)', 
+                      background: '#0284c7', 
                       borderRadius: 3,
                       transition: 'width 0.6s cubic-bezier(0.4, 0, 0.2, 1)'
                     }} 
@@ -789,7 +726,7 @@ export default function EstimasiMilkRun() {
                 </div>
               </div>
 
-              {/* DYNAMIC SINGLE TRUCK ROUTE TRACK (1 SINGLE TRUCK ANIMATED ALONG THE PATH) */}
+              {/* DYNAMIC SINGLE TRUCK ROUTE TRACK */}
               <div style={{ overflowX: 'auto', padding: '16px 0 6px' }}>
                 <div 
                   style={{ 
@@ -832,7 +769,7 @@ export default function EstimasiMilkRun() {
                       left: '9%', 
                       right: '9%', 
                       height: 3, 
-                      background: 'rgba(255,255,255,0.12)', 
+                      background: '#e2e8f0', 
                       zIndex: 1 
                     }} 
                   >
@@ -842,7 +779,6 @@ export default function EstimasiMilkRun() {
                         width: `${(currentStopIndex / (route.stops.length - 1)) * 100}%`, 
                         height: '100%', 
                         background: '#0284c7', 
-                        boxShadow: '0 0 10px #38bdf8',
                         transition: 'width 0.6s ease' 
                       }} 
                     />
@@ -884,15 +820,14 @@ export default function EstimasiMilkRun() {
                               width: 28, 
                               height: 28, 
                               borderRadius: '50%', 
-                              background: isActiveNode ? '#e8431f' : isPassedNode ? '#0284c7' : '#0f172a',
-                              border: `2.5px solid ${isActiveNode ? '#ff8c66' : isPassedNode ? '#38bdf8' : 'rgba(255,255,255,0.2)'}`,
+                              background: isActiveNode ? '#0b2e8a' : isPassedNode ? '#0284c7' : '#f8fafc',
+                              border: `2.5px solid ${isActiveNode ? '#0284c7' : isPassedNode ? '#bae6fd' : '#cbd5e1'}`,
                               display: 'flex', 
                               alignItems: 'center', 
-                              justifyContent: 'center',
-                              fontSize: 11.5,
-                              fontWeight: 800,
-                              color: '#fff',
-                              boxShadow: isActiveNode ? '0 0 14px rgba(232,67,31,0.8)' : isPassedNode ? '0 0 8px rgba(56,189,248,0.5)' : 'none',
+                              justifyContent: 'center', 
+                              fontSize: 11.5, 
+                              fontWeight: 800, 
+                              color: isActiveNode || isPassedNode ? '#ffffff' : '#64748b',
                               transition: 'all 0.3s ease'
                             }}
                           >
@@ -904,19 +839,20 @@ export default function EstimasiMilkRun() {
                             <span style={{ 
                               fontSize: 12.5, 
                               fontWeight: isActiveNode ? 800 : 600, 
-                              color: isActiveNode ? '#ff8c66' : isPassedNode ? '#fff' : 'rgba(255,255,255,0.4)',
+                              color: isActiveNode ? '#0b2e8a' : isPassedNode ? '#0f172a' : '#64748b',
                               transition: 'color 0.3s'
                             }}>
                               {stop.name}
                             </span>
-                            <span style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.4)' }}>
+                            <span style={{ fontSize: 10.5, color: '#94a3b8' }}>
                               {stop.time}
                             </span>
                             <span style={{ 
                               fontSize: 10, 
                               fontWeight: 700, 
-                              color: stop.weight > 0 ? '#38bdf8' : 'rgba(255,255,255,0.3)',
-                              background: stop.weight > 0 ? 'rgba(56,189,248,0.1)' : 'transparent',
+                              color: stop.weight > 0 ? '#0b2e8a' : '#94a3b8',
+                              background: stop.weight > 0 ? '#f0f9ff' : 'transparent',
+                              border: stop.weight > 0 ? '1px solid #bae6fd' : 'none',
                               padding: '1px 6px',
                               borderRadius: 8,
                               marginTop: 2
@@ -932,68 +868,48 @@ export default function EstimasiMilkRun() {
                 </div>
               </div>
 
-              <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.45)', textAlign: 'center', fontStyle: 'italic', marginTop: -6 }}>
-                💡 Klik tombol <strong>Next / Prev</strong> atau node stop (0-4) untuk menggerakkan Truk. Klik pada <strong>gambar MOBIL TRUK</strong> untuk membuka detail manifest kiriman (40 Field Lengkap).
+              <div style={{ fontSize: 11.5, color: '#64748b', textAlign: 'center', fontStyle: 'italic', marginTop: -6, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <Info size={14} color="#0284c7" />
+                <span>Klik tombol <strong>Next / Prev</strong> atau node stop (0-4) untuk menggerakkan Truk. Klik pada <strong>gambar MOBIL TRUK</strong> untuk membuka detail manifest kiriman.</span>
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Manifest Detail Modal (40 Fields Exact Format Responsive Layout) */}
+      {/* Manifest Detail Modal */}
       {selectedManifest && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(3,8,22,0.88)',
-          backdropFilter: 'blur(14px)',
-          zIndex: 999,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: 16
-        }}>
+        <div className="modal-overlay">
           <div 
-            className="glass-card-solid"
+            className="modal-content"
             style={{
               width: '100%',
               maxWidth: 920,
               maxHeight: '90vh',
               overflowY: 'auto',
               borderRadius: 16,
-              background: '#09152e',
-              border: '1px solid rgba(56,189,248,0.35)',
+              background: '#ffffff',
+              border: '1px solid #e2e8f0',
               padding: '24px 28px',
-              boxShadow: '0 20px 50px rgba(0,0,0,0.85)'
+              color: '#0f172a'
             }}
           >
             {/* Modal Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 16, marginBottom: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: 16, marginBottom: 20 }}>
               <div>
-                <div style={{ fontSize: 11, color: '#38bdf8', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                <div style={{ fontSize: 11, color: '#0284c7', fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                   Detail Data Manifest Kiriman (40 Field Lengkap)
                 </div>
-                <h3 style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: '4px 0 0' }}>
+                <h3 style={{ fontSize: 20, fontWeight: 900, color: '#0f172a', margin: '4px 0 0' }}>
                   Resi: {selectedManifest.resi}
                 </h3>
               </div>
               <button 
                 onClick={() => setSelectedManifest(null)}
-                style={{
-                  background: 'rgba(232,67,31,0.15)',
-                  border: '1px solid rgba(232,67,31,0.4)',
-                  color: '#ff6b4a',
-                  borderRadius: 8,
-                  padding: '6px 16px',
-                  fontSize: 13,
-                  fontWeight: 700,
-                  cursor: 'pointer'
-                }}
+                className="btn-ghost"
+                style={{ fontSize: 12 }}
               >
-                Tutup (Esc)
+                Tutup
               </button>
             </div>
 
@@ -1002,7 +918,7 @@ export default function EstimasiMilkRun() {
               
               {/* Section 1: Informasi Dasar & Resi */}
               <div>
-                <h4 style={{ fontSize: 13, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <h4 style={{ fontSize: 13, color: '#0b2e8a', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 800 }}>
                   <FileText size={15} /> 1. Informasi Identifikasi Kiriman
                 </h4>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
@@ -1012,20 +928,20 @@ export default function EstimasiMilkRun() {
                   <FieldCard label="4. No Pend Kirim" value={selectedManifest.nopendkirim} />
                   <FieldCard label="19. Layanan" value={selectedManifest.layanan} highlight />
                   <FieldCard label="22. Kode Pelanggan" value={selectedManifest.kodepelanggan} />
-                  <FieldCard label="26. Status" value={selectedManifest.status} badge="emerald" />
+                  <FieldCard label="26. Status" value={selectedManifest.status} />
                   <FieldCard label="31. Lokasi Terakhir" value={selectedManifest.lokasiterakhir} />
                 </div>
               </div>
 
               {/* Section 2: Data Pengirim & Penerima */}
               <div>
-                <h4 style={{ fontSize: 13, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <h4 style={{ fontSize: 13, color: '#0b2e8a', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 800 }}>
                   <User size={15} /> 2. Data Pengirim & Penerima Lengkap
                 </h4>
                 <div className="responsive-modal-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                   {/* Pengirim Box */}
-                  <div style={{ background: 'rgba(255,255,255,0.03)', padding: 14, borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)' }}>
-                    <div style={{ fontWeight: 700, color: '#fbbf24', fontSize: 12, marginBottom: 8 }}>DOKUMEN PENGIRIM</div>
+                  <div style={{ background: '#f8fafc', padding: 14, borderRadius: 10, border: '1px solid #e2e8f0' }}>
+                    <div style={{ fontWeight: 800, color: '#d97706', fontSize: 12, marginBottom: 8 }}>DOKUMEN PENGIRIM</div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       <FieldRow label="5. Nama Pengirim" value={selectedManifest.namapengirim} />
                       <FieldRow label="6. Alamat Pengirim" value={selectedManifest.alamtpengirim} />
@@ -1037,8 +953,8 @@ export default function EstimasiMilkRun() {
                   </div>
 
                   {/* Penerima Box */}
-                  <div style={{ background: 'rgba(255,255,255,0.03)', padding: 14, borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)' }}>
-                    <div style={{ fontWeight: 700, color: '#34d399', fontSize: 12, marginBottom: 8 }}>DOKUMEN PENERIMA</div>
+                  <div style={{ background: '#f8fafc', padding: 14, borderRadius: 10, border: '1px solid #e2e8f0' }}>
+                    <div style={{ fontWeight: 800, color: '#16a34a', fontSize: 12, marginBottom: 8 }}>DOKUMEN PENERIMA</div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       <FieldRow label="10. Nama Penerima" value={selectedManifest.namapenerima} />
                       <FieldRow label="11. Alamat Penerima" value={selectedManifest.alamtpenerima} />
@@ -1054,7 +970,7 @@ export default function EstimasiMilkRun() {
 
               {/* Section 3: Destinasi & Keuangan */}
               <div>
-                <h4 style={{ fontSize: 13, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <h4 style={{ fontSize: 13, color: '#0b2e8a', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 800 }}>
                   <Building size={15} /> 3. Destinasi Regional & Keuangan
                 </h4>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
@@ -1070,7 +986,7 @@ export default function EstimasiMilkRun() {
 
               {/* Section 4: SLA, Tanggal & Keterangan */}
               <div>
-                <h4 style={{ fontSize: 13, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <h4 style={{ fontSize: 13, color: '#0b2e8a', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 800 }}>
                   <Clock size={15} /> 4. SLA, Log Tanggal & Keterangan Serah Terima
                 </h4>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
@@ -1087,27 +1003,24 @@ export default function EstimasiMilkRun() {
 
               {/* Section 5: Bukti Foto & Tanda Tangan */}
               <div>
-                <h4 style={{ fontSize: 13, color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <h4 style={{ fontSize: 13, color: '#0b2e8a', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 800 }}>
                   <Camera size={15} /> 5. Bukti Lampiran Visual (Photo1, Photo2, TTD)
                 </h4>
                 <div className="responsive-modal-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
-                  {/* Photo 1 */}
-                  <div style={{ background: 'rgba(255,255,255,0.03)', padding: 10, borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)' }}>
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>37. Photo1 (Paket FISIK)</div>
+                  <div style={{ background: '#f8fafc', padding: 10, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                    <div style={{ fontSize: 11, color: '#64748b', marginBottom: 6, fontWeight: 600 }}>37. Photo1 (Paket FISIK)</div>
                     <img src={selectedManifest.photo1} alt="Photo 1" style={{ width: '100%', height: 110, objectFit: 'cover', borderRadius: 6 }} />
                   </div>
-                  {/* Photo 2 */}
-                  <div style={{ background: 'rgba(255,255,255,0.03)', padding: 10, borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)' }}>
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 6 }}>38. Photo2 (Manifest Barcode)</div>
+                  <div style={{ background: '#f8fafc', padding: 10, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                    <div style={{ fontSize: 11, color: '#64748b', marginBottom: 6, fontWeight: 600 }}>38. Photo2 (Manifest Barcode)</div>
                     <img src={selectedManifest.photo2} alt="Photo 2" style={{ width: '100%', height: 110, objectFit: 'cover', borderRadius: 6 }} />
                   </div>
-                  {/* TTD Digital */}
-                  <div style={{ background: 'rgba(255,255,255,0.03)', padding: 10, borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)' }}>39. Tanda Tangan (Verified TTD)</div>
-                    <div style={{ height: 75, background: 'rgba(0,0,0,0.4)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px stroke rgba(255,255,255,0.1)' }}>
-                      <span style={{ fontFamily: 'cursive', fontSize: 18, color: '#38bdf8' }}>{selectedManifest.namapengirim.split(' ')[0]} Verified</span>
+                  <div style={{ background: '#f8fafc', padding: 10, borderRadius: 8, border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <div style={{ fontSize: 11, color: '#64748b', fontWeight: 600 }}>39. Tanda Tangan (Verified TTD)</div>
+                    <div style={{ height: 75, background: '#ffffff', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #e2e8f0' }}>
+                      <span style={{ fontFamily: 'cursive', fontSize: 18, color: '#0b2e8a' }}>{selectedManifest.namapengirim.split(' ')[0]} Verified</span>
                     </div>
-                    <div style={{ fontSize: 10, color: '#34d399', textAlign: 'center', fontWeight: 600 }}>
+                    <div style={{ fontSize: 10, color: '#16a34a', textAlign: 'center', fontWeight: 700 }}>
                       ✓ {selectedManifest.tandatangan}
                     </div>
                   </div>
@@ -1123,17 +1036,16 @@ export default function EstimasiMilkRun() {
   );
 }
 
-// Helper Card Component for 40 fields
-function FieldCard({ label, value, highlight, badge }) {
+function FieldCard({ label, value, highlight }) {
   return (
     <div style={{
-      background: highlight ? 'rgba(56,189,248,0.08)' : 'rgba(255,255,255,0.03)',
-      border: `1px solid ${highlight ? 'rgba(56,189,248,0.25)' : 'rgba(255,255,255,0.07)'}`,
+      background: highlight ? '#f0f9ff' : '#f8fafc',
+      border: `1px solid ${highlight ? '#bae6fd' : '#e2e8f0'}`,
       padding: '8px 12px',
       borderRadius: 8
     }}>
-      <div style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>{label}</div>
-      <div style={{ fontSize: 12.5, color: highlight ? '#38bdf8' : '#fff', fontWeight: highlight ? 700 : 500, marginTop: 2, wordBreak: 'break-word' }}>
+      <div style={{ fontSize: 10.5, color: '#64748b', fontWeight: 700 }}>{label}</div>
+      <div style={{ fontSize: 12.5, color: highlight ? '#0b2e8a' : '#0f172a', fontWeight: highlight ? 800 : 600, marginTop: 2, wordBreak: 'break-word' }}>
         {value || '-'}
       </div>
     </div>
@@ -1143,8 +1055,8 @@ function FieldCard({ label, value, highlight, badge }) {
 function FieldRow({ label, value }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5 }}>
-      <span style={{ color: 'rgba(255,255,255,0.4)' }}>{label}:</span>
-      <span style={{ color: '#fff', fontWeight: 600, maxWidth: '60%', textAlign: 'right' }}>{value || '-'}</span>
+      <span style={{ color: '#64748b', fontWeight: 600 }}>{label}:</span>
+      <span style={{ color: '#0f172a', fontWeight: 700, maxWidth: '60%', textAlign: 'right' }}>{value || '-'}</span>
     </div>
   );
 }

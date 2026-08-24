@@ -1,25 +1,25 @@
 import { useState } from 'react';
-import { Plus, Play, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Play, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { api } from '../utils/api.js';
 
-const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const days = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 
 export default function JadwalTransportasi() {
   const [trips] = useState([
-    { id: 1, day: 0, startHour: 6, duration: 2, vehicle: 'D 9021 AB', route: 'Cimahi → Bandung SC', color: '#e8431f' },
-    { id: 2, day: 0, startHour: 10, duration: 2, vehicle: 'D 8832 CD', route: 'Cimahi → Bandung SC', color: '#2460b0' },
-    { id: 3, day: 0, startHour: 14, duration: 2, vehicle: 'D 7741 EF', route: 'Cimahi → Soreang Loop', color: '#f59e0b' },
-    { id: 4, day: 1, startHour: 6, duration: 2, vehicle: 'D 9021 AB', route: 'Cimahi → Bandung SC', color: '#e8431f' },
-    { id: 5, day: 1, startHour: 10, duration: 2, vehicle: 'D 6600 GH', route: 'Cimahi → Bandung SC (Via Padalarang)', color: '#2460b0' },
-    { id: 6, day: 2, startHour: 7, duration: 2, vehicle: 'D 5512 IJ', route: 'Cimahi → Bandung SC', color: '#e8431f' },
-    { id: 7, day: 2, startHour: 13, duration: 3, vehicle: 'D 4423 KL', route: 'Cimahi → Soreang Loop', color: '#f59e0b' },
-    { id: 8, day: 3, startHour: 6, duration: 2, vehicle: 'D 9021 AB', route: 'Cimahi → Bandung SC', color: '#e8431f' },
-    { id: 9, day: 3, startHour: 9, duration: 2, vehicle: 'D 8832 CD', route: 'Cimahi → Bandung SC', color: '#2460b0' },
-    { id: 10, day: 3, startHour: 14, duration: 2, vehicle: 'D 2205 OP', route: 'Cimahi → Bandung SC', color: '#e8431f' },
-    { id: 11, day: 4, startHour: 6, duration: 2, vehicle: 'D 9021 AB', route: 'Cimahi → Bandung SC', color: '#e8431f' },
-    { id: 12, day: 4, startHour: 11, duration: 2, vehicle: 'D 7741 EF', route: 'Cimahi → Soreang Loop', color: '#f59e0b' },
-    { id: 13, day: 5, startHour: 8, duration: 2, vehicle: 'D 8832 CD', route: 'Cimahi → Bandung SC', color: '#2460b0' },
-    { id: 14, day: 6, startHour: 8, duration: 2, vehicle: 'D 5512 IJ', route: 'Cimahi → Bandung SC', color: '#e8431f' },
+    { id: 1, day: 0, startHour: 6, duration: 2, vehicle: 'B 9910 PCX', route: 'Cimahi → SPP Bandung', color: '#0284c7' },
+    { id: 2, day: 0, startHour: 10, duration: 2, vehicle: 'B 9945 PCY', route: 'Cimahi → SPP Bandung', color: '#0b2e8a' },
+    { id: 3, day: 0, startHour: 14, duration: 2, vehicle: 'D 8812 AB', route: 'Cimahi → Soreang Loop', color: '#d97706' },
+    { id: 4, day: 1, startHour: 6, duration: 2, vehicle: 'B 9910 PCX', route: 'Cimahi → SPP Bandung', color: '#0284c7' },
+    { id: 5, day: 1, startHour: 10, duration: 2, vehicle: 'D 8990 SPP', route: 'SPP Bandung → Jakarta (RTE-6)', color: '#0b2e8a' },
+    { id: 6, day: 2, startHour: 7, duration: 2, vehicle: 'B 9910 PCX', route: 'Cimahi → SPP Bandung', color: '#0284c7' },
+    { id: 7, day: 2, startHour: 13, duration: 3, vehicle: 'D 8812 AB', route: 'Cimahi → Soreang Loop', color: '#d97706' },
+    { id: 8, day: 3, startHour: 6, duration: 2, vehicle: 'B 9910 PCX', route: 'Cimahi → SPP Bandung', color: '#0284c7' },
+    { id: 9, day: 3, startHour: 9, duration: 2, vehicle: 'B 9945 PCY', route: 'Cimahi → SPP Bandung', color: '#0b2e8a' },
+    { id: 10, day: 3, startHour: 14, duration: 2, vehicle: 'D 8990 SPP', route: 'SPP Bandung → Jakarta (RTE-6)', color: '#0284c7' },
+    { id: 11, day: 4, startHour: 6, duration: 2, vehicle: 'B 9910 PCX', route: 'Cimahi → SPP Bandung', color: '#0284c7' },
+    { id: 12, day: 4, startHour: 11, duration: 2, vehicle: 'D 8812 AB', route: 'Cimahi → Soreang Loop', color: '#d97706' },
+    { id: 13, day: 5, startHour: 8, duration: 2, vehicle: 'B 9945 PCY', route: 'Cimahi → SPP Bandung', color: '#0b2e8a' },
+    { id: 14, day: 6, startHour: 8, duration: 2, vehicle: 'B 9910 PCX', route: 'Cimahi → SPP Bandung', color: '#0284c7' },
   ]);
 
   const [generating, setGenerating] = useState(false);
@@ -48,7 +48,7 @@ export default function JadwalTransportasi() {
   };
 
   const hours = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
-  const CELL_H = 50;
+  const CELL_H = 52;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -58,8 +58,8 @@ export default function JadwalTransportasi() {
           <button className="btn-ghost" style={{ padding: '6px 10px' }} onClick={() => setWeekOffset((w) => w - 1)}>
             <ChevronLeft size={14} />
           </button>
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#fff', minWidth: 160, textAlign: 'center' }}>
-            20 Jul – 26 Jul 2026
+          <span style={{ fontSize: 13.5, fontWeight: 800, color: '#0f172a', minWidth: 170, textAlign: 'center' }}>
+            17 Agt – 23 Agt 2026
           </span>
           <button className="btn-ghost" style={{ padding: '6px 10px' }} onClick={() => setWeekOffset((w) => w + 1)}>
             <ChevronRight size={14} />
@@ -69,43 +69,43 @@ export default function JadwalTransportasi() {
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 10, alignItems: 'center' }}>
           {generating && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 140, height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${progress}%`, background: 'linear-gradient(90deg, #e8431f, #f59e0b)', borderRadius: 3, transition: 'width 0.2s' }} />
+              <div style={{ width: 140, height: 6, borderRadius: 3, background: '#e2e8f0', overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${progress}%`, background: '#0284c7', borderRadius: 3, transition: 'width 0.2s' }} />
               </div>
-              <span style={{ fontSize: 12, color: '#e8431f', fontWeight: 600 }}>{progress}%</span>
+              <span style={{ fontSize: 12, color: '#0284c7', fontWeight: 800 }}>{progress}%</span>
             </div>
           )}
-          <button className="btn-ghost"><Plus size={14} /> Add Trip</button>
-          <button className="btn-primary" onClick={handleGenerate} disabled={generating}>
-            <Play size={14} /> {generating ? 'Generating…' : 'Generate Monthly Schedule'}
+          <button className="btn-ghost"><Plus size={14} /> Tambah Jadwal Trip</button>
+          <button className="btn-primary" onClick={handleGenerate} disabled={generating} style={{ gap: 6 }}>
+            <Play size={14} /> {generating ? 'Membuat Jadwal…' : 'Generate Jadwal Bulanan'}
           </button>
         </div>
       </div>
 
       {/* Transport Calendar Grid */}
-      <div className="glass-card-solid" style={{ overflow: 'hidden' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '56px repeat(7, 1fr)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-          <div style={{ padding: '10px', borderRight: '1px solid rgba(255,255,255,0.05)' }} />
+      <div className="spatial-card" style={{ overflow: 'hidden', padding: 0 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '60px repeat(7, 1fr)', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+          <div style={{ padding: '10px', borderRight: '1px solid #e2e8f0' }} />
           {days.map((d, i) => (
-            <div key={d} style={{ padding: '10px 0', textAlign: 'center', borderRight: i < 6 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
-              <div style={{ fontSize: 10.5, fontWeight: 700, color: i === 3 ? '#e8431f' : 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>{d}</div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: i === 3 ? '#fff' : 'rgba(255,255,255,0.6)', marginTop: 2 }}>{20 + i}</div>
+            <div key={d} style={{ padding: '10px 0', textAlign: 'center', borderRight: i < 6 ? '1px solid #e2e8f0' : 'none' }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: i === 3 ? '#0284c7' : '#64748b', textTransform: 'uppercase' }}>{d}</div>
+              <div style={{ fontSize: 17, fontWeight: 900, color: i === 3 ? '#0b2e8a' : '#0f172a', marginTop: 2 }}>{17 + i}</div>
             </div>
           ))}
         </div>
 
-        <div style={{ overflowY: 'auto', maxHeight: 420, display: 'grid', gridTemplateColumns: '56px repeat(7, 1fr)' }}>
-          <div>
+        <div style={{ overflowY: 'auto', maxHeight: 440, display: 'grid', gridTemplateColumns: '60px repeat(7, 1fr)' }}>
+          <div style={{ background: '#f8fafc' }}>
             {hours.map((h) => (
-              <div key={h} style={{ height: CELL_H, borderRight: '1px solid rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.04)', padding: '4px 8px' }}>
-                <span className="font-mono" style={{ fontSize: 10, color: 'rgba(255,255,255,0.3)' }}>{h.toString().padStart(2, '0')}:00</span>
+              <div key={h} style={{ height: CELL_H, borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #f1f5f9', padding: '6px 8px' }}>
+                <span style={{ fontSize: 11, color: '#94a3b8', fontFamily: 'monospace', fontWeight: 600 }}>{h.toString().padStart(2, '0')}:00</span>
               </div>
             ))}
           </div>
 
           {days.map((_, dayIdx) => (
-            <div key={dayIdx} style={{ borderRight: dayIdx < 6 ? '1px solid rgba(255,255,255,0.05)' : 'none', position: 'relative' }}>
-              {hours.map((h) => <div key={h} style={{ height: CELL_H, borderBottom: '1px solid rgba(255,255,255,0.04)' }} />)}
+            <div key={dayIdx} style={{ borderRight: dayIdx < 6 ? '1px solid #f1f5f9' : 'none', position: 'relative' }}>
+              {hours.map((h) => <div key={h} style={{ height: CELL_H, borderBottom: '1px solid #f1f5f9' }} />)}
               {trips.filter((t) => t.day === dayIdx).map((trip) => {
                 const top = (trip.startHour - 6) * CELL_H;
                 const height = trip.duration * CELL_H - 4;
@@ -118,17 +118,18 @@ export default function JadwalTransportasi() {
                       left: 4,
                       right: 4,
                       height,
-                      borderRadius: 7,
-                      background: `${trip.color}22`,
-                      border: `1px solid ${trip.color}50`,
+                      borderRadius: 8,
+                      background: '#f0f9ff',
+                      border: '1px solid #bae6fd',
                       padding: '6px 8px',
                       cursor: 'pointer',
                       overflow: 'hidden',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
                     }}
                   >
-                    <div style={{ fontSize: 11, fontWeight: 700, color: trip.color }}>{trip.startHour.toString().padStart(2, '0')}:00</div>
-                    <div style={{ fontSize: 10.5, color: '#fff', lineHeight: 1.2 }}>{trip.route}</div>
-                    <div className="font-mono" style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>{trip.vehicle}</div>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: '#0b2e8a', fontFamily: 'monospace' }}>{trip.startHour.toString().padStart(2, '0')}:00</div>
+                    <div style={{ fontSize: 11, color: '#0f172a', fontWeight: 700, lineHeight: 1.2 }}>{trip.route}</div>
+                    <div style={{ fontSize: 10, color: '#64748b', marginTop: 2, fontFamily: 'monospace' }}>{trip.vehicle}</div>
                   </div>
                 );
               })}

@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../utils/api.js';
 import VehicleDetailModal from '../components/VehicleDetailModal.jsx';
 import { 
   ClipboardList, Search, RefreshCw, AlertTriangle, Eye, 
-  ChevronLeft, ChevronRight, Truck, Calendar, ArrowRight, X, Clock, HelpCircle, Package, User, MapPin
+  ChevronLeft, ChevronRight, Truck, Calendar, ArrowRight, X, Clock, 
+  HelpCircle, Package, User, MapPin, Copy, Check, Filter, SlidersHorizontal,
+  ArrowUpRight, Radio, ExternalLink, ShieldCheck, Box, Activity, CheckCircle2
 } from 'lucide-react';
 
 export default function Transaksi() {
@@ -38,6 +40,7 @@ export default function Transaksi() {
   const [hasPrevious, setHasPrevious] = useState(false);
   
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [copiedResi, setCopiedResi] = useState(null);
   
   // Details Modal States
   const [selectedVehicle, setSelectedVehicle] = useState(null);
@@ -65,12 +68,10 @@ export default function Transaksi() {
 
   // 2. Fetch Transactions Function
   const fetchTransactions = async (autoRefresh = false) => {
-    // Abort previous request if any
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
     
-    // Create new abort controller
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
@@ -94,7 +95,6 @@ export default function Transaksi() {
       if (dateFrom) queryParams.append('date_from', dateFrom);
       if (dateTo) queryParams.append('date_to', dateTo);
 
-      // Call API
       const res = await api.getTransactions(queryParams.toString());
       if (res.success) {
         setData(res.data);
@@ -140,61 +140,23 @@ export default function Transaksi() {
     }
   };
 
-  // Trigger fetch when parameters change
   useEffect(() => {
     fetchTransactions();
     fetchStats();
   }, [page, limit, debouncedSearch, stateFilter, serviceFilter, kprkFilter, regFilter, vehicleFilter, dateFrom, dateTo, sortBy, sortOrder]);
 
-  // Reset page to 1 when filters change
   const handleFilterChange = (setter, value) => {
     setter(value);
     setPage(1);
   };
 
-  // 4. Auto-refresh logic (30 seconds)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      // Don't refresh if the browser tab is hidden/inactive
-      if (document.hidden) return;
-      fetchTransactions(true);
-      fetchStats();
-    }, 30000);
-
-    return () => {
-      clearInterval(interval);
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
-    };
-  }, [page, limit, debouncedSearch, stateFilter, serviceFilter, kprkFilter, regFilter, vehicleFilter, dateFrom, dateTo, sortBy, sortOrder]);
-
-  // 5. Fetch Connote Detail
-  const fetchConnoteDetail = async (code) => {
-    try {
-      setConnoteDetailLoading(true);
-      setConnoteDetailError('');
-      setConnoteDetailData(null);
-      const res = await api.getTransactionByCode(code);
-      if (res.success) {
-        setConnoteDetailData(res.data);
-      } else {
-        setConnoteDetailError(res.message || 'Gagal memuat detail resi.');
-      }
-    } catch (err) {
-      setConnoteDetailError(err.message || 'Gagal menghubungi server.');
-    } finally {
-      setConnoteDetailLoading(false);
-    }
+  const handleCopy = (code) => {
+    if (!code) return;
+    navigator.clipboard.writeText(code);
+    setCopiedResi(code);
+    setTimeout(() => setCopiedResi(null), 1800);
   };
 
-  useEffect(() => {
-    if (selectedConnote) {
-      fetchConnoteDetail(selectedConnote);
-    }
-  }, [selectedConnote]);
-
-  // Format Helpers
   const formatIDR = (val) => {
     if (val === undefined || val === null || val === '-') return '-';
     const num = parseFloat(val);
@@ -214,9 +176,8 @@ export default function Transaksi() {
     if (val === undefined || val === null || val === '-') return '-';
     try {
       const date = new Date(val);
-      if (isNaN(date.getTime())) return String(val); // Fallback to raw string
-      // Format to WIB
-      return date.toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + ' WIB';
+      if (isNaN(date.getTime())) return String(val);
+      return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WIB';
     } catch (e) {
       return String(val);
     }
@@ -244,9 +205,9 @@ export default function Transaksi() {
     setSortBy('created_at');
     setSortOrder('desc');
     setPage(1);
+    setActiveDatePreset('');
   };
 
-  // Quick date range helper
   const [activeDatePreset, setActiveDatePreset] = useState('');
   const setQuickDateRange = (preset) => {
     const today = new Date();
@@ -270,482 +231,700 @@ export default function Transaksi() {
     }
   };
 
+  const getBadgeClass = (status) => {
+    if (!status) return 'badge badge-navy';
+    const s = String(status).toUpperCase();
+    if (s.includes('DELIVERED') || s.includes('SELESAI') || s.includes('SUKSES')) return 'badge badge-emerald';
+    if (s.includes('TRANSIT') || s.includes('INVEHICLE') || s.includes('LOADED') || s.includes('IN_TRANSIT')) return 'badge badge-orange';
+    if (s.includes('ARRIVED') || s.includes('TIBA') || s.includes('LOCATION')) return 'badge badge-amber';
+    if (s.includes('RECEIVED') || s.includes('DITERIMA') || s.includes('ENTRY') || s.includes('SCANNED') || s.includes('PAID')) return 'badge badge-blue';
+    return 'badge badge-navy';
+  };
+
   const isFilterActive = !!(debouncedSearch || stateFilter || serviceFilter || kprkFilter || regFilter || vehicleFilter || dateFrom || dateTo);
 
   return (
-    <div className="page-container" style={{ position: 'relative' }}>
-      <div className="page-header" style={{ marginBottom: '20px' }}>
-        <div>
-          <h1 className="page-title">
-            <ClipboardList size={22} style={{ color: 'var(--accent-cyan)' }} />
-            Data Transaksi Paket (Connotes)
-          </h1>
-          <p className="page-subtitle">Daftar lengkap transaksi kiriman, status pelacakan, dan pemetaan rute kendaraan malam</p>
+    <div className="page-container" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      
+      {/* Detail Modal */}
+      {selectedVehicle && (
+        <VehicleDetailModal 
+          nopol={selectedVehicle} 
+          onClose={() => setSelectedVehicle(null)} 
+        />
+      )}
+
+      {/* ── TOP HEADER CAPSULE ── */}
+      <div 
+        className="spatial-card"
+        style={{
+          padding: '14px 20px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 14
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ 
+            width: 42, 
+            height: 42, 
+            borderRadius: 12, 
+            background: 'linear-gradient(135deg, #0b2e8a, #0284c7)', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            color: '#fff', 
+            boxShadow: '0 4px 12px rgba(11, 46, 138, 0.2)' 
+          }}>
+            <ClipboardList size={22} />
+          </div>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <h1 style={{ fontSize: 18, fontWeight: 900, margin: 0, letterSpacing: '-0.02em' }}>
+                Data Transaksi Resi
+              </h1>
+              <span className="badge badge-blue" style={{ fontSize: 10.5, padding: '3px 8px' }}>
+                Live Registry
+              </span>
+              <span className="badge badge-navy" style={{ fontSize: 10.5, padding: '3px 8px' }}>
+                {new Intl.NumberFormat('id-ID').format(totalRows)} Resi Database
+              </span>
+            </div>
+            <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '3px 0 0' }}>
+              Pencarian manifest transaksi paket, histori status pelacakan, dan audit rute armada feeder POSIND
+            </p>
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           {lastUpdated && (
-            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-              Terakhir diperbarui: {lastUpdated.toLocaleTimeString()} (Auto-refresh 30s)
+            <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600, fontFamily: 'monospace' }}>
+              Sync: {lastUpdated.toLocaleTimeString()}
             </span>
           )}
-          <button className="btn btn-secondary" onClick={() => { fetchTransactions(); fetchStats(); }} disabled={loading}>
-            <RefreshCw size={14} className={loading ? 'spin-anim' : ''} /> Refresh
+          <button 
+            type="button"
+            className="btn-primary" 
+            onClick={() => { fetchTransactions(); fetchStats(); }} 
+            disabled={loading}
+            style={{ padding: '7px 16px', fontSize: 12, borderRadius: 20, display: 'flex', alignItems: 'center', gap: 6 }}
+          >
+            <RefreshCw size={13} className={loading ? 'spin' : ''} /> 
+            <span>Refresh Data</span>
           </button>
         </div>
       </div>
 
-      {/* Stats Dashboard Summary */}
+      {/* ── 6 MODERN SPATIAL STAT CARDS (RESPONSIVE GRID DECK) ── */}
       {stats && (
-        <div className="grid-6 mb-4" style={{ gap: '15px', marginBottom: '24px' }}>
+        <div 
+          className="grid-6" 
+          style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', 
+            gap: 12,
+            marginBottom: 2 
+          }}
+        >
           {/* Card 1: TOTAL TRANSAKSI */}
-          <div className="stat-card" style={{ 
-            background: 'rgba(56, 189, 248, 0.02)', 
-            border: '1px solid var(--border-light)', 
-            minHeight: '85px', 
-            padding: '12px 14px', 
-            marginBottom: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            position: 'relative'
-          }}>
-            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, width: '100%' }}>
-              <span style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.5px' }}>TOTAL TRANSAKSI</span>
-              <h3 style={{ fontSize: '18px', color: 'white', fontWeight: 800, marginTop: '4px', margin: 0, whiteSpace: 'nowrap', display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+          <div 
+            className="stat-card" 
+            style={{ 
+              background: 'var(--bg-card)', 
+              border: '1px solid var(--border-light)', 
+              borderRadius: 14,
+              padding: '14px 16px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              boxShadow: '0 2px 6px rgba(0, 0, 0, 0.03)',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <div>
+              <span style={{ fontSize: '10.5px', color: '#0284c7', fontWeight: 800, letterSpacing: '0.5px', display: 'block' }}>TOTAL TRANSAKSI</span>
+              <h3 style={{ fontSize: '20px', color: 'var(--text-primary)', fontWeight: 900, marginTop: '3px', margin: 0, fontFamily: 'var(--font-mono)' }}>
                 {new Intl.NumberFormat('id-ID').format(stats.total_transaksi)}
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 500 }}>Resi</span>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, marginLeft: 4 }}>Resi</span>
               </h3>
-              <span style={{ fontSize: '9px', color: 'var(--text-secondary)', display: 'block', marginTop: '2px', opacity: 0.8 }}>
+              <span style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'block', marginTop: '3px', fontWeight: 600 }}>
                 {isFilterActive ? 'Filter Aktif' : 'Semua Data'}
               </span>
             </div>
-            <div style={{ position: 'absolute', right: '12px', top: '12px', opacity: 0.15, color: 'var(--accent-cyan)' }}>
-              <ClipboardList size={20} />
+            <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(2, 132, 199, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0284c7', flexShrink: 0 }}>
+              <ClipboardList size={18} />
             </div>
           </div>
 
           {/* Card 2: TOTAL TONASE */}
-          <div className="stat-card" style={{ 
-            background: 'rgba(0, 210, 196, 0.02)', 
-            border: '1px solid var(--border-light)', 
-            minHeight: '85px', 
-            padding: '12px 14px', 
-            marginBottom: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            position: 'relative'
-          }}>
-            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, width: '100%' }}>
-              <span style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.5px' }}>TOTAL TONASE</span>
-              <h3 style={{ fontSize: '18px', color: 'var(--accent-cyan)', fontWeight: 800, marginTop: '4px', margin: 0, whiteSpace: 'nowrap' }}>
+          <div 
+            className="stat-card" 
+            style={{ 
+              background: 'var(--bg-card)', 
+              border: '1px solid var(--border-light)', 
+              borderRadius: 14,
+              padding: '14px 16px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              boxShadow: '0 2px 6px rgba(0, 0, 0, 0.03)',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <div>
+              <span style={{ fontSize: '10.5px', color: '#10b981', fontWeight: 800, letterSpacing: '0.5px', display: 'block' }}>TOTAL TONASE</span>
+              <h3 style={{ fontSize: '20px', color: '#10b981', fontWeight: 900, marginTop: '3px', margin: 0, fontFamily: 'var(--font-mono)' }}>
                 {formatWeight(stats.total_berat)}
               </h3>
-              <span style={{ fontSize: '9px', color: 'var(--text-secondary)', display: 'block', marginTop: '2px', opacity: 0.8 }}>
+              <span style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'block', marginTop: '3px', fontWeight: 600 }}>
                 {isFilterActive ? 'Filter Aktif' : 'Semua Data'}
               </span>
             </div>
-            <div style={{ position: 'absolute', right: '12px', top: '12px', opacity: 0.15, color: 'var(--accent-cyan)' }}>
-              <Truck size={20} />
+            <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981', flexShrink: 0 }}>
+              <Truck size={18} />
             </div>
           </div>
 
-          {/* Card 3: NILAI AMUNISI */}
-          <div className="stat-card" style={{ 
-            background: 'rgba(234, 179, 8, 0.02)', 
-            border: '1px solid var(--border-light)', 
-            minHeight: '85px', 
-            padding: '12px 14px', 
-            marginBottom: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            position: 'relative'
-          }}>
-            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, width: '100%' }}>
-              <span style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.5px' }}>NILAI AMUNISI</span>
-              <h3 style={{ fontSize: '18px', color: 'var(--accent-yellow)', fontWeight: 800, marginTop: '4px', margin: 0, whiteSpace: 'nowrap' }}>
+          {/* Card 3: NILAI KIRIMAN */}
+          <div 
+            className="stat-card" 
+            style={{ 
+              background: 'var(--bg-card)', 
+              border: '1px solid var(--border-light)', 
+              borderRadius: 14,
+              padding: '14px 16px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              boxShadow: '0 2px 6px rgba(0, 0, 0, 0.03)',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <div>
+              <span style={{ fontSize: '10.5px', color: '#f59e0b', fontWeight: 800, letterSpacing: '0.5px', display: 'block' }}>NILAI KIRIMAN</span>
+              <h3 style={{ fontSize: '16.5px', color: '#f59e0b', fontWeight: 900, marginTop: '3px', margin: 0, fontFamily: 'var(--font-mono)' }}>
                 {formatIDR(stats.total_nilai_kiriman)}
               </h3>
-              <span style={{ fontSize: '9px', color: 'var(--text-secondary)', display: 'block', marginTop: '2px', opacity: 0.8 }}>
+              <span style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'block', marginTop: '3px', fontWeight: 600 }}>
                 {isFilterActive ? 'Filter Aktif' : 'Semua Data'}
               </span>
             </div>
-            <div style={{ position: 'absolute', right: '12px', top: '12px', opacity: 0.15, color: 'var(--accent-yellow)' }}>
-              <Package size={20} />
+            <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(245, 158, 11, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b', flexShrink: 0 }}>
+              <Package size={18} />
             </div>
           </div>
 
           {/* Card 4: STATUS DELIVERED */}
-          <div className="stat-card" style={{ 
-            background: 'rgba(52, 211, 153, 0.02)', 
-            border: '1px solid var(--border-light)', 
-            minHeight: '85px', 
-            padding: '12px 14px', 
-            marginBottom: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            position: 'relative'
-          }}>
-            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, width: '100%' }}>
-              <span style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.5px' }}>STATUS DELIVERED</span>
-              <h3 style={{ fontSize: '18px', color: '#10b981', fontWeight: 800, marginTop: '4px', margin: 0, whiteSpace: 'nowrap', display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+          <div 
+            className="stat-card" 
+            style={{ 
+              background: 'var(--bg-card)', 
+              border: '1px solid var(--border-light)', 
+              borderRadius: 14,
+              padding: '14px 16px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              boxShadow: '0 2px 6px rgba(0, 0, 0, 0.03)',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <div>
+              <span style={{ fontSize: '10.5px', color: '#10b981', fontWeight: 800, letterSpacing: '0.5px', display: 'block' }}>DELIVERED</span>
+              <h3 style={{ fontSize: '20px', color: '#10b981', fontWeight: 900, marginTop: '3px', margin: 0, fontFamily: 'var(--font-mono)' }}>
                 {new Intl.NumberFormat('id-ID').format(stats.jumlah_by_state?.DELIVERED || 0)}
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 500 }}>Pkt</span>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, marginLeft: 4 }}>Pkt</span>
               </h3>
-              <span style={{ fontSize: '9px', color: 'var(--text-secondary)', display: 'block', marginTop: '2px', opacity: 0.8 }}>
+              <span style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'block', marginTop: '3px', fontWeight: 600 }}>
                 {isFilterActive ? 'Filter Aktif' : 'Semua Data'}
               </span>
             </div>
-            <div style={{ position: 'absolute', right: '12px', top: '12px', opacity: 0.15, color: '#10b981' }}>
-              <Package size={20} />
+            <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981', flexShrink: 0 }}>
+              <CheckCircle2 size={18} />
             </div>
           </div>
 
-          {/* Card 5: MAPPED TO ROUTE */}
-          <div className="stat-card" style={{ 
-            background: 'rgba(167, 139, 250, 0.02)', 
-            border: '1px solid var(--border-light)', 
-            minHeight: '85px', 
-            padding: '12px 14px', 
-            marginBottom: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            position: 'relative'
-          }}>
-            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, width: '100%' }}>
-              <span style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.5px' }}>MAPPED TO ROUTE</span>
-              <h3 style={{ fontSize: '18px', color: '#a78bfa', fontWeight: 800, marginTop: '4px', margin: 0, whiteSpace: 'nowrap', display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+          {/* Card 5: MAPPED ROUTE */}
+          <div 
+            className="stat-card" 
+            style={{ 
+              background: 'var(--bg-card)', 
+              border: '1px solid var(--border-light)', 
+              borderRadius: 14,
+              padding: '14px 16px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              boxShadow: '0 2px 6px rgba(0, 0, 0, 0.03)',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <div>
+              <span style={{ fontSize: '10.5px', color: '#a855f7', fontWeight: 800, letterSpacing: '0.5px', display: 'block' }}>MAPPED ROUTE</span>
+              <h3 style={{ fontSize: '20px', color: '#a855f7', fontWeight: 900, marginTop: '3px', margin: 0, fontFamily: 'var(--font-mono)' }}>
                 {new Intl.NumberFormat('id-ID').format(stats.jumlah_mapped)}
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 500 }}>Pkt</span>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, marginLeft: 4 }}>Pkt</span>
               </h3>
-              <span style={{ fontSize: '9px', color: 'var(--text-secondary)', display: 'block', marginTop: '2px', opacity: 0.8 }}>
+              <span style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'block', marginTop: '3px', fontWeight: 600 }}>
                 {isFilterActive ? 'Filter Aktif' : 'Semua Data'}
               </span>
             </div>
-            <div style={{ position: 'absolute', right: '12px', top: '12px', opacity: 0.15, color: '#a78bfa' }}>
-              <MapPin size={20} />
+            <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(168, 85, 247, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#a855f7', flexShrink: 0 }}>
+              <MapPin size={18} />
             </div>
           </div>
 
           {/* Card 6: UNMAPPED */}
-          <div className="stat-card" style={{ 
-            background: 'rgba(239, 68, 68, 0.02)', 
-            border: '1px solid var(--border-light)', 
-            minHeight: '85px', 
-            padding: '12px 14px', 
-            marginBottom: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            position: 'relative'
-          }}>
-            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, width: '100%' }}>
-              <span style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.5px' }}>UNMAPPED</span>
-              <h3 style={{ fontSize: '18px', color: 'var(--accent-red)', fontWeight: 800, marginTop: '4px', margin: 0, whiteSpace: 'nowrap', display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+          <div 
+            className="stat-card" 
+            style={{ 
+              background: 'var(--bg-card)', 
+              border: '1px solid var(--border-light)', 
+              borderRadius: 14,
+              padding: '14px 16px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              boxShadow: '0 2px 6px rgba(0, 0, 0, 0.03)',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <div>
+              <span style={{ fontSize: '10.5px', color: '#f43f5e', fontWeight: 800, letterSpacing: '0.5px', display: 'block' }}>UNMAPPED</span>
+              <h3 style={{ fontSize: '20px', color: '#f43f5e', fontWeight: 900, marginTop: '3px', margin: 0, fontFamily: 'var(--font-mono)' }}>
                 {new Intl.NumberFormat('id-ID').format(stats.jumlah_unmapped)}
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 500 }}>Pkt</span>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, marginLeft: 4 }}>Pkt</span>
               </h3>
-              <span style={{ fontSize: '9px', color: 'var(--text-secondary)', display: 'block', marginTop: '2px', opacity: 0.8 }}>
+              <span style={{ fontSize: '10px', color: 'var(--text-secondary)', display: 'block', marginTop: '3px', fontWeight: 600 }}>
                 {isFilterActive ? 'Filter Aktif' : 'Semua Data'}
               </span>
             </div>
-            <div style={{ position: 'absolute', right: '12px', top: '12px', opacity: 0.15, color: 'var(--accent-red)' }}>
-              <AlertTriangle size={20} />
+            <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(244, 63, 94, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f43f5e', flexShrink: 0 }}>
+              <AlertTriangle size={18} />
             </div>
           </div>
         </div>
       )}
 
-      {/* Advanced Filter Form Panel */}
-      <div className="glass-card" style={{ padding: '20px', marginBottom: '20px' }}>
-        <h3 style={{ margin: '0 0 16px 0', fontSize: '14px', fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Search size={16} style={{ color: 'var(--accent-cyan)' }} />
-          Pencarian & Penyaringan Lanjutan
-        </h3>
-        
-        <form onSubmit={(e) => { e.preventDefault(); setPage(1); fetchTransactions(); fetchStats(); }} style={{ display: 'grid', gap: '15px' }}>
-          {/* Row 1: Search input */}
+      {/* ── 4. MODERN SEARCH & MULTI-FILTER PANEL ── */}
+      <div className="spatial-card" style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Filter size={15} color="var(--primary-blue)" />
+            <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>Filter & Pencarian Lanjutan</span>
+          </div>
+          {isFilterActive && (
+            <button 
+              type="button"
+              onClick={resetAllFilters}
+              className="btn-ghost"
+              style={{ fontSize: 11, padding: '4px 10px', color: '#ef4444' }}
+              title="Reset Semua Filter"
+            >
+              Reset Filter
+            </button>
+          )}
+        </div>
+
+        {/* Filter Inputs Grid */}
+        <form onSubmit={(e) => { e.preventDefault(); setPage(1); fetchTransactions(); fetchStats(); }} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {/* Row 1: Search Bar */}
           <div style={{ position: 'relative' }}>
-            <Search size={18} style={{ position: 'absolute', left: '14px', top: '13px', color: 'var(--text-muted)' }} />
+            <Search size={16} color="var(--text-muted)" style={{ position: 'absolute', left: 14, top: 12 }} />
             <input 
               type="text" 
-              placeholder="Cari berdasarkan resi, booking code, nama/alamat pengirim/penerima, nopend..." 
+              placeholder="Cari berdasarkan resi (P260...), booking code, nama/alamat pengirim, penerima, nopend..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              style={{ paddingLeft: '45px', height: '42px', borderRadius: '6px', fontSize: '13px' }}
+              style={{
+                width: '100%',
+                height: 40,
+                background: 'var(--bg-workspace)',
+                border: '1px solid var(--border-light)',
+                borderRadius: 12,
+                padding: '0 40px 0 42px',
+                color: 'var(--text-primary)',
+                fontSize: 12.5,
+                outline: 'none',
+                boxSizing: 'border-box'
+              }}
             />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                style={{ position: 'absolute', right: 12, top: 11, background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}
+                title="Hapus pencarian"
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
 
-          {/* Row 2: Select Filters */}
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            <div style={{ flex: 1, minWidth: '150px' }}>
-              <select value={stateFilter} onChange={(e) => handleFilterChange(setStateFilter, e.target.value)} style={{ padding: '8px 12px', fontSize: '13px' }}>
-                <option value="">-- Status (State) --</option>
-                <option value="INLOCATION">INLOCATION (In Location)</option>
-                <option value="INVEHICLE">INVEHICLE (In Vehicle)</option>
-                <option value="DELIVERYRUNSHEET">DELIVERYRUNSHEET (Delivery Run Sheet)</option>
-                <option value="DELIVERED">DELIVERED (Delivered)</option>
-                <option value="FAILEDTODELIVERED">FAILEDTODELIVERED (Failed to Deliver)</option>
-                <option value="inBag">inBag (In Bag / Kantong)</option>
-                <option value="unBag">unBag (Unbag / Buka Kantong)</option>
-                <option value="PAID">PAID (Paid / Lunas)</option>
-                <option value="CANCEL">CANCEL (Canceled)</option>
-                <option value="Irregularity">Irregularity</option>
-              </select>
-            </div>
-            
-            <div style={{ flex: 1, minWidth: '150px' }}>
-              <select value={serviceFilter} onChange={(e) => handleFilterChange(setServiceFilter, e.target.value)} style={{ padding: '8px 12px', fontSize: '13px' }}>
-                <option value="">-- Layanan --</option>
-                <option value="PKH">PKH (Kilat Khusus)</option>
-                <option value="PE">PE</option>
-                <option value="3PE">3PE</option>
-                <option value="EC3">EC3</option>
-                <option value="Q9">Q9</option>
-                <option value="PJB">PJB</option>
-                <option value="PJM">PJM</option>
-                <option value="PPB_SRT">PPB_SRT</option>
-                <option value="312">312</option>
-              </select>
-            </div>
+          {/* Row 2: Select Dropdowns */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10 }}>
+            {/* Status Filter */}
+            <select 
+              value={stateFilter} 
+              onChange={(e) => handleFilterChange(setStateFilter, e.target.value)}
+              style={{
+                background: 'var(--bg-workspace)',
+                border: '1px solid var(--border-light)',
+                borderRadius: 10,
+                padding: '8px 12px',
+                color: stateFilter ? 'var(--primary-blue)' : 'var(--text-secondary)',
+                fontWeight: stateFilter ? 700 : 500,
+                fontSize: 12,
+                outline: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="">-- Semua Status (State) --</option>
+              <option value="INLOCATION">INLOCATION (In Location)</option>
+              <option value="INVEHICLE">INVEHICLE (In Vehicle)</option>
+              <option value="DELIVERYRUNSHEET">DELIVERYRUNSHEET</option>
+              <option value="DELIVERED">DELIVERED (Delivered)</option>
+              <option value="FAILEDTODELIVERED">FAILEDTODELIVERED</option>
+              <option value="inBag">inBag (In Bag)</option>
+              <option value="unBag">unBag (Unbag)</option>
+              <option value="PAID">PAID (Paid / Lunas)</option>
+              <option value="CANCEL">CANCEL (Canceled)</option>
+            </select>
 
-            <div style={{ flex: 1, minWidth: '150px' }}>
-              <input 
-                type="text" 
-                placeholder="Tujuan KPRK (misal: 40000)" 
-                value={kprkFilter}
-                onChange={(e) => handleFilterChange(setKprkFilter, e.target.value)}
-                style={{ padding: '8px 12px', fontSize: '13px', height: '38px', borderRadius: '4px' }}
-              />
-            </div>
+            {/* Service Filter */}
+            <select 
+              value={serviceFilter} 
+              onChange={(e) => handleFilterChange(setServiceFilter, e.target.value)}
+              style={{
+                background: 'var(--bg-workspace)',
+                border: '1px solid var(--border-light)',
+                borderRadius: 10,
+                padding: '8px 12px',
+                color: serviceFilter ? 'var(--primary-blue)' : 'var(--text-secondary)',
+                fontWeight: serviceFilter ? 700 : 500,
+                fontSize: 12,
+                outline: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="">-- Semua Layanan --</option>
+              <option value="Pos Reguler">Pos Reguler</option>
+              <option value="Pos Nextday">Pos Nextday</option>
+              <option value="Pos Jumbo Cargo">Pos Jumbo Cargo</option>
+              <option value="PKH">PKH (Kilat Khusus)</option>
+              <option value="PE">PE (Pos Express)</option>
+            </select>
 
-            <div style={{ flex: 1, minWidth: '120px' }}>
-              <input 
-                type="text" 
-                placeholder="Regional" 
-                value={regFilter}
-                onChange={(e) => handleFilterChange(setRegFilter, e.target.value)}
-                style={{ padding: '8px 12px', fontSize: '13px', height: '38px', borderRadius: '4px' }}
-              />
-            </div>
+            {/* KPRK Filter */}
+            <input 
+              type="text" 
+              placeholder="Tujuan KPRK (misal: 40000)" 
+              value={kprkFilter}
+              onChange={(e) => handleFilterChange(setKprkFilter, e.target.value)}
+              style={{
+                background: 'var(--bg-workspace)',
+                border: '1px solid var(--border-light)',
+                borderRadius: 10,
+                padding: '8px 12px',
+                color: 'var(--text-primary)',
+                fontSize: 12,
+                outline: 'none'
+              }}
+            />
 
-            <div style={{ flex: 1, minWidth: '150px' }}>
-              <select value={vehicleFilter} onChange={(e) => handleFilterChange(setVehicleFilter, e.target.value)} style={{ padding: '8px 12px', fontSize: '13px' }}>
-                <option value="">-- Kendaraan --</option>
-                <option value="B 9910 PCX">B 9910 PCX (MALAM)</option>
-                <option value="B 9945 PCY">B 9945 PCY (MALAM)</option>
-              </select>
-            </div>
+            {/* Regional Filter */}
+            <input 
+              type="text" 
+              placeholder="Regional (misal: REG 5)" 
+              value={regFilter}
+              onChange={(e) => handleFilterChange(setRegFilter, e.target.value)}
+              style={{
+                background: 'var(--bg-workspace)',
+                border: '1px solid var(--border-light)',
+                borderRadius: 10,
+                padding: '8px 12px',
+                color: 'var(--text-primary)',
+                fontSize: 12,
+                outline: 'none'
+              }}
+            />
+
+            {/* Vehicle Filter */}
+            <select 
+              value={vehicleFilter} 
+              onChange={(e) => handleFilterChange(setVehicleFilter, e.target.value)}
+              style={{
+                background: 'var(--bg-workspace)',
+                border: '1px solid var(--border-light)',
+                borderRadius: 10,
+                padding: '8px 12px',
+                color: vehicleFilter ? 'var(--primary-blue)' : 'var(--text-secondary)',
+                fontWeight: vehicleFilter ? 700 : 500,
+                fontSize: 12,
+                outline: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="">-- Semua Kendaraan --</option>
+              <option value="B 9910 PCX">B 9910 PCX (Feeder Cimahi Raya)</option>
+              <option value="B 9945 PCY">B 9945 PCY (Feeder Timur & Pusat)</option>
+              <option value="D 8812 AB">D 8812 AB (Feeder Barat & Utara)</option>
+            </select>
           </div>
 
-          {/* Row 3: Quick Date Presets + Date Filters & Action Buttons */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {/* Quick date preset buttons */}
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700, marginRight: '4px' }}><Calendar size={12} style={{ marginRight: '4px', verticalAlign: 'middle' }} />PERIODE CEPAT:</span>
-              {[{ key: 'today', label: 'Hari Ini' }, { key: 'yesterday', label: 'Kemarin' }, { key: '7d', label: '7 Hari' }, { key: '30d', label: '30 Hari' }].map(p => (
+          {/* Row 3: Quick Period & Manual Date Picker */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, paddingTop: 10, borderTop: '1px solid var(--border-light)' }}>
+            {/* Quick Period Buttons */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                PERIODE:
+              </span>
+              {[
+                { key: 'today', label: 'Hari Ini' }, 
+                { key: 'yesterday', label: 'Kemarin' }, 
+                { key: '7d', label: '7 Hari' }, 
+                { key: '30d', label: '30 Hari' }
+              ].map(p => (
                 <button
                   key={p.key}
                   type="button"
                   onClick={() => setQuickDateRange(p.key)}
                   style={{
                     padding: '4px 12px',
-                    fontSize: '12px',
-                    fontWeight: 600,
-                    borderRadius: '20px',
-                    border: activeDatePreset === p.key ? '1px solid var(--accent-cyan)' : '1px solid var(--border-light)',
-                    background: activeDatePreset === p.key ? 'rgba(0,210,196,0.12)' : 'rgba(255,255,255,0.04)',
-                    color: activeDatePreset === p.key ? 'var(--accent-cyan)' : 'var(--text-secondary)',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    borderRadius: 20,
+                    border: activeDatePreset === p.key ? '1px solid var(--primary-blue)' : '1px solid var(--border-light)',
+                    background: activeDatePreset === p.key ? 'var(--primary-blue)' : 'var(--bg-workspace)',
+                    color: activeDatePreset === p.key ? '#ffffff' : 'var(--text-secondary)',
                     cursor: 'pointer',
-                    transition: 'all 0.2s'
+                    transition: 'all 0.15s ease'
                   }}
                 >
                   {p.label}
                 </button>
               ))}
-              {activeDatePreset && (
-                <button
-                  type="button"
-                  onClick={() => { setActiveDatePreset(''); setDateFrom(''); setDateTo(''); setPage(1); }}
-                  style={{ padding: '4px 10px', fontSize: '11px', borderRadius: '20px', border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.06)', color: 'var(--accent-red)', cursor: 'pointer' }}
-                >
-                  <X size={10} style={{ marginRight: '3px', verticalAlign: 'middle' }} />Clear
-                </button>
-              )}
             </div>
 
-            {/* Manual date range + action buttons */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Mulai:</span>
-                  <input 
-                    type="date" 
-                    value={dateFrom} 
-                    onChange={(e) => { setActiveDatePreset(''); handleFilterChange(setDateFrom, e.target.value); }} 
-                    style={{ padding: '6px 10px', fontSize: '12px', height: '32px', width: '130px' }} 
-                  />
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Akhir:</span>
-                  <input 
-                    type="date" 
-                    value={dateTo} 
-                    onChange={(e) => { setActiveDatePreset(''); handleFilterChange(setDateTo, e.target.value); }} 
-                    style={{ padding: '6px 10px', fontSize: '12px', height: '32px', width: '130px' }} 
-                  />
-                </div>
+            {/* Manual Date Input & Action Buttons */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: 'var(--text-secondary)' }}>
+                <span>Mulai:</span>
+                <input 
+                  type="date" 
+                  value={dateFrom} 
+                  onChange={(e) => { setActiveDatePreset(''); handleFilterChange(setDateFrom, e.target.value); }} 
+                  style={{
+                    background: 'var(--bg-workspace)',
+                    border: '1px solid var(--border-light)',
+                    borderRadius: 8,
+                    padding: '4px 8px',
+                    color: 'var(--text-primary)',
+                    fontSize: 11.5,
+                    outline: 'none'
+                  }}
+                />
               </div>
 
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => { resetAllFilters(); setActiveDatePreset(''); }} style={{ padding: '8px 16px', fontSize: '13px' }}>
-                  Reset Filter
-                </button>
-                <button type="submit" className="btn btn-primary" style={{ padding: '8px 24px', fontSize: '13px' }}>
-                  Cari Data
-                </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: 'var(--text-secondary)' }}>
+                <span>Akhir:</span>
+                <input 
+                  type="date" 
+                  value={dateTo} 
+                  onChange={(e) => { setActiveDatePreset(''); handleFilterChange(setDateTo, e.target.value); }} 
+                  style={{
+                    background: 'var(--bg-workspace)',
+                    border: '1px solid var(--border-light)',
+                    borderRadius: 8,
+                    padding: '4px 8px',
+                    color: 'var(--text-primary)',
+                    fontSize: 11.5,
+                    outline: 'none'
+                  }}
+                />
               </div>
+
+              <button 
+                type="submit" 
+                className="btn-primary"
+                style={{ fontSize: 11.5, padding: '5px 16px' }}
+              >
+                Cari Data
+              </button>
             </div>
           </div>
         </form>
       </div>
 
-      {/* Main Table Grid */}
+      {/* ── MAIN DATA TABLE ── */}
       {loading ? (
-        <div style={{ padding: '60px', textAlign: 'center', background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '12px' }}>
-          <RefreshCw size={32} className="spin-anim text-accent" style={{ color: 'var(--accent-cyan)', margin: '0 auto 12px' }} />
-          <div style={{ color: 'var(--text-secondary)' }}>Memuat data transaksi dari server MongoDB...</div>
+        <div className="spatial-card" style={{ padding: '50px 0', textAlign: 'center' }}>
+          <RefreshCw size={32} className="spin" style={{ color: 'var(--primary-blue)', margin: '0 auto 12px' }} />
+          <div style={{ color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600 }}>Memuat data transaksi dari server MongoDB...</div>
         </div>
       ) : error ? (
-        <div className="info-alert" style={{ background: 'rgba(239, 68, 68, 0.08)', borderColor: 'rgba(239, 68, 68, 0.2)', color: 'var(--accent-red)' }}>
+        <div className="spatial-card" style={{ padding: 18, border: '1px solid #fecaca', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', display: 'flex', alignItems: 'center', gap: 10 }}>
           <AlertTriangle size={20} />
           <div>{error}</div>
         </div>
       ) : data.length === 0 ? (
-        <div style={{ padding: '60px 0', textAlign: 'center', color: 'var(--text-secondary)', background: 'var(--bg-card)', border: '1px dashed var(--border-light)', borderRadius: '12px' }}>
-          <ClipboardList size={48} style={{ color: 'var(--text-muted)', margin: '0 auto 12px' }} />
-          <h4 style={{ color: 'white', margin: 0 }}>Tidak Ada Data Kiriman</h4>
-          <p style={{ fontSize: '13px', marginTop: '6px', color: 'var(--text-muted)' }}>Sesuaikan pencarian atau filter untuk menemukan data kiriman.</p>
+        <div className="spatial-card" style={{ padding: '50px 0', textAlign: 'center' }}>
+          <ClipboardList size={40} style={{ color: 'var(--text-muted)', margin: '0 auto 10px' }} />
+          <h4 style={{ color: 'var(--text-primary)', margin: 0, fontSize: 15, fontWeight: 800 }}>Tidak Ada Data Kiriman</h4>
+          <p style={{ fontSize: 12, marginTop: 4, color: 'var(--text-secondary)' }}>Sesuaikan kata kunci pencarian atau filter untuk menemukan data kiriman.</p>
         </div>
       ) : (
-        <div>
-          <div className="table-container" style={{ overflowX: 'auto' }}>
-            <table>
-              <thead>
-                <tr>
-                  <th style={{ width: '40px' }}>No</th>
-                  <th style={{ cursor: 'pointer' }} onClick={() => handleSort('connote_code')}>
-                    Nomor Resi {sortBy === 'connote_code' && (sortOrder === 'asc' ? '▲' : '▼')}
+        <div className="spatial-card" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          
+          <div style={{ overflowX: 'auto', maxHeight: 520, overflowY: 'auto' }}>
+            <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
+              <thead style={{ position: 'sticky', top: 0, background: 'var(--bg-card)', zIndex: 10 }}>
+                <tr style={{ borderBottom: '1px solid var(--border-light)', textAlign: 'left', color: 'var(--text-secondary)', fontSize: 11, fontWeight: 700 }}>
+                  <th style={{ padding: '10px 10px', width: 35 }}>#</th>
+                  <th style={{ padding: '10px 10px', cursor: 'pointer' }} onClick={() => handleSort('connote_code')}>
+                    NO. CONNOTE {sortBy === 'connote_code' && (sortOrder === 'asc' ? '▲' : '▼')}
                   </th>
-                  <th style={{ cursor: 'pointer' }} onClick={() => handleSort('connote_booking_code')}>
-                    Kode Booking {sortBy === 'connote_booking_code' && (sortOrder === 'asc' ? '▲' : '▼')}
+                  <th style={{ padding: '10px 10px' }}>PENGIRIM / PENERIMA</th>
+                  <th style={{ padding: '10px 10px', cursor: 'pointer' }} onClick={() => handleSort('connote_service')}>
+                    LAYANAN {sortBy === 'connote_service' && (sortOrder === 'asc' ? '▲' : '▼')}
                   </th>
-                  <th style={{ cursor: 'pointer' }} onClick={() => handleSort('connote_sender_name')}>
-                    Pengirim {sortBy === 'connote_sender_name' && (sortOrder === 'asc' ? '▲' : '▼')}
+                  <th style={{ padding: '10px 10px', textAlign: 'right', cursor: 'pointer' }} onClick={() => handleSort('actual_weight')}>
+                    BERAT {sortBy === 'actual_weight' && (sortOrder === 'asc' ? '▲' : '▼')}
                   </th>
-                  <th>Penerima / Alamat Tujuan</th>
-                  <th style={{ cursor: 'pointer' }} onClick={() => handleSort('connote_service')}>
-                    Layanan {sortBy === 'connote_service' && (sortOrder === 'asc' ? '▲' : '▼')}
+                  <th style={{ padding: '10px 10px', textAlign: 'right', cursor: 'pointer' }} onClick={() => handleSort('connote_amount')}>
+                    BEA KIRIM {sortBy === 'connote_amount' && (sortOrder === 'asc' ? '▲' : '▼')}
                   </th>
-                  <th style={{ cursor: 'pointer' }} onClick={() => handleSort('actual_weight')}>
-                    Berat {sortBy === 'actual_weight' && (sortOrder === 'asc' ? '▲' : '▼')}
+                  <th style={{ padding: '10px 10px' }}>ARMADA / RUTE</th>
+                  <th style={{ padding: '10px 10px', cursor: 'pointer' }} onClick={() => handleSort('connote_state')}>
+                    STATUS {sortBy === 'connote_state' && (sortOrder === 'asc' ? '▲' : '▼')}
                   </th>
-                  <th style={{ cursor: 'pointer' }} onClick={() => handleSort('connote_amount')}>
-                    Bea Kirim {sortBy === 'connote_amount' && (sortOrder === 'asc' ? '▲' : '▼')}
+                  <th style={{ padding: '10px 10px', cursor: 'pointer' }} onClick={() => handleSort('created_at')}>
+                    WAKTU {sortBy === 'created_at' && (sortOrder === 'asc' ? '▲' : '▼')}
                   </th>
-                  <th style={{ cursor: 'pointer' }} onClick={() => handleSort('connote_state')}>
-                    Status {sortBy === 'connote_state' && (sortOrder === 'asc' ? '▲' : '▼')}
-                  </th>
-                  <th style={{ cursor: 'pointer' }} onClick={() => handleSort('created_at')}>
-                    Tanggal Transaksi {sortBy === 'created_at' && (sortOrder === 'asc' ? '▲' : '▼')}
-                  </th>
-                  <th>Dest Nopen</th>
-                  <th>Dest KPRK</th>
-                  <th>Reg</th>
-                  <th>Posisi Terkini</th>
-                  <th>Final SWP</th>
-                  <th>Kendaraan / Nopol</th>
-                  <th>Rute</th>
-                  <th style={{ textAlign: 'right' }}>Aksi</th>
+                  <th style={{ padding: '10px 10px', textAlign: 'center' }}>AKSI</th>
                 </tr>
               </thead>
               <tbody>
                 {data.map((item, index) => {
                   const no = (page - 1) * limit + index + 1;
+                  const rawConnote = item.raw?.connote || {};
+                  const nopol = item.vehicle_nopol || item.raw?.assigned_vehicle || item.raw?.vehicle_nopol || '-';
+                  const service = item.connote_service || rawConnote.connote_service || 'Pos Reguler';
+                  const sender = item.connote_sender_name || rawConnote.connote_sender_name || 'Pengirim';
+                  const receiver = item.connote_receiver_name || rawConnote.connote_receiver_name || 'Penerima';
+                  const destCity = rawConnote.connote_receiver_city || item.destination_nopen || 'Tujuan';
+                  const status = item.connote_state || rawConnote.connote_state || 'IN_TRANSIT';
+
                   return (
-                    <tr key={item._id || item.connote_code}>
-                      <td style={{ color: 'var(--text-secondary)' }}>{no}</td>
-                      <td>
-                        <button 
-                          onClick={() => setSelectedConnote(item.connote_code)}
-                          style={{ background: 'none', border: 'none', color: 'white', fontWeight: 800, cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
-                        >
-                          {item.connote_code}
-                        </button>
+                    <tr 
+                      key={item._id || item.connote_code || index}
+                      style={{
+                        borderBottom: '1px solid var(--border-light)',
+                        transition: 'background 0.15s'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-workspace)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                    >
+                      {/* Index */}
+                      <td style={{ padding: '10px 10px', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
+                        {no}
                       </td>
-                      <td>{item.connote_booking_code}</td>
-                      <td style={{ fontWeight: 600, color: 'white' }}>{item.connote_sender_name}</td>
-                      <td style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.connote_receiver_address}>
-                        {item.connote_receiver_address}
-                      </td>
-                      <td>
-                        <span className="badge badge-info">{item.connote_service}</span>
-                      </td>
-                      <td>{formatWeight(item.actual_weight)}</td>
-                      <td style={{ fontWeight: 600, color: 'var(--accent-yellow)' }}>{formatIDR(item.connote_amount)}</td>
-                      <td>
-                        <span className="badge badge-warning">{item.connote_state?.replace(/_/g, ' ') || 'UNKNOWN'}</span>
-                      </td>
-                      <td style={{ whiteSpace: 'nowrap' }}>{formatWIB(item.created_at)}</td>
-                      <td style={{ fontWeight: 700, color: 'white' }}>{item.destination_nopen}</td>
-                      <td>{item.destination_kprk}</td>
-                      <td>{item.destination_reg}</td>
-                      <td style={{ fontWeight: 600 }}>{item.current_location_name}</td>
-                      <td>{item.final_swp}</td>
-                      <td style={{ whiteSpace: 'nowrap' }}>
-                        {item.vehicle_nopol !== '-' ? (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <button 
-                              onClick={() => setSelectedVehicle(item.vehicle_nopol)}
-                              className="btn-text" 
-                              style={{ color: 'var(--accent-cyan)', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                              title="Klik untuk detail kendaraan"
-                            >
-                              <Truck size={13} style={{ marginRight: '3px' }} />
-                              {item.vehicle_nopol}
-                            </button>
-                          </div>
-                        ) : '-'}
-                      </td>
-                      <td style={{ fontSize: '11px', fontWeight: 600 }}>
-                        {item.route_id !== '-' ? (
-                          <span style={{ color: 'var(--text-secondary)' }}>{item.route_id}</span>
-                        ) : '-'}
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                          <button 
-                            onClick={() => setSelectedConnote(item.connote_code)}
-                            className="btn btn-secondary" 
-                            style={{ padding: '6px', borderRadius: '4px' }} 
-                            title="Detail Transaksi"
+
+                      {/* Connote Code + Booking Code */}
+                      <td style={{ padding: '10px 10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <Link 
+                            to={`/checker?code=${item.connote_code}`}
+                            style={{ textDecoration: 'none', color: 'var(--primary-blue)', fontWeight: 800, fontFamily: 'monospace' }}
+                            title="Lacak connote di checker"
                           >
-                            <Eye size={13} style={{ color: 'var(--accent-cyan)' }} />
+                            {item.connote_code}
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(item.connote_code)}
+                            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: copiedResi === item.connote_code ? '#10b981' : 'var(--text-muted)' }}
+                            title="Salin No. Resi"
+                          >
+                            {copiedResi === item.connote_code ? <Check size={12} color="#10b981" /> : <Copy size={12} />}
                           </button>
-                          {item.vehicle_nopol !== '-' && (
+                        </div>
+                        {item.connote_booking_code && item.connote_booking_code !== '-' && (
+                          <div style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'monospace' }}>
+                            {item.connote_booking_code}
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Shipper / Receiver */}
+                      <td style={{ padding: '10px 10px', maxWidth: 220, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <div style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{sender}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <ArrowRight size={11} /> {receiver} ({destCity})
+                        </div>
+                      </td>
+
+                      {/* Service */}
+                      <td style={{ padding: '10px 10px' }}>
+                        <span className="badge badge-navy" style={{ fontSize: 10, padding: '2px 8px' }}>
+                          {service}
+                        </span>
+                      </td>
+
+                      {/* Weight */}
+                      <td style={{ padding: '10px 10px', textAlign: 'right', color: 'var(--text-primary)', fontWeight: 800, fontFamily: 'monospace' }}>
+                        {formatWeight(item.actual_weight)}
+                      </td>
+
+                      {/* Amount */}
+                      <td style={{ padding: '10px 10px', textAlign: 'right', color: 'var(--primary-blue)', fontWeight: 800, fontFamily: 'monospace' }}>
+                        {formatIDR(item.connote_amount)}
+                      </td>
+
+                      {/* Vehicle / Route */}
+                      <td style={{ padding: '10px 10px' }}>
+                        {nopol !== '-' ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <Truck size={12} color="var(--primary-blue)" />
                             <button 
-                              onClick={() => setSelectedVehicle(item.vehicle_nopol)}
-                              className="btn btn-secondary" 
-                              style={{ padding: '6px', borderRadius: '4px' }} 
+                              type="button"
+                              onClick={() => setSelectedVehicle(nopol)}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 11.5, fontWeight: 700, color: 'var(--primary-blue)', fontFamily: 'monospace' }}
                               title="Detail Kendaraan"
                             >
-                              <Truck size={13} style={{ color: 'var(--accent-yellow)' }} />
+                              {nopol}
                             </button>
-                          )}
-                        </div>
+                          </div>
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>-</span>
+                        )}
+                      </td>
+
+                      {/* Status */}
+                      <td style={{ padding: '10px 10px' }}>
+                        <span className={getBadgeClass(status)} style={{ fontSize: 10 }}>
+                          {status.replace(/_/g, ' ')}
+                        </span>
+                      </td>
+
+                      {/* Time */}
+                      <td style={{ padding: '10px 10px', whiteSpace: 'nowrap', fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>
+                        {formatWIB(item.created_at)}
+                      </td>
+
+                      {/* Action */}
+                      <td style={{ padding: '10px 10px', textAlign: 'center' }}>
+                        <Link 
+                          to={`/checker?code=${item.connote_code}`}
+                          className="btn-ghost"
+                          style={{ padding: '3px 8px', fontSize: 11, gap: 4 }}
+                          title="Lacak Connote"
+                        >
+                          <Eye size={12} />
+                          <span>Track</span>
+                        </Link>
                       </td>
                     </tr>
                   );
@@ -754,243 +933,62 @@ export default function Transaksi() {
             </table>
           </div>
 
-          {/* Pagination bar */}
-          <div className="pagination-bar" style={{ marginTop: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-              <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                Menampilkan Halaman <strong>{page}</strong> dari <strong>{totalPages}</strong> ({totalRows} data)
+          {/* ── PAGINATION BAR ── */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, borderTop: '1px solid var(--border-light)', paddingTop: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: 'var(--text-secondary)' }}>
+              <span>
+                Halaman <strong style={{ color: '#0f172a' }}>{page}</strong> dari <strong style={{ color: '#0f172a' }}>{totalPages}</strong> ({totalRows.toLocaleString()} baris data)
               </span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Tampilkan:</span>
-                <select value={limit} onChange={(e) => { setLimit(parseInt(e.target.value)); setPage(1); }} style={{ padding: '4px 8px', fontSize: '12px', width: '70px', height: '26px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 11 }}>Limit:</span>
+                <select 
+                  value={limit} 
+                  onChange={(e) => { setLimit(parseInt(e.target.value)); setPage(1); }} 
+                  style={{
+                    background: '#ffffff',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: 6,
+                    padding: '2px 6px',
+                    color: '#0f172a',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    outline: 'none',
+                    cursor: 'pointer'
+                  }}
+                >
                   <option value={25}>25</option>
                   <option value={50}>50</option>
                   <option value={100}>100</option>
-                  <option value={200}>200</option>
                 </select>
               </div>
             </div>
-            
-            <div style={{ display: 'flex', gap: '8px' }}>
+
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
               <button 
-                onClick={() => setPage(p => Math.max(1, p - 1))} 
-                disabled={!hasPrevious}
-                className="btn btn-secondary" 
-                style={{ padding: '6px 12px' }}
+                type="button"
+                onClick={() => setPage(prev => Math.max(1, prev - 1))} 
+                disabled={!hasPrevious || loading}
+                className="btn-ghost"
+                style={{ padding: '4px 12px', fontSize: 11.5, fontWeight: 700, cursor: !hasPrevious ? 'not-allowed' : 'pointer' }}
               >
-                <ChevronLeft size={16} />
+                <ChevronLeft size={13} /> Prev
               </button>
+
               <button 
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))} 
-                disabled={!hasNext}
-                className="btn btn-secondary" 
-                style={{ padding: '6px 12px' }}
+                type="button"
+                onClick={() => setPage(prev => (hasNext ? prev + 1 : prev))} 
+                disabled={!hasNext || loading}
+                className="btn-ghost"
+                style={{ padding: '4px 12px', fontSize: 11.5, fontWeight: 700, cursor: !hasNext ? 'not-allowed' : 'pointer' }}
               >
-                <ChevronRight size={16} />
+                Next <ChevronRight size={13} />
               </button>
             </div>
           </div>
+
         </div>
       )}
 
-      {/* Modal Detail Transaksi (Connote) */}
-      {selectedConnote && (
-        <div className="modal-overlay" style={{ zIndex: 1001 }}>
-          <div className="modal-content animate-fade-in" style={{ maxWidth: '750px', width: '90%' }}>
-            <div className="modal-header">
-              <h3 style={{ color: 'white', fontWeight: 700 }}>Detail Kiriman Paket</h3>
-              <button onClick={() => setSelectedConnote(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                <X size={20} />
-              </button>
-            </div>
-            
-            <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
-              {connoteDetailLoading ? (
-                <div style={{ padding: '40px', textAlign: 'center' }}>
-                  <RefreshCw size={24} className="spin-anim" style={{ color: 'var(--accent-cyan)' }} />
-                  <p style={{ color: 'var(--text-secondary)', marginTop: '8px' }}>Memuat detail data...</p>
-                </div>
-              ) : connoteDetailError ? (
-                <div className="info-alert" style={{ background: 'rgba(239, 68, 68, 0.08)', color: 'var(--accent-red)' }}>
-                  <AlertTriangle size={16} />
-                  <div>{connoteDetailError}</div>
-                </div>
-              ) : connoteDetailData ? (
-                <div style={{ display: 'grid', gap: '20px' }}>
-                  
-                  {/* General Info */}
-                  <div className="glass-card" style={{ padding: '16px', marginBottom: 0 }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
-                      <div>
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>NOMOR RESI / CONNOTE</span>
-                        <div style={{ color: 'white', fontWeight: 800, fontSize: '15px', marginTop: '3px' }}>{connoteDetailData.transaction.connote_code}</div>
-                      </div>
-                      <div>
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>KODE BOOKING</span>
-                        <div style={{ color: 'white', fontWeight: 600, fontSize: '14px', marginTop: '3px' }}>{connoteDetailData.transaction.connote_booking_code}</div>
-                      </div>
-                      <div>
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>TANGGAL TRANSAKSI</span>
-                        <div style={{ color: 'white', fontWeight: 600, fontSize: '13px', marginTop: '3px' }}>{formatWIB(connoteDetailData.transaction.created_at)}</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Sender & Receiver Cards */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '15px' }}>
-                    <div className="glass-card" style={{ padding: '16px', marginBottom: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--border-light)', paddingBottom: '6px', marginBottom: '10px' }}>
-                        <User size={14} style={{ color: 'var(--accent-cyan)' }} />
-                        <h4 style={{ color: 'white', margin: 0, fontSize: '13px' }}>PENGIRIM</h4>
-                      </div>
-                      <div style={{ fontSize: '13px', fontWeight: 700, color: 'white' }}>{connoteDetailData.transaction.connote_sender_name}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>Email: {connoteDetailData.transaction.connote_sender_email}</div>
-                      <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px', lineHeight: 1.4 }}>{connoteDetailData.transaction.connote_sender_address}</p>
-                    </div>
-
-                    <div className="glass-card" style={{ padding: '16px', marginBottom: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--border-light)', paddingBottom: '6px', marginBottom: '10px' }}>
-                        <MapPin size={14} style={{ color: 'var(--accent-cyan)' }} />
-                        <h4 style={{ color: 'white', margin: 0, fontSize: '13px' }}>PENERIMA</h4>
-                      </div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>Alamat Detail: {connoteDetailData.transaction.connote_receiver_address_detail}</div>
-                      <div style={{ fontSize: '11.5px', color: 'var(--accent-cyan)', marginTop: '4px' }}>Kode Pos: {connoteDetailData.transaction.connote_receiver_zipcode}</div>
-                      <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px', lineHeight: 1.4 }}>{connoteDetailData.transaction.connote_receiver_address}</p>
-                    </div>
-                  </div>
-
-                  {/* Pricing and Weight Details */}
-                  <div className="glass-card" style={{ padding: '16px', marginBottom: 0 }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
-                      <div>
-                        <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>LAYANAN</span>
-                        <div style={{ marginTop: '4px' }}><span className="badge badge-info">{connoteDetailData.transaction.connote_service}</span></div>
-                      </div>
-                      <div>
-                        <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>BERAT PAKET</span>
-                        <div style={{ color: 'white', fontWeight: 700, fontSize: '13px', marginTop: '4px' }}>{formatWeight(connoteDetailData.transaction.actual_weight)}</div>
-                      </div>
-                      <div>
-                        <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>BEA KIRIM</span>
-                        <div style={{ color: 'white', fontWeight: 700, fontSize: '13px', marginTop: '4px' }}>{formatIDR(connoteDetailData.transaction.connote_service_price)}</div>
-                      </div>
-                      <div>
-                        <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>TOTAL BIAYA</span>
-                        <div style={{ color: 'var(--accent-yellow)', fontWeight: 700, fontSize: '13px', marginTop: '4px' }}>{formatIDR(connoteDetailData.transaction.connote_amount)}</div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Route Mapping Info */}
-                  <div className="glass-card" style={{ padding: '16px', marginBottom: 0, borderLeft: '3px solid var(--accent-cyan)' }}>
-                    <h4 style={{ color: 'white', margin: '0 0 10px', fontSize: '13px', fontWeight: 700 }}>Informasi Pemetaan Rute Logistik</h4>
-                    
-                    <table className="table-borderless" style={{ width: '100%', fontSize: '12.5px' }}>
-                      <tbody>
-                        <tr>
-                          <td style={{ color: 'var(--text-muted)', padding: '4px 0' }}>Status Mapped</td>
-                          <td>
-                            <span className={`badge ${connoteDetailData.route_mapping.route_id !== '-' ? 'badge-success' : 'badge-danger'}`}>
-                              {connoteDetailData.route_mapping.route_id !== '-' ? 'TERPETAKAN' : 'BELUM TERPETAKAN'}
-                            </span>
-                          </td>
-                        </tr>
-                        <tr>
-                          <td style={{ color: 'var(--text-muted)', padding: '4px 0' }}>Route ID</td>
-                          <td style={{ color: 'white', fontWeight: 600 }}>{connoteDetailData.route_mapping.route_id}</td>
-                        </tr>
-                        <tr>
-                          <td style={{ color: 'var(--text-muted)', padding: '4px 0' }}>Kendaraan / Nopol</td>
-                          <td style={{ color: 'white', fontWeight: 600 }}>
-                            {connoteDetailData.route_mapping.vehicle_nopol !== '-' ? (
-                              <button 
-                                onClick={() => {
-                                  setSelectedConnote(null);
-                                  setSelectedVehicle(connoteDetailData.route_mapping.vehicle_nopol);
-                                }}
-                                style={{ background: 'none', border: 'none', color: 'var(--accent-cyan)', fontWeight: 700, cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
-                              >
-                                {connoteDetailData.route_mapping.vehicle_nopol}
-                              </button>
-                            ) : '-'}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td style={{ color: 'var(--text-muted)', padding: '4px 0' }}>Mapping Level</td>
-                          <td>
-                            {connoteDetailData.route_mapping.mapping_level !== 'UNMAPPED' ? (
-                              <span className="badge badge-purple">{connoteDetailData.route_mapping.mapping_level}</span>
-                            ) : '-'}
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Route Timeline stops */}
-                  {connoteDetailData.route_stops && connoteDetailData.route_stops.length > 0 && (
-                    <div className="glass-card" style={{ padding: '16px', marginBottom: 0 }}>
-                      <h4 style={{ color: 'white', margin: '0 0 12px 0', fontSize: '13px', fontWeight: 700 }}>Alur Checkpoint Rute Kendaraan</h4>
-                      <div style={{ display: 'grid', gap: '8px' }}>
-                        {connoteDetailData.route_stops.map((stop, sIdx) => (
-                          <div key={sIdx} style={{ display: 'flex', gap: '10px', alignItems: 'center', fontSize: '12px' }}>
-                            <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: 'var(--bg-dark)', border: '1.5px solid var(--accent-cyan)', color: 'var(--accent-cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '10px' }}>
-                              {sIdx + 1}
-                            </div>
-                            <span style={{ color: 'white', fontWeight: 600 }}>{stop.nama_nopend}</span>
-                            <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>({stop.nopend})</span>
-                            <span className="badge" style={{ background: 'rgba(56,189,248,0.05)', color: 'var(--text-secondary)', fontSize: '9px', marginLeft: 'auto' }}>{stop.role}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Audit Trail History */}
-                  {connoteDetailData.transaction.tracking_history && connoteDetailData.transaction.tracking_history.length > 0 && (
-                    <div className="glass-card" style={{ padding: '16px', marginBottom: 0 }}>
-                      <h4 style={{ color: 'white', margin: '0 0 12px 0', fontSize: '13px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Clock size={14} style={{ color: 'var(--accent-cyan)' }} />
-                        Riwayat Pelacakan Paket (Audit Trail)
-                      </h4>
-                      <div style={{ display: 'grid', gap: '6px' }}>
-                        {connoteDetailData.transaction.tracking_history.map((h, hIdx) => (
-                          <div key={hIdx} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 12px', background: 'var(--bg-navy)', borderRadius: '6px', fontSize: '12px' }}>
-                            <div>
-                              <span style={{ fontSize: '10.5px', color: 'var(--text-muted)' }}>{h.from ? h.from.replace(/_/g, ' ') : '-'}</span>
-                              <span style={{ margin: '0 6px', color: 'var(--text-muted)' }}>→</span>
-                              <span className="badge badge-info" style={{ fontSize: '10px' }}>{h.to.replace(/_/g, ' ')}</span>
-                            </div>
-                            <span style={{ fontSize: '11px', color: 'white', fontWeight: 600 }}>{formatWIB(h.changedAt)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : null}
-            </div>
-            
-            <div className="modal-footer">
-              <button onClick={() => setSelectedConnote(null)} className="btn btn-secondary">
-                Tutup
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Detail Kendaraan */}
-      {selectedVehicle && (
-        <VehicleDetailModal 
-          nopol={selectedVehicle} 
-          onClose={() => setSelectedVehicle(null)} 
-          onViewTransaction={(code) => {
-            setSelectedVehicle(null);
-            setSelectedConnote(code);
-          }}
-        />
-      )}
     </div>
   );
 }

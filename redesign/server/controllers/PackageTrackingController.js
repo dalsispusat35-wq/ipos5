@@ -2,6 +2,30 @@ import PackageTrackingService from '../services/PackageTrackingService.js';
 
 class PackageTrackingController {
   /**
+   * GET /api/checker/vehicles?date=YYYY-MM-DD
+   * GET /api/checker/fleet?date=YYYY-MM-DD
+   */
+  async getFleetList(req, res) {
+    try {
+      const dateStr = req.query.date ? String(req.query.date).trim() : PackageTrackingService.getWibDateStr();
+      const data = await PackageTrackingService.getFleetList(dateStr);
+      return res.json({
+        success: true,
+        data
+      });
+    } catch (error) {
+      console.error('Error in getFleetList:', error);
+      return res.status(500).json({
+        success: false,
+        error: {
+          code: 'FLEET_LIST_ERROR',
+          message: error.message || 'Gagal memuat daftar armada kendaraan dari database.'
+        }
+      });
+    }
+  }
+
+  /**
    * GET /api/checker/control-tower?date=YYYY-MM-DD
    */
   async getControlTowerData(req, res) {

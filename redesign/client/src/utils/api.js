@@ -68,16 +68,23 @@ export const api = {
   logout: () => fetchApi('/auth/logout', { method: 'POST' }),
 
   // Stats
-  getDashboardStats: () => fetchApi('/dashboard-stats'),
+  getDashboardStats: (params = '') => {
+    const q = typeof params === 'object' ? new URLSearchParams(params).toString() : params;
+    return fetchApi(`/dashboard-stats${q ? `?${q}` : ''}`);
+  },
 
   // Checker
   checkRouting: (connoteCode, date) => fetchApi(`/checker/${encodeURIComponent(connoteCode)}${date ? `?date=${encodeURIComponent(date)}` : ''}`),
   getCheckerData: (connoteCode, date) => fetchApi(`/checker/${encodeURIComponent(connoteCode)}${date ? `?date=${encodeURIComponent(date)}` : ''}`),
   getControlTowerData: (date) => fetchApi(`/checker/control-tower${date ? `?date=${encodeURIComponent(date)}` : ''}`),
   getVehicleCheckerData: (nopol, date) => fetchApi(`/checker/vehicle/${encodeURIComponent(nopol)}${date ? `?date=${encodeURIComponent(date)}` : ''}`),
+  getFleetList: (date) => fetchApi(`/checker/vehicles${date ? `?date=${encodeURIComponent(date)}` : ''}`),
 
   // Kantor
-  getKantor: (params = '') => fetchApi(`/kantor?${params}`),
+  getKantor: (params = '') => {
+    const q = typeof params === 'object' ? new URLSearchParams(params).toString() : params;
+    return fetchApi(`/kantor${q ? `?${q}` : ''}`);
+  },
   getKantorFilters: () => fetchApi('/kantor/filters'),
   getKantorById: (id) => fetchApi(`/kantor/${id}`),
   createKantor: (data) => fetchApi('/kantor', { method: 'POST', body: data }),

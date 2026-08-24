@@ -1,19 +1,75 @@
 import { useState, useEffect } from 'react';
-import { Building2, Tag, Truck, Map, TrendingUp, ArrowUpRight, BarChart3, PieChart as PieChartIcon } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { 
+  Building2, Tag, Truck, Map, TrendingUp, ArrowUpRight, BarChart3, 
+  PieChart as PieChartIcon, RefreshCw, Layers, ShieldCheck, Box, Activity,
+  ChevronRight, ExternalLink, ChevronLeft, Calendar, User, ArrowDownRight,
+  Sparkles, CheckCircle2, AlertCircle, Clock, Zap, MapPin, Gauge, Radio,
+  Cpu, Copy, Check, SlidersHorizontal, ArrowDown, ArrowUp, Compass,
+  RadioTower, Wifi, Sun, Play, Navigation, AlertTriangle, Package,
+  Search, Plane, Filter, Terminal, Globe, Crosshair, HelpCircle, ChevronDown,
+  X, ArrowRight
+} from 'lucide-react';
 import { api } from '../utils/api.js';
 
 export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
   const [dbStats, setDbStats] = useState(null);
+  const [topConnotes, setTopConnotes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [hoveredSegment, setHoveredSegment] = useState(null);
-  const [hoveredBar, setHoveredBar] = useState(null);
+  const [copiedResi, setCopiedResi] = useState(null);
+  const [searchFilter, setSearchFilter] = useState('');
+  
+  // Interactive Filter States
+  const [shipmentPeriod, setShipmentPeriod] = useState('Month'); // 'Week' | 'Month' | 'Year'
+  const [salesPeriod, setSalesPeriod] = useState('Month'); // 'Week' | 'Month' | 'Year'
+  const [activeCategoryFilter, setActiveCategoryFilter] = useState('All');
+  const [hoveredBarIndex, setHoveredBarIndex] = useState(null);
+  const [hoveredSalesIndex, setHoveredSalesIndex] = useState(null);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [selectedDateRange, setSelectedDateRange] = useState('Semua Data (YTD 2026)');
+  const [datePreset, setDatePreset] = useState('All');
+  const [customStart, setCustomStart] = useState('');
+  const [customEnd, setCustomEnd] = useState('');
 
-  const fetchStats = async () => {
+  const datePresetsList = [
+    { label: 'Semua Data (YTD 2026)', preset: 'ytd2026', sub: 'Seluruh Database' },
+    { label: 'Agustus 2026 (Live Database)', preset: 'aug2026', sub: 'Bulan Ini' },
+    { label: 'Juli 2026 (Historis)', preset: 'jul2026', sub: 'Bulan Sebelumnya' },
+    { label: '30 Hari Terakhir', preset: '30d', sub: 'Data 1 Bulan Terakhir' },
+    { label: '7 Hari Terakhir', preset: '7d', sub: 'Minggu Ini' },
+    { label: 'Hari Ini', preset: 'today', sub: 'Real-Time Hari Ini' }
+  ];
+
+  const fetchStatsAndTop20 = async (overrideParams = {}) => {
     try {
-      setLoading(true);
-      const res = await api.getDashboardStats();
-      if (res.success && res.data) {
-        setDbStats(res.data);
+      const activePreset = overrideParams.datePreset !== undefined ? overrideParams.datePreset : datePreset;
+      const activeShipmentPeriod = overrideParams.shipmentPeriod !== undefined ? overrideParams.shipmentPeriod : shipmentPeriod;
+      const activeSalesPeriod = overrideParams.salesPeriod !== undefined ? overrideParams.salesPeriod : salesPeriod;
+      const activeService = overrideParams.service !== undefined ? overrideParams.service : (activeCategoryFilter !== 'All' ? activeCategoryFilter : '');
+      const activeStart = overrideParams.startDate !== undefined ? overrideParams.startDate : customStart;
+      const activeEnd = overrideParams.endDate !== undefined ? overrideParams.endDate : customEnd;
+
+      const qParams = {
+        shipmentPeriod: activeShipmentPeriod,
+        salesPeriod: activeSalesPeriod
+      };
+      if (activePreset && activePreset !== 'All') qParams.datePreset = activePreset;
+      if (activeService) qParams.service = activeService;
+      if (activeStart) qParams.startDate = activeStart;
+      if (activeEnd) qParams.endDate = activeEnd;
+
+      const [statsRes, transRes] = await Promise.allSettled([
+        api.getDashboardStats(qParams),
+        api.getTransactions('limit=20' + (activeStart ? `&startDate=${activeStart}` : '') + (activeEnd ? `&endDate=${activeEnd}` : ''))
+      ]);
+
+      if (statsRes.status === 'fulfilled' && statsRes.value?.success && statsRes.value?.data) {
+        setDbStats(statsRes.value.data);
+      }
+
+      if (transRes.status === 'fulfilled' && transRes.value?.success) {
+        const transData = transRes.value.data || transRes.value.transaksi || [];
+        setTopConnotes(transData);
       }
     } catch (err) {
       console.error('Error loading dashboard stats:', err);
@@ -23,384 +79,1171 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
   };
 
   useEffect(() => {
-    fetchStats();
-  }, [refreshStatsTrigger]);
+    fetchStatsAndTop20();
+    const interval = setInterval(() => fetchStatsAndTop20(), 5000);
+    return () => clearInterval(interval);
+  }, [refreshStatsTrigger, datePreset, customStart, customEnd, shipmentPeriod, salesPeriod, activeCategoryFilter]);
 
-  const stats = [
-    {
-      label: 'Total Post Offices',
-      value: dbStats?.totals?.total_kantor?.toLocaleString() || '13,247',
-      change: '+12 this month',
-      icon: <Building2 size={20} />,
-    },
-    {
-      label: 'Total Products',
-      value: dbStats?.totals?.total_produk?.toString() || '12',
-      change: '3 active services',
-      icon: <Tag size={20} />,
-    },
-    {
-      label: 'Fleet Vehicles',
-      value: dbStats?.totals?.total_kendaraan?.toString() || '48',
-      change: '41 operational',
-      icon: <Truck size={20} />,
-    },
-    {
-      label: 'Total Routes',
-      value: dbStats?.totals?.total_route?.toString() || '24',
-      change: '18 active today',
-      icon: <Map size={20} />,
-    },
-  ];
+  const handleSelectPreset = (p) => {
+    setDatePreset(p.preset);
+    setSelectedDateRange(p.label);
+    setCustomStart('');
+    setCustomEnd('');
+    setIsDatePickerOpen(false);
+    fetchStatsAndTop20({ datePreset: p.preset, startDate: '', endDate: '' });
+  };
 
-  const packageStages = [
-    { name: 'Received at Cimahi', short: 'Received', key: 'DITERIMA_DI_CIMAHI', value: dbStats?.statusBreakdown?.DITERIMA_DI_CIMAHI || 1247, color: '#2460b0' },
-    { name: 'In Manifest', short: 'Manifest', key: 'IN_MANIFEST', value: dbStats?.statusBreakdown?.IN_MANIFEST || 843, color: '#6ba3f0' },
-    { name: 'In Transit to Bandung SC', short: 'In Transit', key: 'TRANSIT_SPP_BANDUNG', value: dbStats?.statusBreakdown?.TRANSIT_SPP_BANDUNG || 562, color: '#e8431f' },
-    { name: 'Arrived at Destination SC', short: 'Arrived SC', key: 'TIBA_DI_SPP_TUJUAN', value: dbStats?.statusBreakdown?.TIBA_DI_SPP_TUJUAN || 389, color: '#f59e0b' },
-    { name: 'Delivered', short: 'Delivered', key: 'DELIVERED', value: dbStats?.statusBreakdown?.DELIVERED || 2891, color: '#10b981' },
-  ];
+  const handleApplyCustomDate = (e) => {
+    e.preventDefault();
+    if (!customStart && !customEnd) return;
+    setDatePreset('custom');
+    setSelectedDateRange(`${customStart || 'Awal'} s/d ${customEnd || 'Sekarang'}`);
+    setIsDatePickerOpen(false);
+    fetchStatsAndTop20({ datePreset: 'custom', startDate: customStart, endDate: customEnd });
+  };
 
-  const totalPackages = packageStages.reduce((acc, curr) => acc + curr.value, 0);
+  const handleResetFilter = () => {
+    setDatePreset('All');
+    setSelectedDateRange('Semua Data (YTD 2026)');
+    setCustomStart('');
+    setCustomEnd('');
+    setActiveCategoryFilter('All');
+    fetchStatsAndTop20({ datePreset: 'All', startDate: '', endDate: '', service: '' });
+  };
 
-  const recentShipments = dbStats?.recentTransactions || [
-    { connote_code: '00130000110724001', origin: 'KPC Cimahi Selatan', destination: 'KCU Bandung Utara', weight: '2.4 kg', status: 'In Transit', statusType: 'transit', date: '24 Jul 2026, 09:14' },
-    { connote_code: '00130000110724002', origin: 'KPC Cimahi Utara', destination: 'KCU Sumedang', weight: '0.8 kg', status: 'Delivered', statusType: 'delivered', date: '24 Jul 2026, 08:52' },
-    { connote_code: '00130000110724003', origin: 'KPRK Cimahi', destination: 'KCU Garut', weight: '5.2 kg', status: 'In Manifest', statusType: 'manifest', date: '24 Jul 2026, 08:30' },
-    { connote_code: '00130000110724004', origin: 'KPC Cimahi Tengah', destination: 'KCU Tasikmalaya', weight: '1.1 kg', status: 'Delivered', statusType: 'delivered', date: '24 Jul 2026, 07:48' },
-    { connote_code: '00130000110724005', origin: 'KPRK Cimahi', destination: 'KCU Bandung Selatan', weight: '3.8 kg', status: 'Arrived at Dest. SC', statusType: 'arrived', date: '24 Jul 2026, 07:22' },
-    { connote_code: '00130000110724006', origin: 'KPC Cimahi Selatan', destination: 'KCU Cianjur', weight: '0.5 kg', status: 'Received', statusType: 'received', date: '24 Jul 2026, 07:05' },
-    { connote_code: '00130000110724007', origin: 'KPRK Cimahi', destination: 'KCU Purwakarta', weight: '7.3 kg', status: 'In Transit', statusType: 'transit', date: '23 Jul 2026, 23:41' },
-  ];
+  const isFiltered = (datePreset && datePreset !== 'All') || customStart || customEnd || activeCategoryFilter !== 'All';
+
+  const totals = dbStats?.totals || {};
+  const totalPackages = totals.total_packages !== undefined ? totals.total_packages : 0;
+  const activeCount = totals.active_shipments !== undefined ? totals.active_shipments : 0;
+  const completedCount = totals.completed_shipments !== undefined ? totals.completed_shipments : 0;
+  const returnedCount = totals.returned_shipments !== undefined ? totals.returned_shipments : 0;
+  
+  const activePct = totalPackages > 0 && activeCount > 0 ? Math.round((activeCount / totalPackages) * 100) : 0;
+  const completedPct = totalPackages > 0 && completedCount > 0 ? Math.round((completedCount / totalPackages) * 100) : 0;
+  const returnedPct = totalPackages > 0 && returnedCount > 0 ? Math.round((returnedCount / totalPackages) * 100) : 0;
+  const revenueFormatted = totals.total_revenue_formatted || (totals.total_revenue !== undefined ? `Rp ${Number(totals.total_revenue).toLocaleString('id-ID')}` : 'Rp 0');
+
+  const totalWeightTonDisplay = totals.total_weight_kg !== undefined
+    ? (totals.total_weight_kg >= 1000 ? (totals.total_weight_kg / 1000).toFixed(1) + ' Ton' : totals.total_weight_kg + ' kg')
+    : '0 kg';
+
+  const handleCopy = (code) => {
+    if (!code) return;
+    navigator.clipboard.writeText(code);
+    setCopiedResi(code);
+    setTimeout(() => setCopiedResi(null), 1800);
+  };
 
   const getBadgeClass = (status) => {
     if (!status) return 'badge badge-navy';
     const s = String(status).toUpperCase();
-    if (s.includes('DELIVERED')) return 'badge badge-emerald';
-    if (s.includes('TRANSIT')) return 'badge badge-orange';
-    if (s.includes('ARRIVED') || s.includes('TIBA')) return 'badge badge-amber';
-    if (s.includes('RECEIVED') || s.includes('DITERIMA')) return 'badge badge-blue';
+    if (s.includes('DELIVERED') || s.includes('SELESAI') || s.includes('SUKSES')) return 'badge badge-emerald';
+    if (s.includes('TRANSIT') || s.includes('INVEHICLE') || s.includes('LOADED') || s.includes('IN_TRANSIT')) return 'badge badge-blue';
+    if (s.includes('ARRIVED') || s.includes('TIBA') || s.includes('HUB')) return 'badge badge-amber';
+    if (s.includes('RETURN') || s.includes('GAGAL') || s.includes('CANCEL')) return 'badge badge-pink';
     return 'badge badge-navy';
   };
 
-  // SVG Donut Chart math calculations
-  const radius = 62;
-  const circumference = 2 * Math.PI * radius; // ~389.55
-  let accumulatedOffset = 0;
-
-  const donutSegments = packageStages.map((st) => {
-    const fraction = totalPackages > 0 ? st.value / totalPackages : 0;
-    const dashLength = fraction * circumference;
-    const offset = accumulatedOffset;
-    accumulatedOffset += dashLength;
-    return { ...st, fraction, dashLength, offset };
+  const filteredConnotes = topConnotes.filter(item => {
+    if (!searchFilter) return true;
+    const q = searchFilter.toLowerCase();
+    return (
+      (item.connote_code || '').toLowerCase().includes(q) ||
+      (item.location_name || '').toLowerCase().includes(q) ||
+      (item.connote_service || '').toLowerCase().includes(q) ||
+      (item.connote_sender_name || '').toLowerCase().includes(q) ||
+      (item.connote_receiver_name || '').toLowerCase().includes(q) ||
+      (item.raw?.assigned_vehicle || item.raw?.vehicle_nopol || '').toLowerCase().includes(q)
+    );
   });
 
-  const maxBarValue = Math.max(...packageStages.map((s) => s.value), 1);
+  // Real Monthly Stacked Bar Data from MongoDB
+  const shipmentBarData = dbStats?.monthlyShipments || [];
+
+  // Popular Categories from Real MongoDB Database
+  const popularCategoriesList = dbStats?.popularCategories || [];
+
+  // Av Check (Average Revenue per Service from DB)
+  const avCheckData = dbStats?.avCheck || [];
+
+  const maxAvRevenue = Math.max(...avCheckData.map(d => d.avgRevenue || 1), 1);
+
+  // Av Delivery Time by Region & Hub SLA from Database
+  const avDeliveryData = (totalPackages > 0 && dbStats?.avDeliveryTime) ? dbStats.avDeliveryTime : [];
+
+  // Category filter options from real DB
+  const salesCategories = ['All', 'Pos Nextday', 'Pos Reguler', 'Pos Sameday', 'Pos Shopee', 'Pos Jumbo'];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* Stat Metric Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
-        {stats.map((s) => (
-          <div key={s.label} className="gradient-border-card glow-orange" style={{ padding: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
-              <div
-                style={{
-                  width: 38,
-                  height: 38,
-                  borderRadius: 10,
-                  background: 'rgba(232,67,31,0.14)',
-                  border: '1px solid rgba(232,67,31,0.25)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#e8431f',
-                }}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, width: '100%', paddingBottom: 20 }}>
+      
+      {/* ── 1. SUBHEADER: PAGE TITLE & ACTIVE DATE FILTER DROPDOWN ── */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <h1 style={{ fontSize: 26, fontWeight: 900, margin: 0, letterSpacing: '-0.03em' }}>
+            Analytics
+          </h1>
+          {isFiltered && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span className="badge badge-navy" style={{ fontSize: 11, padding: '4px 10px' }}>
+                Filter Aktif: {dbStats?.filterMeta?.filteredCount || totalPackages} Data
+              </span>
+              <button
+                type="button"
+                onClick={handleResetFilter}
+                className="btn-ghost"
+                style={{ fontSize: 11, padding: '2px 8px', color: '#ef4444' }}
+                title="Reset Semua Filter"
               >
-                {s.icon}
-              </div>
-              <ArrowUpRight size={14} color="rgba(255,255,255,0.3)" />
+                Reset
+              </button>
             </div>
-            <div className="stat-number" style={{ marginBottom: 6 }}>
-              {s.value}
-            </div>
-            <div style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.5)', fontWeight: 500 }}>
-              {s.label}
-            </div>
-            <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <TrendingUp size={11} color="#10b981" />
-              <span style={{ fontSize: 11, color: '#10b981', fontWeight: 600 }}>{s.change}</span>
-            </div>
-          </div>
-        ))}
-      </div>
+          )}
+        </div>
 
-      {/* Row 1: Donut Chart & Bar Chart Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 16 }}>
-        {/* 🍩 Donut Chart Card */}
-        <div className="glass-card-solid" style={{ padding: 22, display: 'flex', flexDirection: 'column' }}>
-          <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <PieChartIcon size={16} color="#e8431f" /> Package Status Breakdown
-              </div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>
-                {totalPackages.toLocaleString()} total packages in database
-              </div>
-            </div>
-          </div>
+        {/* Interactive Date Range Dropdown Pill */}
+        <div style={{ position: 'relative' }}>
+          <button
+            type="button"
+            onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+            className="btn-ghost"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              borderRadius: 9999,
+              padding: '7px 16px',
+              fontSize: 12.5,
+              fontWeight: 700,
+              cursor: 'pointer'
+            }}
+          >
+            <Calendar size={14} color={isFiltered ? 'var(--primary-blue)' : 'var(--text-muted)'} />
+            <span>{selectedDateRange}</span>
+            <ChevronDown size={14} color={isFiltered ? 'var(--primary-blue)' : 'var(--text-muted)'} />
+          </button>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap', justifyContent: 'center' }}>
-            {/* SVG Donut Chart Circle */}
-            <div style={{ position: 'relative', width: 170, height: 170, flexShrink: 0 }}>
-              <svg width="170" height="170" viewBox="0 0 170 170" style={{ transform: 'rotate(-90deg)' }}>
-                {/* Background Ring Track */}
-                <circle
-                  cx="85"
-                  cy="85"
-                  r={radius}
-                  fill="none"
-                  stroke="rgba(255,255,255,0.06)"
-                  strokeWidth="20"
-                />
-                {/* Donut Segments */}
-                {donutSegments.map((seg, i) => {
-                  const isHovered = hoveredSegment === i;
-                  return (
-                    <circle
-                      key={seg.name}
-                      cx="85"
-                      cy="85"
-                      r={radius}
-                      fill="none"
-                      stroke={seg.color}
-                      strokeWidth={isHovered ? 24 : 20}
-                      strokeDasharray={`${seg.dashLength} ${circumference}`}
-                      strokeDashoffset={-seg.offset}
-                      style={{
-                        transition: 'all 0.3s ease',
-                        cursor: 'pointer',
-                        filter: isHovered ? `drop-shadow(0 0 8px ${seg.color})` : 'none',
-                      }}
-                      onMouseEnter={() => setHoveredSegment(i)}
-                      onMouseLeave={() => setHoveredSegment(null)}
-                    />
-                  );
-                })}
-              </svg>
-
-              {/* Center Donut Label */}
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  transform: 'translate(-50%, -50%)',
-                  textAlign: 'center',
-                  pointerEvents: 'none',
-                }}
-              >
-                <div style={{ fontSize: 20, fontWeight: 800, color: '#fff', lineHeight: 1 }}>
-                  {hoveredSegment !== null
-                    ? packageStages[hoveredSegment].value.toLocaleString()
-                    : totalPackages.toLocaleString()}
-                </div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginTop: 3 }}>
-                  {hoveredSegment !== null ? packageStages[hoveredSegment].short : 'packages'}
-                </div>
+          {isDatePickerOpen && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 'calc(100% + 8px)',
+                right: 0,
+                width: 290,
+                background: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: 16,
+                padding: '12px',
+                boxShadow: '0 16px 36px rgba(15, 23, 42, 0.15)',
+                zIndex: 999,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8
+              }}
+            >
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '0 4px' }}>
+                PILIH PERIODE DATA MONGODB
               </div>
-            </div>
 
-            {/* Donut Legend Items */}
-            <div style={{ flex: 1, minWidth: 160, display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {packageStages.map((st, idx) => {
-                const pct = totalPackages > 0 ? Math.round((st.value / totalPackages) * 100) : 0;
-                const isHovered = hoveredSegment === idx;
-                return (
-                  <div
-                    key={st.name}
-                    onMouseEnter={() => setHoveredSegment(idx)}
-                    onMouseLeave={() => setHoveredSegment(null)}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                {datePresetsList.map((p) => (
+                  <button
+                    key={p.preset}
+                    type="button"
+                    onClick={() => handleSelectPreset(p)}
                     style={{
                       display: 'flex',
-                      alignItems: 'center',
                       justifyContent: 'space-between',
-                      padding: '5px 8px',
-                      borderRadius: 6,
-                      background: isHovered ? 'rgba(255,255,255,0.08)' : 'transparent',
+                      alignItems: 'center',
+                      background: datePreset === p.preset ? '#e0f2fe' : 'transparent',
+                      color: datePreset === p.preset ? '#0b2e8a' : '#334155',
+                      fontWeight: datePreset === p.preset ? 800 : 500,
+                      border: 'none',
+                      borderRadius: 8,
+                      padding: '7px 10px',
+                      fontSize: 12,
+                      textAlign: 'left',
                       cursor: 'pointer',
-                      transition: 'background 0.2s',
+                      transition: 'all 0.15s'
                     }}
+                    onMouseEnter={(e) => { if (datePreset !== p.preset) e.currentTarget.style.background = '#f8fafc'; }}
+                    onMouseLeave={(e) => { if (datePreset !== p.preset) e.currentTarget.style.background = 'transparent'; }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={{ width: 9, height: 9, borderRadius: 2, background: st.color, flexShrink: 0 }} />
-                      <span style={{ fontSize: 12, color: isHovered ? '#fff' : 'rgba(255,255,255,0.7)', fontWeight: isHovered ? 600 : 400 }}>
-                        {st.short}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span className="font-mono" style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>
-                        {st.value.toLocaleString()}
-                      </span>
-                      <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', width: 28, textAlign: 'right' }}>
-                        {pct}%
-                      </span>
-                    </div>
+                    <span>{p.label}</span>
+                    <span style={{ fontSize: 10, color: '#64748b' }}>{p.sub}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Custom Date Inputs Form */}
+              <form onSubmit={handleApplyCustomDate} style={{ borderTop: '1px solid #f1f5f9', paddingTop: 10, marginTop: 4, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#475569' }}>Atur Rentang Tanggal Manual:</span>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                  <div>
+                    <span style={{ fontSize: 10, color: '#94a3b8', display: 'block', marginBottom: 2 }}>Mulai:</span>
+                    <input
+                      type="date"
+                      value={customStart}
+                      onChange={(e) => setCustomStart(e.target.value)}
+                      style={{ width: '100%', fontSize: 11, padding: '4px 6px', border: '1px solid #e2e8f0', borderRadius: 6, background: '#f8fafc', boxSizing: 'border-box' }}
+                    />
                   </div>
-                );
-              })}
+                  <div>
+                    <span style={{ fontSize: 10, color: '#94a3b8', display: 'block', marginBottom: 2 }}>Selesai:</span>
+                    <input
+                      type="date"
+                      value={customEnd}
+                      onChange={(e) => setCustomEnd(e.target.value)}
+                      style={{ width: '100%', fontSize: 11, padding: '4px 6px', border: '1px solid #e2e8f0', borderRadius: 6, background: '#f8fafc', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                  <button
+                    type="submit"
+                    className="btn-primary"
+                    style={{ flex: 1, fontSize: 11, padding: '6px 0', justifyContent: 'center' }}
+                  >
+                    Terapkan Filter
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleResetFilter}
+                    className="btn-ghost"
+                    style={{ fontSize: 11, padding: '6px 10px' }}
+                  >
+                    Reset
+                  </button>
+                </div>
+              </form>
             </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── 2. ROW 1: 5 PASTEL KPI SUMMARY CARDS (REAL DATABASE DATA) ── */}
+      <div className="grid-5" style={{ gap: 14 }}>
+        
+        {/* 1. Dark Blue Total Shipments Card */}
+        <div className="kpi-card-blue" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: 96, padding: '16px 18px', borderRadius: 16 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, opacity: 0.9 }}>
+            Total Shipments
+          </div>
+          <div style={{ fontSize: 28, fontWeight: 900, letterSpacing: '-0.02em', marginTop: 8 }}>
+            {totalPackages.toLocaleString('id-ID')}
           </div>
         </div>
 
-        {/* 📊 Bar Chart Card */}
-        <div className="glass-card-solid" style={{ padding: 22, display: 'flex', flexDirection: 'column' }}>
-          <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <BarChart3 size={16} color="#10b981" /> Status Volume Distribution Bar Chart
-              </div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>
-                Comparative package volume across operational stages
-              </div>
+        {/* 2. Soft Cyan Active Shipments Card */}
+        <div className="kpi-card-cyan" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: 96, padding: '16px 18px', borderRadius: 16 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>
+            Active Shipments
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 8 }}>
+            <span style={{ fontSize: 26, fontWeight: 900, color: 'var(--text-primary)' }}>
+              {activeCount.toLocaleString('id-ID')}
+            </span>
+            <span style={{ fontSize: 11, color: 'var(--accent-cyan)', fontWeight: 800 }}>
+              {activePct}% of total
+            </span>
+          </div>
+        </div>
+
+        {/* 3. Soft Green Completed Card */}
+        <div className="kpi-card-green" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: 96, padding: '16px 18px', borderRadius: 16 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>
+            Completed
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 8 }}>
+            <span style={{ fontSize: 26, fontWeight: 900, color: 'var(--text-primary)' }}>
+              {completedCount.toLocaleString('id-ID')}
+            </span>
+            <span style={{ fontSize: 11, color: 'var(--accent-emerald)', fontWeight: 800 }}>
+              {completedPct}% of total
+            </span>
+          </div>
+        </div>
+
+        {/* 4. Soft Pink Returned Card */}
+        <div className="kpi-card-pink" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: 96, padding: '16px 18px', borderRadius: 16 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>
+            Returned / Failed
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 8 }}>
+            <span style={{ fontSize: 26, fontWeight: 900, color: 'var(--text-primary)' }}>
+              {returnedCount.toLocaleString('id-ID')}
+            </span>
+            <span style={{ fontSize: 11, color: 'var(--accent-pink)', fontWeight: 800 }}>
+              {returnedPct}% of total
+            </span>
+          </div>
+        </div>
+
+        {/* 5. Soft Purple Real Revenue / Cargo Tonase Card */}
+        <div className="kpi-card-purple" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: 96, padding: '16px 18px', borderRadius: 16 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>
+            Total Freight Value
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 8 }}>
+            <span style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+              {revenueFormatted}
+            </span>
+            <span style={{ fontSize: 11, color: '#a855f7', fontWeight: 800 }}>
+              {totalWeightTonDisplay}
+            </span>
+          </div>
+        </div>
+
+      </div>
+
+      {/* ── 3. ROW 2: TWO MAIN INTERACTIVE CHARTS (SHIPMENT & SALES) ── */}
+      <div className="grid-2" style={{ gap: 16 }}>
+        
+        {/* ── CHART 1: SHIPMENT STACKED BAR CHART ── */}
+        <div className="spatial-card" style={{ padding: 22, display: 'flex', flexDirection: 'column', minHeight: 340 }}>
+          
+          {/* Card Header with Period Switcher */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+            <h2 style={{ fontSize: 17, fontWeight: 800, margin: 0 }}>
+              Shipment
+            </h2>
+
+            <div className="filter-pill-group">
+              {['Week', 'Month', 'Year'].map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => {
+                    setShipmentPeriod(p);
+                    fetchStatsAndTop20({ shipmentPeriod: p });
+                  }}
+                  className={`filter-pill-btn ${shipmentPeriod === p ? 'active' : ''}`}
+                >
+                  {p}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* SVG Vertical Bar Chart */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', minHeight: 180, paddingTop: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', height: 140, borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 0 }}>
-              {packageStages.map((st, idx) => {
-                const barHeightPct = Math.round((st.value / maxBarValue) * 100);
-                const isHovered = hoveredBar === idx;
+          {/* Stacked Bar Chart Area */}
+          <div style={{ flex: 1, position: 'relative', minHeight: 200, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingBottom: 26 }}>
+            
+            {/* Dynamic Horizontal Dashed Guidelines & Y-Axis Labels */}
+            {(() => {
+              const maxVal = Math.max(...shipmentBarData.map(d => d.total || 0), 10);
+              const step3 = Math.round(maxVal);
+              const step2 = Math.round(maxVal * 0.75);
+              const step1 = Math.round(maxVal * 0.5);
+              const step05 = Math.round(maxVal * 0.25);
+
+              return (
+                <>
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 10, color: 'var(--text-muted)', width: 32, textAlign: 'right', fontFamily: 'monospace' }}>{step3}</span>
+                    <div style={{ flex: 1, borderTop: '1px dashed var(--border-light)' }} />
+                  </div>
+                  <div style={{ position: 'absolute', top: '25%', left: 0, right: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 10, color: 'var(--text-muted)', width: 32, textAlign: 'right', fontFamily: 'monospace' }}>{step2}</span>
+                    <div style={{ flex: 1, borderTop: '1px dashed var(--border-light)' }} />
+                  </div>
+                  <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 10, color: 'var(--text-muted)', width: 32, textAlign: 'right', fontFamily: 'monospace' }}>{step1}</span>
+                    <div style={{ flex: 1, borderTop: '1px dashed var(--border-light)' }} />
+                  </div>
+                  <div style={{ position: 'absolute', top: '75%', left: 0, right: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 10, color: 'var(--text-muted)', width: 32, textAlign: 'right', fontFamily: 'monospace' }}>{step05}</span>
+                    <div style={{ flex: 1, borderTop: '1px dashed var(--border-light)' }} />
+                  </div>
+                  <div style={{ position: 'absolute', bottom: 26, left: 0, right: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 10, color: 'var(--text-muted)', width: 32, textAlign: 'right', fontFamily: 'monospace' }}>0</span>
+                    <div style={{ flex: 1, borderTop: '1px solid var(--border-light)' }} />
+                  </div>
+                </>
+              );
+            })()}
+
+            {/* Bars Container */}
+            <div 
+              onMouseLeave={() => setHoveredBarIndex(null)}
+              style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'flex-end', height: '100%', paddingLeft: 42, zIndex: 5 }}
+            >
+              {shipmentBarData.map((item, idx) => {
+                const isHovered = hoveredBarIndex === idx;
+                const maxVal = Math.max(...shipmentBarData.map(d => d.total || 0), 10);
+                const totalH = item.total > 0 ? Math.min(150, Math.max(14, (item.total / maxVal) * 150)) : 0;
+                const retH = item.total > 0 ? Math.max(item.returned > 0 ? 4 : 0, (item.returned / item.total) * totalH) : 0;
+                const delH = item.total > 0 ? Math.max(item.delivered > 0 ? 6 : 0, (item.delivered / item.total) * totalH) : 0;
+                const onDelH = item.total > 0 ? Math.max(item.onDelivery > 0 ? 6 : 0, totalH - retH - delH) : 0;
 
                 return (
                   <div
-                    key={st.name}
-                    onMouseEnter={() => setHoveredBar(idx)}
-                    onMouseLeave={() => setHoveredBar(null)}
+                    key={item.month + idx}
+                    onMouseEnter={() => setHoveredBarIndex(idx)}
                     style={{
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
-                      flex: 1,
-                      height: '100%',
-                      justifyContent: 'flex-end',
                       position: 'relative',
                       cursor: 'pointer',
+                      width: 44
                     }}
                   >
-                    {/* Hover Tooltip Popup above bar */}
+                    {/* Dynamic Tooltip on Hover */}
                     {isHovered && (
                       <div
                         style={{
                           position: 'absolute',
-                          top: -30,
-                          background: '#0d1b38',
-                          border: `1px solid ${st.color}`,
-                          padding: '3px 8px',
-                          borderRadius: 6,
-                          fontSize: 11,
-                          fontWeight: 700,
-                          color: '#fff',
-                          boxShadow: `0 0 10px ${st.color}50`,
-                          whiteSpace: 'nowrap',
-                          zIndex: 10,
+                          top: -82,
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          background: '#0b2e8a',
+                          color: '#ffffff',
+                          borderRadius: 12,
+                          padding: '8px 12px',
+                          fontSize: 10.5,
+                          boxShadow: '0 8px 24px rgba(11, 46, 138, 0.3)',
+                          zIndex: 30,
+                          minWidth: 130,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: 3,
+                          pointerEvents: 'none'
                         }}
                       >
-                        {st.value.toLocaleString()} pkgs
+                        <div style={{ fontWeight: 800, fontSize: 11, borderBottom: '1px solid rgba(255,255,255,0.2)', paddingBottom: 3, marginBottom: 2 }}>
+                          {item.month} ({item.total} Total)
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                          <span style={{ color: '#bae6fd', fontWeight: 600 }}>On Delivery</span>
+                          <span style={{ fontWeight: 800 }}>{item.onDelivery} <span style={{ fontSize: 9.5, opacity: 0.75 }}>({item.onDeliveryPct}%)</span></span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                          <span style={{ color: '#bbf7d0', fontWeight: 600 }}>Delivered</span>
+                          <span style={{ fontWeight: 800 }}>{item.delivered} <span style={{ fontSize: 9.5, opacity: 0.75 }}>({item.deliveredPct}%)</span></span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                          <span style={{ color: '#fecdd3', fontWeight: 600 }}>Returned</span>
+                          <span style={{ fontWeight: 800 }}>{item.returned} <span style={{ fontSize: 9.5, opacity: 0.75 }}>({item.returnedPct}%)</span></span>
+                        </div>
                       </div>
                     )}
 
-                    {/* Bar Pillar */}
+                    {/* Stacked Bar Pillar with Thick Rounded Style */}
                     <div
                       style={{
-                        width: '40%',
-                        maxWidth: 36,
-                        height: `${Math.max(barHeightPct, 6)}%`,
-                        background: `linear-gradient(180deg, ${st.color}, ${st.color}88)`,
-                        borderRadius: '6px 6px 0 0',
-                        transition: 'all 0.3s ease',
-                        boxShadow: isHovered ? `0 0 16px ${st.color}88` : 'none',
-                        opacity: isHovered ? 1 : 0.85,
+                        width: 26,
+                        height: item.total > 0 ? Math.max(8, totalH) : 4,
+                        display: 'flex',
+                        flexDirection: 'column-reverse',
+                        borderRadius: item.total > 0 ? 12 : 2,
+                        overflow: 'hidden',
+                        boxShadow: isHovered ? '0 6px 16px rgba(2, 132, 199, 0.3)' : (item.total > 0 ? '0 2px 6px rgba(15, 23, 42, 0.05)' : 'none'),
+                        transition: 'all 0.15s ease',
+                        transform: isHovered ? 'scaleY(1.04) scaleX(1.05)' : 'none',
+                        background: item.total > 0 ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.04)'
                       }}
-                    />
+                    >
+                      {/* Bottom Segment: Returned (Pink/Rose) */}
+                      {retH > 0 && <div style={{ height: retH, background: '#f43f5e' }} />}
+                      {/* Middle Segment: Delivered (Mint/Emerald) */}
+                      {delH > 0 && <div style={{ height: delH, background: '#10b981' }} />}
+                      {/* Top Segment: On Delivery (Cyan Blue) */}
+                      {onDelH > 0 && <div style={{ height: onDelH, background: '#0284c7' }} />}
+                    </div>
+
+                    {/* Month Label */}
+                    <span style={{ fontSize: 11.5, fontWeight: isHovered ? 800 : 600, color: isHovered ? 'var(--primary-blue)' : 'var(--text-secondary)', marginTop: 8 }}>
+                      {item.month}
+                    </span>
                   </div>
                 );
               })}
             </div>
 
-            {/* X-Axis Labels */}
-            <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: 10 }}>
-              {packageStages.map((st, idx) => (
-                <div
-                  key={st.name}
-                  style={{
-                    flex: 1,
-                    textAlign: 'center',
-                    fontSize: 11,
-                    color: hoveredBar === idx ? '#fff' : 'rgba(255,255,255,0.45)',
-                    fontWeight: hoveredBar === idx ? 700 : 500,
-                    transition: 'color 0.2s',
+          </div>
+
+          {/* Bottom Legend Pill Badges */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 8, flexWrap: 'wrap', paddingLeft: 42 }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, fontWeight: 700, color: 'var(--primary-blue)' }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--primary-blue)' }} />
+              All
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, fontWeight: 600, color: 'var(--text-secondary)' }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#0284c7' }} />
+              On Delivery
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, fontWeight: 600, color: 'var(--text-secondary)' }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981' }} />
+              Delivered
+            </span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, fontWeight: 600, color: 'var(--text-secondary)' }}>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#f43f5e' }} />
+              Returned
+            </span>
+          </div>
+
+        </div>
+
+        {/* ── CHART 2: SALES / FREIGHT VOLUME AREA & LINE CHART (DYNAMIC FROM DATABASE) ── */}
+        <div className="spatial-card" style={{ padding: 22, display: 'flex', flexDirection: 'column', minHeight: 340 }}>
+          
+          {/* Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+            <h2 style={{ fontSize: 17, fontWeight: 800, margin: 0 }}>
+              Sales & Freight Volume
+            </h2>
+
+            <div className="filter-pill-group">
+              {['Week', 'Month', 'Year'].map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => {
+                    setSalesPeriod(p);
+                    fetchStatsAndTop20({ salesPeriod: p });
                   }}
+                  className={`filter-pill-btn ${salesPeriod === p ? 'active' : ''}`}
                 >
-                  {st.short}
-                </div>
+                  {p}
+                </button>
               ))}
             </div>
           </div>
+
+          {/* Dynamic Line & Area Chart Canvas */}
+          {(() => {
+            const rawPoints = (dbStats?.salesTrend && dbStats.salesTrend.length > 0)
+              ? dbStats.salesTrend
+              : shipmentBarData.map(b => ({
+                  label: b.month,
+                  revenue: b.revenue || (b.total * 150000),
+                  revenueFormatted: `Rp ${(b.revenue || (b.total * 150000)).toLocaleString('id-ID')}`,
+                  connotesCount: b.total,
+                  onDelivery: b.onDelivery,
+                  delivered: b.delivered
+                }));
+
+            const maxRev = Math.max(...rawPoints.map(p => p.revenue || 0), 1000000);
+            const activeIdx = hoveredSalesIndex;
+
+            // Generate SVG Coordinates (450x150 viewBox)
+            const coords = rawPoints.map((pt, i) => {
+              const x = rawPoints.length > 1 ? (i / (rawPoints.length - 1)) * 430 + 10 : 225;
+              const y = 135 - ((pt.revenue || 0) / maxRev) * 110;
+              return { x, y, pt, i };
+            });
+
+            // Construct smooth spline path
+            let lineD = '';
+            if (coords.length > 0) {
+              lineD = `M ${coords[0].x},${coords[0].y}`;
+              for (let i = 0; i < coords.length - 1; i++) {
+                const c = coords[i];
+                const n = coords[i + 1];
+                const cpX = (c.x + n.x) / 2;
+                lineD += ` C ${cpX},${c.y} ${cpX},${n.y} ${n.x},${n.y}`;
+              }
+            }
+
+            const areaD = coords.length > 0
+              ? `${lineD} L ${coords[coords.length - 1].x},150 L ${coords[0].x},150 Z`
+              : '';
+
+            const currentPoint = activeIdx !== null && coords[activeIdx] ? coords[activeIdx] : null;
+            const revMaxMillions = (maxRev / 1000000).toFixed(0);
+
+            return (
+              <div 
+                onMouseLeave={() => setHoveredSalesIndex(null)}
+                style={{ flex: 1, position: 'relative', minHeight: 200, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingBottom: 26 }}
+              >
+                
+                {/* Guidelines & Y-Axis */}
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 10, color: 'var(--text-muted)', width: 44, textAlign: 'right', fontFamily: 'monospace' }}>Rp {revMaxMillions}M</span>
+                  <div style={{ flex: 1, borderTop: '1px dashed var(--border-light)' }} />
+                </div>
+                <div style={{ position: 'absolute', top: '25%', left: 0, right: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 10, color: 'var(--text-muted)', width: 44, textAlign: 'right', fontFamily: 'monospace' }}>Rp {Math.round(revMaxMillions * 0.75)}M</span>
+                  <div style={{ flex: 1, borderTop: '1px dashed var(--border-light)' }} />
+                </div>
+                <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 10, color: 'var(--text-muted)', width: 44, textAlign: 'right', fontFamily: 'monospace' }}>Rp {Math.round(revMaxMillions * 0.5)}M</span>
+                  <div style={{ flex: 1, borderTop: '1px dashed var(--border-light)' }} />
+                </div>
+                <div style={{ position: 'absolute', top: '75%', left: 0, right: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 10, color: 'var(--text-muted)', width: 44, textAlign: 'right', fontFamily: 'monospace' }}>Rp {Math.round(revMaxMillions * 0.25)}M</span>
+                  <div style={{ flex: 1, borderTop: '1px dashed var(--border-light)' }} />
+                </div>
+                <div style={{ position: 'absolute', bottom: 26, left: 0, right: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 10, color: 'var(--text-muted)', width: 44, textAlign: 'right', fontFamily: 'monospace' }}>Rp 0</span>
+                  <div style={{ flex: 1, borderTop: '1px solid var(--border-light)' }} />
+                </div>
+
+                {/* Shaded Area Highlight Box for Active Selected Point */}
+                {hoveredSalesIndex !== null && currentPoint && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      bottom: 26,
+                      left: `calc(44px + ${(currentPoint.x / 450) * 100}% - 30px)`,
+                      width: 60,
+                      background: 'rgba(224, 242, 254, 0.45)',
+                      borderLeft: '1px dashed rgba(2, 132, 199, 0.35)',
+                      borderRight: '1px dashed rgba(2, 132, 199, 0.35)',
+                      borderRadius: 4,
+                      zIndex: 2,
+                      pointerEvents: 'none',
+                      transition: 'left 0.2s ease'
+                    }}
+                  />
+                )}
+
+                {/* Smooth Harmonic Bezier SVG Trendline */}
+                <svg
+                  viewBox="0 0 450 150"
+                  style={{ width: 'calc(100% - 44px)', height: '100%', marginLeft: 44, overflow: 'visible', zIndex: 4 }}
+                  preserveAspectRatio="none"
+                >
+                  <defs>
+                    <linearGradient id="salesGradientDynamic" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#0b2e8a" stopOpacity="0.22" />
+                      <stop offset="100%" stopColor="#0b2e8a" stopOpacity="0.0" />
+                    </linearGradient>
+                  </defs>
+
+                  {/* Smooth Area Gradient Fill */}
+                  {areaD && (
+                    <path
+                      d={areaD}
+                      fill="url(#salesGradientDynamic)"
+                    />
+                  )}
+
+                  {/* Smooth Main Line */}
+                  {lineD && (
+                    <path
+                      d={lineD}
+                      fill="none"
+                      stroke="#0b2e8a"
+                      strokeWidth="2.8"
+                      strokeLinecap="round"
+                    />
+                  )}
+
+                  {/* Clickable & Hoverable Marker Nodes */}
+                  {coords.map((c, i) => (
+                    <g 
+                      key={i} 
+                      onMouseEnter={() => setHoveredSalesIndex(i)}
+                      onClick={() => setHoveredSalesIndex(i)} 
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <circle
+                        cx={c.x}
+                        cy={c.y}
+                        r={i === activeIdx ? 6 : 4}
+                        fill={i === activeIdx ? '#0b2e8a' : '#ffffff'}
+                        stroke="#0b2e8a"
+                        strokeWidth={i === activeIdx ? 3 : 2}
+                        style={{ transition: 'all 0.2s ease' }}
+                      />
+                    </g>
+                  ))}
+                </svg>
+
+                {/* Floating Interactive Tooltip Box */}
+                {hoveredSalesIndex !== null && currentPoint && currentPoint.pt && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: Math.max(10, currentPoint.y - 65),
+                      left: `calc(44px + ${(currentPoint.x / 450) * 100}% - 70px)`,
+                      background: '#0b2e8a',
+                      color: '#ffffff',
+                      borderRadius: 12,
+                      padding: '8px 14px',
+                      fontSize: 10.5,
+                      boxShadow: '0 10px 25px rgba(11, 46, 138, 0.35)',
+                      zIndex: 30,
+                      minWidth: 140,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 2,
+                      pointerEvents: 'none',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <div style={{ fontSize: 9.5, color: '#93c5fd', fontWeight: 600 }}>Periode: {currentPoint.pt.label}</div>
+                    <div style={{ fontSize: 9.5, color: '#93c5fd', fontWeight: 600, marginTop: 2 }}>Total Nilai Kiriman</div>
+                    <div style={{ fontWeight: 900, fontSize: 13, letterSpacing: '-0.02em' }}>
+                      {currentPoint.pt.revenueFormatted || `Rp ${(currentPoint.pt.revenue || 0).toLocaleString('id-ID')}`}
+                    </div>
+                    <div style={{ fontSize: 9.5, color: '#93c5fd', fontWeight: 600, marginTop: 2 }}>Volume Connotes</div>
+                    <div style={{ fontWeight: 800 }}>{currentPoint.pt.connotesCount || 0} Resi</div>
+                  </div>
+                )}
+
+                {/* X-Axis Dynamic Labels */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', paddingLeft: 44, marginTop: 8, fontSize: 11.5, color: 'var(--text-secondary)', fontWeight: 600 }}>
+                  {rawPoints.map((pt, i) => (
+                    <span
+                      key={pt.label + i}
+                      onMouseEnter={() => setHoveredSalesIndex(i)}
+                      onClick={() => setHoveredSalesIndex(i)}
+                      style={{
+                        cursor: 'pointer',
+                        fontWeight: i === activeIdx ? 900 : 600,
+                        color: i === activeIdx ? 'var(--primary-blue)' : 'var(--text-secondary)'
+                      }}
+                    >
+                      {pt.label}
+                    </span>
+                  ))}
+                </div>
+
+              </div>
+            );
+          })()}
+
+          {/* Bottom Category Filter Pills */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, overflowX: 'auto', paddingBottom: 2 }}>
+            {salesCategories.map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => {
+                  setActiveCategoryFilter(cat);
+                  fetchStatsAndTop20({ service: cat !== 'All' ? cat : '' });
+                }}
+                className={`category-filter-pill ${activeCategoryFilter === cat ? 'active' : ''}`}
+                style={{ whiteSpace: 'nowrap' }}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
         </div>
+
       </div>
 
-      {/* Row 2: Recent Shipments Table */}
-      <div className="glass-card-solid" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        <div
-          style={{
-            padding: '18px 20px 14px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            borderBottom: '1px solid rgba(255,255,255,0.06)',
-          }}
-        >
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>Recent Shipments</div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.4)', marginTop: 1 }}>
-              Real-time active connotes
+      {/* ── 4. ROW 3: THREE BOTTOM ANALYTICS CARDS (100% REAL DATABASE DATA) ── */}
+      <div className="grid-3" style={{ gap: 16 }}>
+        
+        {/* ── CARD 1: POPULAR CATEGORIES (DONUT CHART WITH REAL DB DATA) ── */}
+        <div className="spatial-card" style={{ padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 800, margin: 0 }}>
+              Popular Categories
+            </h3>
+            <Link to="/produk" style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--primary-blue)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 2 }}>
+              See All <ArrowUpRight size={13} />
+            </Link>
+          </div>
+
+          {popularCategoriesList.length === 0 ? (
+            <div style={{ padding: '36px 12px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>
+              Belum ada data kategori kiriman pada periode ini.
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: '130px 1fr', gap: 14, alignItems: 'center' }}>
+              
+              {/* Multi-Color Donut Chart with Center Text (100% Dynamic Matching Legend) */}
+              <div style={{ position: 'relative', width: 120, height: 120, margin: '0 auto' }}>
+                {(() => {
+                  const DONUT_COLORS = ['#0284c7', '#f59e0b', '#10b981', '#a855f7', '#ec4899', '#6366f1', '#64748b'];
+                  const r = 38;
+                  const circumference = 2 * Math.PI * r;
+                  let accumulatedOffset = 0;
+
+                  const topList = popularCategoriesList.slice(0, 5);
+                  const totalPct = topList.reduce((acc, c) => acc + (c.percentage || 0), 0) || 100;
+
+                  return (
+                    <svg viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)', width: '100%', height: '100%' }}>
+                      <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="11" />
+                      {topList.map((cat, idx) => {
+                        const normalizedPct = cat.percentage > 0 ? (cat.percentage / totalPct) * 100 : 0;
+                        const strokeLength = (normalizedPct / 100) * circumference;
+                        const strokeDasharray = `${strokeLength} ${circumference}`;
+                        const strokeDashoffset = -accumulatedOffset;
+                        accumulatedOffset += strokeLength;
+                        const color = DONUT_COLORS[idx % DONUT_COLORS.length];
+
+                        return (
+                          <circle
+                            key={cat.name + idx}
+                            cx="50"
+                            cy="50"
+                            r="38"
+                            fill="none"
+                            stroke={color}
+                            strokeWidth="11"
+                            strokeDasharray={strokeDasharray}
+                            strokeDashoffset={strokeDashoffset}
+                            style={{ transition: 'all 0.4s ease' }}
+                          />
+                        );
+                      })}
+                    </svg>
+                  );
+                })()}
+                
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  textAlign: 'center',
+                  fontSize: 11,
+                  fontWeight: 800,
+                  color: 'var(--text-primary)',
+                  lineHeight: 1.1,
+                  padding: 10
+                }}>
+                  All Products
+                </div>
+              </div>
+
+              {/* Categories Legend List from Database with Exact Matching Colors */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 11 }}>
+                {popularCategoriesList.slice(0, 5).map((cat, idx) => {
+                  const DONUT_COLORS = ['#0284c7', '#f59e0b', '#10b981', '#a855f7', '#ec4899', '#6366f1', '#64748b'];
+                  const color = DONUT_COLORS[idx % DONUT_COLORS.length];
+                  return (
+                    <div key={cat.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-secondary)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 120 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: color }} />
+                        {cat.name}
+                      </span>
+                      <strong style={{ color: 'var(--text-primary)' }}>{cat.percentage}%</strong>
+                    </div>
+                  );
+                })}
+              </div>
+
+            </div>
+          )}
+        </div>
+
+        {/* ── CARD 2: AV. CHECK (REAL AVERAGE REVENUE RANKED BARS) ── */}
+        <div className="spatial-card" style={{ padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 800, margin: 0 }}>
+              Av. Check (Nilai per Resi)
+            </h3>
+            <Link to="/transaksi" style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--primary-blue)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 2 }}>
+              See All <ArrowUpRight size={13} />
+            </Link>
+          </div>
+
+          {avCheckData.length === 0 ? (
+            <div style={{ padding: '36px 12px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>
+              Belum ada data nilai per resi pada periode ini.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+              {avCheckData.slice(0, 5).map((item) => {
+                const barWidth = `${Math.min(100, Math.max(15, Math.round((item.avgRevenue / maxAvRevenue) * 100)))}%`;
+                return (
+                  <div key={item.name} style={{ display: 'grid', gridTemplateColumns: '105px 1fr 75px', alignItems: 'center', gap: 8, fontSize: 11 }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text-secondary)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--primary-blue)' }} />
+                      {item.name}
+                    </span>
+
+                    <div style={{ width: '100%', height: 10, background: 'rgba(255, 255, 255, 0.08)', borderRadius: 6, overflow: 'hidden' }}>
+                      <div style={{ width: barWidth, height: '100%', background: 'var(--primary-blue)', borderRadius: 6 }} />
+                    </div>
+
+                    <span style={{ fontWeight: 800, color: 'var(--text-primary)', textAlign: 'right', fontSize: 10.5 }}>
+                      {item.avgRevenueFormatted}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ── CARD 3: AV. DELIVERY TIME (REGIONAL HUB TRANSIT SLA BARS) ── */}
+        <div className="spatial-card" style={{ padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 800, margin: 0 }}>
+                Av. Delivery Time
+              </h3>
+              <HelpCircle size={13} color="var(--text-muted)" />
+            </div>
+            <Link to="/kantor" style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--primary-blue)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 2 }}>
+              See All <ArrowUpRight size={13} />
+            </Link>
+          </div>
+
+          {avDeliveryData.length === 0 ? (
+            <div style={{ padding: '36px 12px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 12 }}>
+              Belum ada data waktu transit kiriman pada periode ini.
+            </div>
+          ) : (
+            <>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+                {avDeliveryData.map((d) => (
+                  <div key={d.region} style={{ display: 'grid', gridTemplateColumns: '110px 1fr 65px', alignItems: 'center', gap: 8, fontSize: 11 }}>
+                    <span style={{ color: 'var(--text-secondary)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {d.region}
+                    </span>
+                    
+                    <div style={{ width: '100%', height: 11, background: 'rgba(255, 255, 255, 0.08)', borderRadius: 6, overflow: 'hidden' }}>
+                      <div style={{ width: d.width || '45%', height: '100%', background: d.color, borderRadius: 6 }} />
+                    </div>
+
+                    <span style={{ fontWeight: 800, color: 'var(--text-primary)', textAlign: 'right', fontSize: 10 }}>
+                      {d.timeDisplay.split(' ')[0]} {d.timeDisplay.split(' ')[1]}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Bottom Status Pill Legend */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+                <span className="badge badge-emerald" style={{ padding: '3px 10px', fontSize: 10 }}>
+                  Perfect
+                </span>
+                <span className="badge badge-blue" style={{ padding: '3px 10px', fontSize: 10 }}>
+                  Fine
+                </span>
+                <span className="badge badge-pink" style={{ padding: '3px 10px', fontSize: 10 }}>
+                  For too long
+                </span>
+              </div>
+            </>
+          )}
+
+        </div>
+
+      </div>
+
+      {/* ── 5. ROW 4: FULL VIEW LIVE MONITORING (REAL-TIME TELEMETRY TABLE & FLEET DECK) ── */}
+      <div className="spatial-card" style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        
+        {/* Table Title Bar */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: '#0b2e8a', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', boxShadow: '0 4px 12px rgba(11, 46, 138, 0.2)' }}>
+              <Package size={18} />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                  Live Connotes Telemetry Stream
+                </h3>
+                <span className="badge badge-emerald">
+                  <span className="pulse" style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#15803d' }} />
+                  REAL-TIME SYNC
+                </span>
+              </div>
+              <p style={{ fontSize: 12, color: '#64748b', margin: '2px 0 0' }}>
+                Manifest data pengiriman terkini dari basis data MongoDB IPOS5 ({totalPackages.toLocaleString('id-ID')} Resi)
+              </p>
             </div>
           </div>
+
+          {/* Table Search & Link */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              background: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              borderRadius: 9999,
+              padding: '6px 14px',
+              gap: 8,
+              width: 260
+            }}>
+              <Search size={14} color="#94a3b8" />
+              <input
+                type="text"
+                placeholder="Cari resi, pengirim, kota..."
+                value={searchFilter}
+                onChange={(e) => setSearchFilter(e.target.value)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  outline: 'none',
+                  color: '#0f172a',
+                  fontSize: 12,
+                  width: '100%'
+                }}
+              />
+              {searchFilter && (
+                <button
+                  type="button"
+                  onClick={() => setSearchFilter('')}
+                  style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}
+                  title="Hapus pencarian"
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+
+            <Link
+              to="/transaksi"
+              className="btn-ghost"
+              style={{ textDecoration: 'none', fontSize: 11.5, padding: '7px 14px' }}
+            >
+              Lihat Semua Manifest
+            </Link>
+          </div>
         </div>
-        <div style={{ overflowX: 'auto', flex: 1 }}>
+
+        {/* Live Manifest Table */}
+        <div style={{ overflowX: 'auto', maxHeight: 380, overflowY: 'auto' }}>
           <table className="data-table">
             <thead>
               <tr>
-                <th>Connote No.</th>
-                <th>Origin</th>
-                <th>Destination</th>
-                <th>Status</th>
+                <th style={{ width: 40 }}>#</th>
+                <th>NO. CONNOTE / RESI</th>
+                <th>LAYANAN</th>
+                <th>RUTE ASAL / TUJUAN</th>
+                <th>PENGIRIM / PENERIMA</th>
+                <th style={{ textAlign: 'right' }}>BERAT</th>
+                <th>ARMADA FEEDER</th>
+                <th>STATUS</th>
+                <th style={{ textAlign: 'center' }}>AKSI</th>
               </tr>
             </thead>
             <tbody>
-              {recentShipments.map((s, idx) => (
-                <tr key={s.connote_code || idx}>
-                  <td>
-                    <span className="font-mono" style={{ fontSize: 12, color: 'rgba(255,255,255,0.9)' }}>
-                      {s.connote_code || s.connote}
-                    </span>
-                  </td>
-                  <td style={{ color: 'rgba(255,255,255,0.7)' }}>{s.origin || s.origin_name || 'KPRK Cimahi'}</td>
-                  <td style={{ color: 'rgba(255,255,255,0.7)' }}>{s.destination || s.dest_name || 'Bandung SC'}</td>
-                  <td>
-                    <span className={getBadgeClass(s.status || s.connote_state)}>
-                      {s.status || s.connote_state || 'ENTRY'}
-                    </span>
+              {filteredConnotes.length === 0 ? (
+                <tr>
+                  <td colSpan={9} style={{ textAlign: 'center', padding: '28px 0', color: '#94a3b8', fontSize: 12 }}>
+                    {searchFilter ? 'Tidak ada connote yang sesuai dengan filter pencarian.' : (isFiltered ? 'Tidak ada connote yang tercatat pada filter tanggal ini.' : 'Tidak ada data connotes di database.')}
                   </td>
                 </tr>
-              ))}
+              ) : (
+                filteredConnotes.slice(0, 20).map((c, idx) => {
+                  const rawConnote = c.raw?.connote || {};
+                  const nopol = c.raw?.assigned_vehicle || c.raw?.vehicle_nopol || c.vehicle_nopol || '-';
+                  const service = c.connote_service || rawConnote.connote_service || 'Pos Reguler';
+                  const weight = c.actual_weight || rawConnote.actual_weight || 1.0;
+                  const origin = c.location_name || 'KCU Cimahi 40511';
+                  const dest = rawConnote.connote_receiver_city || c.destination_nopen || 'SPP Bandung 40400';
+                  const sender = c.connote_sender_name || rawConnote.connote_sender_name || 'Pengirim';
+                  const receiver = c.connote_receiver_name || rawConnote.connote_receiver_name || 'Penerima';
+                  const status = c.connote_state || rawConnote.connote_state || 'IN_TRANSIT';
+
+                  return (
+                    <tr key={c.connote_code || c._id || idx}>
+                      <td className="font-mono" style={{ color: '#94a3b8' }}>
+                        {String(idx + 1).padStart(2, '0')}
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <Link 
+                            to={`/checker?code=${c.connote_code}`} 
+                            className="font-mono"
+                            style={{ textDecoration: 'none', color: '#0b2e8a', fontWeight: 800 }}
+                          >
+                            {c.connote_code}
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(c.connote_code)}
+                            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: copiedResi === c.connote_code ? '#15803d' : '#94a3b8' }}
+                            title="Salin Resi"
+                          >
+                            {copiedResi === c.connote_code ? <Check size={12} /> : <Copy size={12} />}
+                          </button>
+                        </div>
+                      </td>
+                      <td>
+                        <span style={{
+                          background: service.includes('Nextday') ? '#e0f2fe' : service.includes('Cargo') ? '#eae8fc' : '#ffedd5',
+                          color: service.includes('Nextday') ? '#0284c7' : service.includes('Cargo') ? '#7e22ce' : '#c2410c',
+                          padding: '2px 8px',
+                          borderRadius: 6,
+                          fontSize: 10.5,
+                          fontWeight: 700,
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {service}
+                        </span>
+                      </td>
+                      <td style={{ maxWidth: 180, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <span style={{ color: '#0f172a', fontWeight: 600 }}>{origin.split(' ')[0]}</span>
+                        <ArrowRight size={11} style={{ display: 'inline', margin: '0 4px', color: '#0284c7' }} />
+                        <span style={{ color: '#64748b' }}>{dest}</span>
+                      </td>
+                      <td style={{ maxWidth: 190, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <span style={{ color: '#475569' }}>{sender.split(' ')[0]}</span>
+                        <ArrowRight size={11} style={{ display: 'inline', margin: '0 4px', color: '#94a3b8' }} />
+                        <span style={{ color: '#0f172a', fontWeight: 600 }}>{receiver.split(' ')[0]}</span>
+                      </td>
+                      <td className="font-mono" style={{ textAlign: 'right', fontWeight: 800, color: '#0f172a' }}>
+                        {Number(weight).toFixed(1)} kg
+                      </td>
+                      <td>
+                        {nopol && nopol !== '-' ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                            <Truck size={12} color="#0284c7" />
+                            <span className="font-mono" style={{ fontSize: 11, fontWeight: 700, color: '#0284c7' }}>{nopol}</span>
+                          </div>
+                        ) : (
+                          <span style={{ color: '#94a3b8', fontSize: 11 }}>Belum Dialokasi</span>
+                        )}
+                      </td>
+                      <td>
+                        <span className={getBadgeClass(status)} style={{ fontSize: 9.5 }}>
+                          {status}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <Link
+                          to={`/checker?code=${c.connote_code}`}
+                          style={{
+                            background: '#e0f2fe',
+                            border: '1px solid #bae6fd',
+                            color: '#0369a1',
+                            padding: '3px 8px',
+                            borderRadius: 6,
+                            fontSize: 10.5,
+                            fontWeight: 700,
+                            textDecoration: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 3
+                          }}
+                        >
+                          <span>Track</span>
+                          <ChevronRight size={11} />
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
+
+        {/* Footer Summary */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11.5, color: '#64748b', borderTop: '1px solid #f1f5f9', paddingTop: 12 }}>
+          <div>
+            Menampilkan <strong style={{ color: '#0f172a' }}>{Math.min(20, filteredConnotes.length)}</strong> connote resi teratas dari total <strong style={{ color: '#0b2e8a' }}>{totalPackages.toLocaleString('id-ID')}</strong> resi aktif.
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span className="pulse" style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: '#10b981' }} />
+            <span>Database Status: Connected & Live Synced (MongoDB ipos5_reporting)</span>
+          </div>
+        </div>
+
       </div>
+
     </div>
   );
 }

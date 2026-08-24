@@ -91,21 +91,11 @@ export default function CsvImportModal({ isOpen, onClose, onSuccess }) {
 
   return (
     <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 999,
-        background: 'rgba(4, 9, 26, 0.82)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 20
-      }}
+      className="modal-overlay"
+      style={{ zIndex: 999 }}
     >
       <div
-        className="glass-card-solid gradient-border-card"
+        className="modal-content"
         style={{
           width: '100%',
           maxWidth: 720,
@@ -113,9 +103,10 @@ export default function CsvImportModal({ isOpen, onClose, onSuccess }) {
           display: 'flex',
           flexDirection: 'column',
           borderRadius: 20,
-          background: 'linear-gradient(135deg, rgba(13,27,56,0.95), rgba(6,13,31,0.98))',
-          border: '1.5px solid rgba(56,189,248,0.3)',
-          boxShadow: '0 16px 48px rgba(0,0,0,0.6)',
+          background: '#ffffff',
+          border: '1px solid #e2e8f0',
+          color: '#0f172a',
+          padding: 0,
           overflow: 'hidden'
         }}
       >
@@ -123,11 +114,11 @@ export default function CsvImportModal({ isOpen, onClose, onSuccess }) {
         <div
           style={{
             padding: '18px 24px',
-            borderBottom: '1px solid rgba(255,255,255,0.08)',
+            borderBottom: '1px solid #e2e8f0',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            background: 'rgba(255,255,255,0.02)'
+            background: '#f8fafc'
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -136,21 +127,21 @@ export default function CsvImportModal({ isOpen, onClose, onSuccess }) {
                 width: 36,
                 height: 36,
                 borderRadius: 10,
-                background: 'linear-gradient(135deg, rgba(56,189,248,0.2), rgba(16,185,129,0.2))',
-                border: '1px solid rgba(56,189,248,0.4)',
+                background: '#e0f2fe',
+                border: '1px solid #bae6fd',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
               }}
             >
-              <Upload size={18} color="#38bdf8" />
+              <Upload size={18} color="#0284c7" />
             </div>
             <div>
-              <div style={{ fontSize: 16, fontWeight: 900, color: '#fff', letterSpacing: '-0.01em' }}>
-                Tooling Testing: CSV Importer Daily Operation 📥
+              <div style={{ fontSize: 16, fontWeight: 900, color: '#0f172a', letterSpacing: '-0.01em' }}>
+                CSV Importer Daily Operation
               </div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginTop: 2 }}>
-                Import data harian paket, tracking events, & kapasitas rute (Non-Production / QA Tool)
+              <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>
+                Import data harian paket, tracking events, & kapasitas rute
               </div>
             </div>
           </div>
@@ -158,15 +149,15 @@ export default function CsvImportModal({ isOpen, onClose, onSuccess }) {
           <button
             onClick={onClose}
             style={{
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.1)',
+              background: 'none',
+              border: 'none',
               borderRadius: 8,
               width: 32,
               height: 32,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: 'rgba(255,255,255,0.7)',
+              color: '#64748b',
               cursor: 'pointer'
             }}
           >
@@ -198,7 +189,7 @@ export default function CsvImportModal({ isOpen, onClose, onSuccess }) {
             <button
               className="btn-ghost"
               onClick={handleInsertSample}
-              style={{ padding: '7px 14px', fontSize: 12, borderRadius: 8, gap: 6, borderColor: 'rgba(56,189,248,0.3)', color: '#38bdf8' }}
+              style={{ padding: '7px 14px', fontSize: 12, borderRadius: 8, gap: 6 }}
             >
               <Sparkles size={14} /> Gunakan Sample CSV Testing
             </button>
@@ -216,21 +207,20 @@ export default function CsvImportModal({ isOpen, onClose, onSuccess }) {
 
           {/* Text Area Input */}
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
               Isi / Tempel Teks CSV:
             </div>
             <textarea
-              className="input-navy font-mono"
               rows={8}
               value={csvText}
               onChange={(e) => { setCsvText(e.target.value); setErrorMsg(''); }}
               placeholder="Tempel baris CSV di sini (headers: connote,office_code,office_name,event_type,event_datetime,weight_kg,origin_office,destination_office,route_code,vehicle_code,stop_sequence,stop_office)..."
-              style={{ width: '100%', fontSize: 11.5, lineHeight: 1.5, resize: 'vertical' }}
+              style={{ width: '100%', fontSize: 11.5, lineHeight: 1.5, resize: 'vertical', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: 10, color: '#0f172a', fontFamily: 'monospace', outline: 'none', boxSizing: 'border-box' }}
             />
           </div>
 
           {errorMsg && (
-            <div style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', padding: '10px 14px', borderRadius: 10, color: '#f87171', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', padding: '10px 14px', borderRadius: 10, color: '#b91c1c', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
               <AlertTriangle size={16} /> {errorMsg}
             </div>
           )}
@@ -239,8 +229,8 @@ export default function CsvImportModal({ isOpen, onClose, onSuccess }) {
           {result && result.summary && (
             <div
               style={{
-                background: 'rgba(16,185,129,0.08)',
-                border: '1px solid rgba(16,185,129,0.25)',
+                background: '#f0fdf4',
+                border: '1px solid #bbf7d0',
                 borderRadius: 12,
                 padding: 18,
                 display: 'flex',
@@ -249,9 +239,9 @@ export default function CsvImportModal({ isOpen, onClose, onSuccess }) {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 800, color: '#10b981' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 800, color: '#16a34a' }}>
                   <CheckCircle2 size={16} /> Import Selesai! Tag Batch ID:
-                  <span className="font-mono" style={{ background: 'rgba(16,185,129,0.2)', padding: '2px 8px', borderRadius: 6, color: '#fff' }}>
+                  <span style={{ background: '#ffffff', border: '1px solid #bbf7d0', padding: '2px 8px', borderRadius: 6, color: '#0b2e8a', fontFamily: 'monospace' }}>
                     {result.summary.import_batch_id}
                   </span>
                 </div>
@@ -260,7 +250,7 @@ export default function CsvImportModal({ isOpen, onClose, onSuccess }) {
                   onClick={() => handleDeleteBatch(result.summary.import_batch_id)}
                   disabled={deletingBatch}
                   className="btn-ghost"
-                  style={{ padding: '4px 10px', fontSize: 11, borderRadius: 6, color: '#ef4444', borderColor: 'rgba(239,68,68,0.3)', gap: 4 }}
+                  style={{ padding: '4px 10px', fontSize: 11, borderRadius: 6, color: '#ef4444', borderColor: '#fecaca', gap: 4 }}
                 >
                   <Trash2 size={12} /> {deletingBatch ? 'Menghapus...' : 'Rollback / Hapus Batch Ini'}
                 </button>
@@ -270,37 +260,37 @@ export default function CsvImportModal({ isOpen, onClose, onSuccess }) {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 10 }}>
                 {[
                   { label: 'Total Baris', val: result.summary.totalLines },
-                  { label: 'Baris Diproses', val: result.summary.processedLines, color: '#10b981' },
-                  { label: 'Baris Ditolak', val: result.summary.errorLines, color: result.summary.errorLines > 0 ? '#ef4444' : '#fff' },
-                  { label: 'Jumlah Paket', val: result.summary.packagesCount, color: '#38bdf8' },
-                  { label: 'Event Scanned', val: result.summary.eventsCount, color: '#f59e0b' },
+                  { label: 'Baris Diproses', val: result.summary.processedLines, color: '#16a34a' },
+                  { label: 'Baris Ditolak', val: result.summary.errorLines, color: result.summary.errorLines > 0 ? '#ef4444' : '#0f172a' },
+                  { label: 'Jumlah Paket', val: result.summary.packagesCount, color: '#0b2e8a' },
+                  { label: 'Event Scanned', val: result.summary.eventsCount, color: '#d97706' },
                 ].map(m => (
-                  <div key={m.label} style={{ background: 'rgba(6,13,31,0.5)', padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.06)' }}>
-                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase' }}>{m.label}</div>
-                    <div style={{ fontSize: 15, fontWeight: 900, color: m.color || '#fff' }}>{m.val}</div>
+                  <div key={m.label} style={{ background: '#ffffff', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                    <div style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>{m.label}</div>
+                    <div style={{ fontSize: 15, fontWeight: 900, color: m.color || '#0f172a', fontFamily: 'monospace' }}>{m.val}</div>
                   </div>
                 ))}
               </div>
 
               {/* Covered Dates */}
-              <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.7)' }}>
+              <div style={{ fontSize: 11.5, color: '#475569' }}>
                 <strong>Tanggal Operasional Tercover:</strong>{' '}
                 {(result.summary.datesCovered || []).map(d => (
-                  <span key={d} className="font-mono" style={{ background: 'rgba(56,189,248,0.15)', color: '#38bdf8', padding: '2px 6px', borderRadius: 4, marginRight: 6 }}>
+                  <span key={d} style={{ background: '#f0f9ff', border: '1px solid #bae6fd', color: '#0b2e8a', padding: '2px 6px', borderRadius: 4, marginRight: 6, fontFamily: 'monospace', fontWeight: 700 }}>
                     {d}
                   </span>
                 ))}
               </div>
 
-              {/* Error Line Breakdown if any */}
+              {/* Error Line Breakdown */}
               {result.errors && result.errors.length > 0 && (
-                <div style={{ marginTop: 6, borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 10 }}>
+                <div style={{ marginTop: 6, borderTop: '1px solid #e2e8f0', paddingTop: 10 }}>
                   <div style={{ fontSize: 11, fontWeight: 800, color: '#ef4444', textTransform: 'uppercase', marginBottom: 6 }}>
                     Detail Baris Ditolak ({result.errors.length} error):
                   </div>
                   <div style={{ maxHeight: 120, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
                     {result.errors.map((err, idx) => (
-                      <div key={idx} style={{ fontSize: 11, color: '#fca5a5', background: 'rgba(239,68,68,0.1)', padding: '4px 8px', borderRadius: 4 }}>
+                      <div key={idx} style={{ fontSize: 11, color: '#b91c1c', background: '#fee2e2', padding: '4px 8px', borderRadius: 4 }}>
                         Baris {err.line} (kolom {err.column}): {err.reason} (nilai: &quot;{err.value}&quot;)
                       </div>
                     ))}
@@ -316,12 +306,12 @@ export default function CsvImportModal({ isOpen, onClose, onSuccess }) {
         <div
           style={{
             padding: '16px 24px',
-            borderTop: '1px solid rgba(255,255,255,0.08)',
+            borderTop: '1px solid #e2e8f0',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'flex-end',
             gap: 12,
-            background: 'rgba(6,13,31,0.4)'
+            background: '#f8fafc'
           }}
         >
           <button className="btn-ghost" onClick={onClose}>

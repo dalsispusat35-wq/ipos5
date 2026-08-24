@@ -62,35 +62,33 @@ const Login = ({ onLoginSuccess }) => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: '#04091a',
-      backgroundImage: 'radial-gradient(circle at 50% 15%, rgba(232, 67, 31, 0.15) 0%, transparent 60%)',
+      background: '#f8fafc',
+      backgroundImage: 'radial-gradient(circle at 50% 15%, #e0f2fe 0%, #f8fafc 70%)',
       padding: 20,
       fontFamily: "'Plus Jakarta Sans', sans-serif",
-      color: '#fff',
+      color: '#0f172a',
       boxSizing: 'border-box'
     }}>
       <div style={{
         width: '100%',
         maxWidth: 440,
-        background: '#060d1f',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        border: '1.5px solid rgba(232, 67, 31, 0.35)',
+        background: '#ffffff',
+        border: '1px solid #e2e8f0',
         borderRadius: 20,
         padding: '40px 32px',
-        boxShadow: '0 25px 60px -10px rgba(0, 0, 0, 0.8), 0 0 40px rgba(232, 67, 31, 0.15)',
+        boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.08)',
         position: 'relative',
         overflow: 'hidden'
       }}>
 
-        {/* Ambient Top Glow Line */}
+        {/* Ambient Top Accent Line */}
         <div style={{
           position: 'absolute',
           top: 0,
           left: 0,
           right: 0,
-          height: 3,
-          background: 'linear-gradient(90deg, transparent, #e8431f, #38bdf8, transparent)'
+          height: 4,
+          background: 'linear-gradient(90deg, #0b2e8a, #0284c7, #e8431f)'
         }} />
 
         {/* Brand Header & Official IPOS5 Logo */}
@@ -99,12 +97,11 @@ const Login = ({ onLoginSuccess }) => {
             width: 64,
             height: 64,
             borderRadius: 18,
-            background: 'rgba(232, 67, 31, 0.12)',
-            border: '1.5px solid rgba(232, 67, 31, 0.35)',
+            background: '#f0f9ff',
+            border: '1.5px solid #bae6fd',
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 0 24px rgba(232, 67, 31, 0.25)',
             marginBottom: 16
           }}>
             <img 
@@ -114,10 +111,10 @@ const Login = ({ onLoginSuccess }) => {
             />
           </div>
 
-          <h2 style={{ fontSize: 24, fontWeight: 900, margin: '0 0 6px 0', letterSpacing: '-0.02em', color: '#fff' }}>
+          <h2 style={{ fontSize: 24, fontWeight: 900, margin: '0 0 6px 0', letterSpacing: '-0.02em', color: '#0f172a' }}>
             IPOS5 Redesign
           </h2>
-          <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.5)', margin: 0, fontWeight: 500 }}>
+          <p style={{ fontSize: 13, color: '#64748b', margin: 0, fontWeight: 600 }}>
             PT Pos Indonesia — Portal Logistik & Telemetri Rute
           </p>
         </div>
@@ -128,11 +125,11 @@ const Login = ({ onLoginSuccess }) => {
             display: 'flex',
             alignItems: 'center',
             gap: 10,
-            background: 'rgba(239, 68, 68, 0.15)',
-            border: '1px solid rgba(239, 68, 68, 0.4)',
+            background: '#fef2f2',
+            border: '1px solid #fecaca',
             borderRadius: 10,
             padding: '12px 14px',
-            color: '#fca5a5',
+            color: '#b91c1c',
             fontSize: 13,
             marginBottom: 20
           }}>
@@ -144,11 +141,11 @@ const Login = ({ onLoginSuccess }) => {
         {/* Login Form */}
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.8)', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 800, color: '#334155', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Username
             </label>
             <div style={{ position: 'relative' }}>
-              <User size={16} color="rgba(255,255,255,0.4)" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
+              <User size={16} color="#94a3b8" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
               <input
                 type="text"
                 value={username}
@@ -156,11 +153,11 @@ const Login = ({ onLoginSuccess }) => {
                 placeholder="Masukkan username (misal: admin)..."
                 style={{
                   width: '100%',
-                  background: 'rgba(255, 255, 255, 0.04)',
-                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
                   borderRadius: 10,
                   padding: '12px 14px 12px 42px',
-                  color: '#fff',
+                  color: '#0f172a',
                   fontSize: 14,
                   outline: 'none',
                   boxSizing: 'border-box',
@@ -171,11 +168,11 @@ const Login = ({ onLoginSuccess }) => {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.8)', marginBottom: 6 }}>
+            <label style={{ display: 'block', fontSize: 12, fontWeight: 800, color: '#334155', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Password
             </label>
             <div style={{ position: 'relative' }}>
-              <Lock size={16} color="rgba(255,255,255,0.4)" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
+              <Lock size={16} color="#94a3b8" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
               <input
                 type="password"
                 value={password}
@@ -183,11 +180,11 @@ const Login = ({ onLoginSuccess }) => {
                 placeholder="Masukkan password (misal: admin)..."
                 style={{
                   width: '100%',
-                  background: 'rgba(255, 255, 255, 0.04)',
-                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
                   borderRadius: 10,
                   padding: '12px 14px 12px 42px',
-                  color: '#fff',
+                  color: '#0f172a',
                   fontSize: 14,
                   outline: 'none',
                   boxSizing: 'border-box',
@@ -226,17 +223,17 @@ const Login = ({ onLoginSuccess }) => {
         <div style={{
           marginTop: 28,
           paddingTop: 20,
-          borderTop: '1px solid rgba(255,255,255,0.08)',
+          borderTop: '1px solid #f1f5f9',
           textAlign: 'center'
         }}>
-          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', margin: '0 0 10px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontWeight: 700 }}>
-            <Sparkles size={13} color="#e8431f" /> Kredensial Akun Pengujian:
+          <p style={{ fontSize: 11.5, color: '#64748b', margin: '0 0 10px 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontWeight: 700 }}>
+            <Sparkles size={13} color="#0284c7" /> Kredensial Akun Pengujian:
           </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', fontSize: 11 }}>
-            <span style={{ background: 'rgba(232,67,31,0.18)', border: '1px solid rgba(232,67,31,0.4)', padding: '4px 10px', borderRadius: 6, color: '#fff', fontWeight: 700 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', fontSize: 11.5 }}>
+            <span style={{ background: '#f0f9ff', border: '1px solid #bae6fd', padding: '4px 10px', borderRadius: 6, color: '#0369a1', fontWeight: 800 }}>
               Admin: admin / admin
             </span>
-            <span style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', padding: '4px 10px', borderRadius: 6, color: 'rgba(255,255,255,0.7)' }}>
+            <span style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '4px 10px', borderRadius: 6, color: '#475569', fontWeight: 600 }}>
               Supervisor: sari / sari123
             </span>
           </div>

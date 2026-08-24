@@ -157,19 +157,19 @@ export default function MasterRoute() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Toolbar */}
-      <div style={{ display: 'flex', alignItems: 'center' }}>
-        <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)' }}>
-          {routes.length} Active Logistics Routes (Filter Nopend Asal & Prefix Wilayah Tujuan Enabled)
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+        <div style={{ fontSize: 13, color: '#64748b', fontWeight: 600 }}>
+          {routes.length} Master Rute Logistik Aktif (Filter Nopend Asal & Prefix Wilayah Tujuan Terintegrasi)
         </div>
-        <button className="btn-primary" style={{ marginLeft: 'auto' }} onClick={() => setShowForm(true)}>
-          <Plus size={15} /> New Route Configuration
+        <button className="btn-primary" style={{ gap: 6 }} onClick={() => setShowForm(true)}>
+          <Plus size={15} /> Tambah Konfigurasi Rute
         </button>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: showForm ? '1fr 360px' : '1fr', gap: 16 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {routes.map((route) => (
-            <div key={route.id} className="glass-card-solid" style={{ overflow: 'hidden' }}>
+            <div key={route.id} className="spatial-card" style={{ overflow: 'hidden', padding: 0 }}>
               {/* Header */}
               <div
                 style={{
@@ -185,71 +185,71 @@ export default function MasterRoute() {
                   style={{
                     padding: '4px 10px',
                     borderRadius: 6,
-                    background: 'rgba(232,67,31,0.12)',
-                    border: '1px solid rgba(232,67,31,0.25)',
+                    background: '#e0f2fe',
+                    border: '1px solid #bae6fd',
                   }}
                 >
-                  <span className="font-mono" style={{ fontSize: 11.5, color: '#e8431f', fontWeight: 800 }}>
+                  <span style={{ fontSize: 11.5, color: '#0b2e8a', fontWeight: 800, fontFamily: 'monospace' }}>
                     {route.routeId}
                   </span>
                 </div>
 
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 3 }}>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a', marginBottom: 3 }}>
                     {route.name}
                   </div>
-                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ fontSize: 12, color: '#64748b', display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span>{route.origin}</span>
-                    <span style={{ color: 'rgba(255,255,255,0.2)' }}>→</span>
+                    <span style={{ color: '#cbd5e1' }}>→</span>
                     <span>{route.destination}</span>
                   </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
                   <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{route.totalDistance}</div>
-                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>Distance</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>{route.totalDistance}</div>
+                    <div style={{ fontSize: 10, color: '#94a3b8' }}>Jarak</div>
                   </div>
                   <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{route.estDuration}</div>
-                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>Est. Time</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>{route.estDuration}</div>
+                    <div style={{ fontSize: 10, color: '#94a3b8' }}>Est. Waktu</div>
                   </div>
                   <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#38bdf8' }}>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: '#0284c7' }}>
                       {route.checkpoints.length}
                     </div>
-                    <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>Stops</div>
+                    <div style={{ fontSize: 10, color: '#94a3b8' }}>Stops</div>
                   </div>
 
                   {route.expanded ? (
-                    <ChevronUp size={16} color="rgba(255,255,255,0.4)" />
+                    <ChevronUp size={16} color="#64748b" />
                   ) : (
-                    <ChevronDown size={16} color="rgba(255,255,255,0.4)" />
+                    <ChevronDown size={16} color="#64748b" />
                   )}
                 </div>
               </div>
 
               {/* Filter rules & checkpoints node list */}
               {route.expanded && (
-                <div style={{ padding: '16px 18px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 14, background: 'rgba(6,13,31,0.5)' }}>
+                <div style={{ padding: '16px 18px', borderTop: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', gap: 14, background: '#f8fafc' }}>
                   {/* Capacity Filter Configuration Bar */}
-                  <div style={{ padding: '12px 14px', borderRadius: 8, background: 'rgba(56,189,248,0.04)', border: '1px solid rgba(56,189,248,0.15)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <div style={{ fontSize: 11.5, fontWeight: 700, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <Filter size={13} /> Configured Filters for Load Capacity Calculation:
+                  <div style={{ padding: '12px 14px', borderRadius: 8, background: '#f0f9ff', border: '1px solid #bae6fd', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div style={{ fontSize: 11.5, fontWeight: 800, color: '#0284c7', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Filter size={13} /> Filter Kalkulasi Muatan Terkonfigurasi:
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 12 }}>
                       <div>
-                        <span style={{ color: 'rgba(255,255,255,0.45)', marginRight: 6 }}>Nopend Asal (Origin List):</span>
+                        <span style={{ color: '#64748b', marginRight: 6 }}>Nopend Asal (Origin List):</span>
                         {route.originNopenList && route.originNopenList.map(n => (
-                          <span key={n} className="font-mono" style={{ background: 'rgba(255,255,255,0.08)', padding: '2px 6px', borderRadius: 4, marginRight: 4, fontSize: 11, color: '#fff' }}>
+                          <span key={n} style={{ background: '#ffffff', border: '1px solid #e2e8f0', padding: '2px 6px', borderRadius: 4, marginRight: 4, fontSize: 11, color: '#0f172a', fontFamily: 'monospace', fontWeight: 600 }}>
                             {n}
                           </span>
                         ))}
                       </div>
                       <div>
-                        <span style={{ color: 'rgba(255,255,255,0.45)', marginRight: 6 }}>Filter Prefix Wilayah Tujuan:</span>
+                        <span style={{ color: '#64748b', marginRight: 6 }}>Prefix Wilayah Tujuan:</span>
                         {route.destinationPrefixFilter && route.destinationPrefixFilter.map(p => (
-                          <span key={p} className="font-mono" style={{ background: 'rgba(52,211,153,0.15)', color: '#34d399', border: '1px solid rgba(52,211,153,0.3)', padding: '2px 6px', borderRadius: 4, marginRight: 4, fontSize: 11, fontWeight: 700 }}>
+                          <span key={p} style={{ background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', padding: '2px 6px', borderRadius: 4, marginRight: 4, fontSize: 11, fontWeight: 700, fontFamily: 'monospace' }}>
                             Digit `{p}`
                           </span>
                         ))}
@@ -261,9 +261,9 @@ export default function MasterRoute() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
                     {route.checkpoints.map((cp, i) => (
                       <div key={cp.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '6px 0' }}>
-                        <div style={{ width: 10, height: 10, borderRadius: '50%', background: i === 0 ? '#e8431f' : i === route.checkpoints.length - 1 ? '#10b981' : '#38bdf8' }} />
-                        <span className="font-mono" style={{ fontSize: 11, color: '#38bdf8', width: 50 }}>{cp.code}</span>
-                        <span style={{ fontSize: 12.5, color: '#fff', fontWeight: 500 }}>{cp.name}</span>
+                        <div style={{ width: 10, height: 10, borderRadius: '50%', background: i === 0 ? '#0b2e8a' : i === route.checkpoints.length - 1 ? '#16a34a' : '#0284c7' }} />
+                        <span style={{ fontSize: 11, color: '#0b2e8a', width: 50, fontFamily: 'monospace', fontWeight: 700 }}>{cp.code}</span>
+                        <span style={{ fontSize: 12.5, color: '#0f172a', fontWeight: 600 }}>{cp.name}</span>
                       </div>
                     ))}
                   </div>
@@ -275,89 +275,87 @@ export default function MasterRoute() {
 
         {/* Add/Edit Route Form */}
         {showForm && (
-          <div className="glass-card-solid" style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div className="spatial-card" style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 14, height: 'fit-content' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>New Route Filter Config</div>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>Konfigurasi Rute Baru</div>
               <button
                 onClick={() => setShowForm(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', padding: 4 }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: 4 }}
               >
                 <X size={16} />
               </button>
             </div>
 
             <div>
-              <label style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.45)', display: 'block', marginBottom: 5 }}>Route Code (ID)</label>
+              <label style={{ fontSize: 11.5, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 5 }}>Kode Rute (ID)</label>
               <input
-                className="input-navy"
-                placeholder="e.g. RTE-6 / RTE-7"
+                placeholder="misal: RTE-6 / RTE-7"
                 value={form.routeId}
                 onChange={(e) => setForm((prev) => ({ ...prev, routeId: e.target.value }))}
+                style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }}
               />
             </div>
 
             <div>
-              <label style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.45)', display: 'block', marginBottom: 5 }}>Route Name</label>
+              <label style={{ fontSize: 11.5, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 5 }}>Nama Rute</label>
               <input
-                className="input-navy"
-                placeholder="e.g. SPP Bandung to SPP Jakarta"
+                placeholder="misal: SPP Bandung ke SPP Jakarta"
                 value={form.name}
                 onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+                style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }}
               />
             </div>
 
             <div>
-              <label style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.45)', display: 'block', marginBottom: 5 }}>Origin Hub Name</label>
+              <label style={{ fontSize: 11.5, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 5 }}>Nama Hub Asal</label>
               <input
-                className="input-navy"
-                placeholder="e.g. SPP Bandung (40000)"
+                placeholder="misal: SPP Bandung (40000)"
                 value={form.origin}
                 onChange={(e) => setForm((prev) => ({ ...prev, origin: e.target.value }))}
+                style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }}
               />
             </div>
 
             <div>
-              <label style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.45)', display: 'block', marginBottom: 5 }}>Destination Hub Name</label>
+              <label style={{ fontSize: 11.5, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 5 }}>Nama Hub Tujuan</label>
               <input
-                className="input-navy"
-                placeholder="e.g. SPP Jakarta Timur (10000)"
+                placeholder="misal: SPP Jakarta Timur (10000)"
                 value={form.destination}
                 onChange={(e) => setForm((prev) => ({ ...prev, destination: e.target.value }))}
+                style={{ width: '100%', height: 38, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#0f172a', boxSizing: 'border-box' }}
               />
             </div>
 
-            <div style={{ background: 'rgba(56,189,248,0.04)', padding: 12, borderRadius: 8, border: '1px solid rgba(56,189,248,0.15)', display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <div style={{ fontSize: 11.5, fontWeight: 700, color: '#38bdf8' }}>Capacity Calculation Filters (Editable)</div>
+            <div style={{ background: '#f0f9ff', padding: 12, borderRadius: 8, border: '1px solid #bae6fd', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ fontSize: 11.5, fontWeight: 800, color: '#0284c7' }}>Filter Kalkulasi Kapasitas</div>
 
               <div>
-                <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', display: 'block', marginBottom: 4 }}>
-                  Daftar Nopend Asal (Comma-separated)
+                <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>
+                  Daftar Nopend Asal (Pisahkan koma)
                 </label>
                 <input
-                  className="input-navy"
-                  placeholder="e.g. 40000, 40500, 40253A"
+                  placeholder="misal: 40000, 40500, 40253A"
                   value={form.originNopenList}
                   onChange={(e) => setForm((prev) => ({ ...prev, originNopenList: e.target.value }))}
-                  style={{ fontSize: 12 }}
+                  style={{ width: '100%', height: 36, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#ffffff', color: '#0f172a', fontSize: 12, boxSizing: 'border-box' }}
                 />
               </div>
 
               <div>
-                <label style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', display: 'block', marginBottom: 4 }}>
-                  Prefix Digit Wilayah Tujuan (Comma-separated)
+                <label style={{ fontSize: 11, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 4 }}>
+                  Prefix Digit Tujuan (Pisahkan koma)
                 </label>
                 <input
-                  className="input-navy"
-                  placeholder="e.g. 1, 2, 3, 7, 9"
+                  placeholder="misal: 1, 2, 3, 7, 9"
                   value={form.destinationPrefixFilter}
                   onChange={(e) => setForm((prev) => ({ ...prev, destinationPrefixFilter: e.target.value }))}
-                  style={{ fontSize: 12 }}
+                  style={{ width: '100%', height: 36, padding: '0 10px', borderRadius: 6, border: '1px solid #e2e8f0', background: '#ffffff', color: '#0f172a', fontSize: 12, boxSizing: 'border-box' }}
                 />
               </div>
             </div>
 
             <button className="btn-primary" onClick={handleCreateRoute} style={{ width: '100%', justifyContent: 'center', marginTop: 4 }}>
-              Save Route Configuration
+              Simpan Konfigurasi Rute
             </button>
           </div>
         )}

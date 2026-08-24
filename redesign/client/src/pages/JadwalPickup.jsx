@@ -6,12 +6,12 @@ import VehicleDetailModal from '../components/VehicleDetailModal.jsx';
 
 // Helper to determine office type badge
 const getOfficeType = (office) => {
-  const name = office.nama_nopend.toUpperCase();
-  if (name.includes('KCU') || name.startsWith('KCU ')) return { label: 'KCU HUB', color: '#f43f5e', bg: 'rgba(244, 63, 94, 0.05)' };
-  if (name.includes('KCP') || name.startsWith('KCP ')) return { label: 'KCP', color: '#a78bfa', bg: 'rgba(167, 139, 250, 0.05)' };
-  if (name.includes('DC') || name.includes('SPP')) return { label: 'DC / SPP', color: '#f97316', bg: 'rgba(249, 115, 22, 0.05)' };
-  if (name.includes('AGEN') || name.startsWith('AGEN ')) return { label: 'AGEN', color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.05)' };
-  return { label: 'LAINNYA', color: '#94a3b8', bg: 'rgba(148, 163, 184, 0.05)' };
+  const name = (office.nama_nopend || '').toUpperCase();
+  if (name.includes('KCU') || name.startsWith('KCU ')) return { label: 'KCU HUB', color: '#be123c', bg: '#ffe4e6' };
+  if (name.includes('KCP') || name.startsWith('KCP ')) return { label: 'KCP', color: '#6d28d9', bg: '#f5f3ff' };
+  if (name.includes('DC') || name.includes('SPP')) return { label: 'DC / SPP', color: '#c2410c', bg: '#ffedd5' };
+  if (name.includes('AGEN') || name.startsWith('AGEN ')) return { label: 'AGEN', color: '#0369a1', bg: '#e0f2fe' };
+  return { label: 'LAINNYA', color: '#475569', bg: '#f1f5f9' };
 };
 
 function Group({ group, onShowDetails }) {
@@ -65,26 +65,26 @@ function Group({ group, onShowDetails }) {
   };
 
   return (
-    <section className="glass-card" style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <section className="spatial-card" style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Header Group */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 10 }}>
         <div>
-          <h3 style={{ margin: 0, fontSize: 16, color: 'white' }}>{group.name}</h3>
-          <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+          <h3 style={{ margin: 0, fontSize: 16, color: '#0f172a', fontWeight: 800 }}>{group.name}</h3>
+          <span style={{ color: '#64748b', fontSize: 12 }}>
             {group.stops.length} Valid stops · {group.skipped?.length || 0} Skipped
           </span>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <span className="badge badge-purple" style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px' }}>
+          <span className="badge badge-navy" style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px' }}>
             <Clock size={12} /> Berangkat: {group.startTime} → Tiba: {group.endTime}
           </span>
           <button 
-            className="btn btn-secondary" 
+            className="btn-ghost" 
             onClick={handleCopy} 
-            style={{ padding: '6px 10px', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}
+            style={{ padding: '4px 8px', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}
             title="Salin rute ke clipboard"
           >
-            {copied ? <CheckCircle size={12} color="#34d399" /> : <Copy size={12} />}
+            {copied ? <CheckCircle size={12} color="#16a34a" /> : <Copy size={12} />}
             {copied ? 'Tersalin' : 'Salin'}
           </button>
         </div>
@@ -92,7 +92,7 @@ function Group({ group, onShowDetails }) {
 
       {/* Search Input inside Group */}
       <div style={{ position: 'relative' }}>
-        <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+        <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
         <input 
           type="text" 
           placeholder="Cari titik rute..." 
@@ -101,48 +101,35 @@ function Group({ group, onShowDetails }) {
           style={{ 
             width: '100%', 
             padding: '8px 12px 8px 32px', 
-            background: 'var(--bg-dark)', 
-            border: '1px solid var(--border-light)', 
+            background: '#f8fafc', 
+            border: '1px solid #e2e8f0', 
             borderRadius: 6, 
-            color: 'white',
-            fontSize: 13
+            color: '#0f172a',
+            fontSize: 13,
+            outline: 'none',
+            boxSizing: 'border-box'
           }} 
         />
       </div>
 
       {/* Timeline List of Valid Stops */}
-      <div style={{ position: 'relative', display: 'grid', gap: 12, paddingLeft: 12 }}>
-        {/* Vertical Timeline Indicator Line */}
-        {filteredStops.length > 1 && (
-          <div style={{
-            position: 'absolute',
-            left: 20,
-            top: 20,
-            bottom: 20,
-            width: 2,
-            background: 'linear-gradient(180deg, var(--accent-cyan) 0%, var(--primary-blue) 100%)',
-            opacity: 0.25,
-            zIndex: 1
-          }} />
-        )}
-
+      <div style={{ position: 'relative', display: 'grid', gap: 10, paddingLeft: 8 }}>
         {filteredStops.map((office, index) => {
           const type = getOfficeType(office);
           return (
             <div 
               key={office._id || office.nopend} 
-              className="timeline-item"
               style={{ 
                 display: 'flex', 
-                gap: 16, 
-                padding: '14px 16px', 
-                background: 'var(--bg-card-hover)', 
-                border: '1px solid var(--border-light)',
+                gap: 14, 
+                padding: '12px 14px', 
+                background: '#f8fafc', 
+                border: '1px solid #e2e8f0',
                 borderRadius: 8,
-                transition: 'var(--transition-smooth)',
                 position: 'relative',
                 zIndex: 2,
-                cursor: 'pointer'
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
               }}
               onClick={() => onShowDetails(office)}
             >
@@ -154,20 +141,20 @@ function Group({ group, onShowDetails }) {
                 display: 'flex', 
                 alignItems: 'center', 
                 justifyContent: 'center', 
-                background: 'var(--bg-dark)', 
+                background: '#ffffff', 
                 border: `2px solid ${type.color}`, 
                 color: type.color, 
                 fontWeight: '800', 
-                fontSize: 12,
+                fontSize: 11,
                 flexShrink: 0
               }}>
                 {index + 1}
               </div>
               
               {/* Stop Info */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <strong style={{ color: 'white', fontSize: 13.5, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                  <strong style={{ color: '#0f172a', fontSize: 13, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                     {office.nama_nopend}
                   </strong>
                   <span style={{ 
@@ -175,19 +162,18 @@ function Group({ group, onShowDetails }) {
                     fontWeight: 700, 
                     padding: '2px 6px', 
                     borderRadius: 4, 
-                    border: `1px solid ${type.color}30`, 
                     color: type.color, 
                     background: type.bg 
                   }}>
                     {type.label}
                   </span>
                 </div>
-                <div style={{ display: 'flex', gap: 12, alignItems: 'center', color: 'var(--text-muted)', fontSize: 11.5 }}>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center', color: '#64748b', fontSize: 11 }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                    <MapPin size={10} /> {office.nopend}
+                    <MapPin size={11} color="#0284c7" /> {office.nopend}
                   </span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 3, color: 'var(--accent-cyan)', fontWeight: 600 }}>
-                    <Clock size={10} /> Tiba: {office.estimatedTime}
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 3, color: '#0b2e8a', fontWeight: 700, fontFamily: 'monospace' }}>
+                    <Clock size={11} /> Tiba: {office.estimatedTime}
                   </span>
                   {office.nama_kcu_kc && (
                     <span style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
@@ -197,13 +183,13 @@ function Group({ group, onShowDetails }) {
                 </div>
               </div>
               
-              <Info size={14} style={{ color: 'var(--text-muted)', alignSelf: 'center', opacity: 0.6 }} />
+              <Info size={14} style={{ color: '#94a3b8', alignSelf: 'center' }} />
             </div>
           );
         })}
 
         {filteredStops.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-muted)', fontSize: 13 }}>
+          <div style={{ textAlign: 'center', padding: '20px 0', color: '#94a3b8', fontSize: 13 }}>
             {search ? 'Tidak ada rute yang cocok.' : 'Semua kandidat di-skip.'}
           </div>
         )}
@@ -211,32 +197,32 @@ function Group({ group, onShowDetails }) {
 
       {/* Skipped Candidates Panel */}
       {group.skipped && group.skipped.length > 0 && (
-        <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: 12 }}>
+        <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 12 }}>
           <button 
             onClick={() => setShowSkipped(!showSkipped)}
             style={{ 
               background: 'none', 
               border: 'none', 
-              color: 'var(--danger)', 
+              color: '#ef4444', 
               fontSize: 11.5, 
               cursor: 'pointer', 
               display: 'flex', 
               alignItems: 'center', 
               gap: 4,
               padding: 0,
-              fontWeight: 600
+              fontWeight: 700
             }}
           >
-            <AlertTriangle size={12} />
-            {showSkipped ? 'Sembunyikan' : 'Tampilkan'} {group.skipped.length} Kantor di-skip (Dari PPT)
+            <AlertTriangle size={13} />
+            {showSkipped ? 'Sembunyikan' : 'Tampilkan'} {group.skipped.length} Kantor di-skip
           </button>
           
           {showSkipped && (
-            <div style={{ display: 'grid', gap: 6, marginTop: 10, background: 'rgba(239, 68, 68, 0.05)', padding: 12, borderRadius: 6, border: '1px solid rgba(239, 68, 68, 0.15)' }}>
+            <div style={{ display: 'grid', gap: 6, marginTop: 10, background: '#fef2f2', padding: 12, borderRadius: 6, border: '1px solid #fecaca' }}>
               {group.skipped.map((skip, i) => (
                 <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5 }}>
-                  <span style={{ color: 'var(--danger)', fontWeight: 600 }}>{skip.candidate}</span>
-                  <span style={{ color: 'var(--text-muted)' }}>{skip.reason}</span>
+                  <span style={{ color: '#b91c1c', fontWeight: 600 }}>{skip.candidate}</span>
+                  <span style={{ color: '#64748b' }}>{skip.reason}</span>
                 </div>
               ))}
             </div>
@@ -273,55 +259,55 @@ export default function JadwalPickup() {
   }, []);
 
   return (
-    <div className="page-container" style={{ position: 'relative' }}>
-      <div className="page-header">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 className="page-title">
-            <Truck size={22} style={{ color: 'var(--accent-cyan)' }} />
+          <h1 style={{ fontSize: 20, fontWeight: 900, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Truck size={22} color="#0284c7" />
             Jadwal Pickup SPP Bandung
           </h1>
-          <p className="page-subtitle">Rute malam tervalidasi terhadap database master_kantor</p>
+          <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>Rute malam tervalidasi terhadap database master_kantor</p>
         </div>
-        <button className="btn btn-secondary" onClick={load} disabled={loading}>
-          <RefreshCw size={14} className={loading ? 'spin-anim' : ''} /> Refresh
+        <button className="btn-ghost" onClick={load} disabled={loading} style={{ gap: 6 }}>
+          <RefreshCw size={14} className={loading ? 'spin' : ''} /> Refresh
         </button>
       </div>
 
       {/* Blueprint Info Banner */}
-      <div className="glass-card" style={{ padding: 16, marginBottom: 18, fontSize: 13, background: 'rgba(56, 189, 248, 0.03)' }}>
+      <div style={{ padding: '12px 16px', borderRadius: 8, fontSize: 13, background: '#f0f9ff', border: '1px solid #bae6fd', color: '#0369a1' }}>
         Rute didasarkan pada <strong>PPT Slide 2 (Blueprint Urutan)</strong>. 
         Kandidat yang tidak terdaftar di <strong>master_kantor</strong> disaring otomatis demi akurasi operasional.
       </div>
 
       {error && (
-        <div className="glass-card" style={{ padding: 16, color: 'var(--danger)', display: 'flex', gap: 10, alignItems: 'center' }}>
+        <div style={{ padding: 16, background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', borderRadius: 8, display: 'flex', gap: 10, alignItems: 'center' }}>
           <AlertTriangle size={18} />
           {error}
         </div>
       )}
 
       {loading ? (
-        <div className="glass-card" style={{ padding: 40, textAlign: 'center', color: 'var(--text-secondary)' }}>
-          <RefreshCw size={24} className="spin-anim" style={{ marginBottom: 12 }} />
+        <div className="spatial-card" style={{ padding: 40, textAlign: 'center', color: '#64748b' }}>
+          <RefreshCw size={24} className="spin" style={{ marginBottom: 12, color: '#0284c7' }} />
           <div>Sinkronisasi data master kantor pos...</div>
         </div>
       ) : (
         <div style={{ display: 'grid', gap: 20 }}>
           {routes.map(route => (
-            <article key={route.vehicle} className="glass-card" style={{ padding: '20px 24px', borderLeft: '3px solid var(--accent-cyan)' }}>
+            <article key={route.vehicle} className="spatial-card" style={{ padding: '20px 24px', borderLeft: '4px solid #0284c7' }}>
               {/* Vehicle Title Section */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, borderBottom: '1px solid var(--border-light)', paddingBottom: 12 }}>
-                <h2 style={{ margin: 0, fontSize: 18, color: 'white', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Truck size={18} style={{ color: 'var(--accent-cyan)' }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, borderBottom: '1px solid #f1f5f9', paddingBottom: 12 }}>
+                <h2 style={{ margin: 0, fontSize: 18, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Truck size={18} color="#0284c7" />
                   <button 
                     onClick={() => setSelectedVehicle(route.vehicle)}
-                    style={{ background: 'none', border: 'none', color: 'white', fontWeight: 800, fontSize: '18px', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+                    style={{ background: 'none', border: 'none', color: '#0b2e8a', fontWeight: 900, fontSize: '18px', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
                     title="Klik untuk detail kendaraan"
                   >
                     {route.vehicle}
                   </button>
                 </h2>
-                <span className="badge badge-purple">{route.category}</span>
+                <span className="badge badge-navy">{route.category}</span>
               </div>
               
               {/* Groups (Pick Up Lists) */}
@@ -341,25 +327,8 @@ export default function JadwalPickup() {
 
       {/* Office Details Modal Dialog */}
       {selectedOffice && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(4, 8, 16, 0.8)',
-          backdropFilter: 'blur(8px)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 999,
-          padding: 16
-        }}>
-          <div className="glass-card" style={{ 
-            maxWidth: 420, 
-            width: '100%', 
-            padding: 24, 
-            boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
-            border: '1px solid var(--border-strong)',
-            position: 'relative'
-          }}>
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: 420, width: '95%', padding: 24, background: '#ffffff', color: '#0f172a', position: 'relative' }}>
             <button 
               onClick={() => setSelectedOffice(null)}
               style={{
@@ -368,7 +337,7 @@ export default function JadwalPickup() {
                 right: 16,
                 background: 'none',
                 border: 'none',
-                color: 'var(--text-muted)',
+                color: '#64748b',
                 cursor: 'pointer',
                 padding: 4
               }}
@@ -376,43 +345,35 @@ export default function JadwalPickup() {
               <X size={18} />
             </button>
             
-            <h3 style={{ margin: '0 0 16px', fontSize: 16, color: 'white', borderBottom: '1px solid var(--border-light)', paddingBottom: 10 }}>
+            <h3 style={{ margin: '0 0 16px', fontSize: 16, color: '#0f172a', fontWeight: 800, borderBottom: '1px solid #e2e8f0', paddingBottom: 10 }}>
               Detail Kantor Pos
             </h3>
             
             <div style={{ display: 'grid', gap: 14 }}>
               <div>
-                <label style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Nama Kantor</label>
-                <div style={{ fontSize: 14, fontWeight: 700, color: 'white', marginTop: 2 }}>{selectedOffice.nama_nopend}</div>
+                <label style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Nama Kantor</label>
+                <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a', marginTop: 2 }}>{selectedOffice.nama_nopend}</div>
               </div>
               
               <div>
-                <label style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Nopend / Kode Pos</label>
-                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent-cyan)', marginTop: 2 }}>{selectedOffice.nopend}</div>
+                <label style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Nopend / Kode Pos</label>
+                <div style={{ fontSize: 14, fontWeight: 800, color: '#0b2e8a', marginTop: 2, fontFamily: 'monospace' }}>{selectedOffice.nopend}</div>
               </div>
               
               <div>
-                <label style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Kantor KCU Hub</label>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'white', marginTop: 2 }}>{selectedOffice.nama_kcu_kc || '-'}</div>
+                <label style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Kantor KCU Hub</label>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', marginTop: 2 }}>{selectedOffice.nama_kcu_kc || '-'}</div>
               </div>
               
               <div>
-                <label style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Kantor Regional</label>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'white', marginTop: 2 }}>{selectedOffice.nama_regional || '-'}</div>
+                <label style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Kantor Regional</label>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', marginTop: 2 }}>{selectedOffice.nama_regional || '-'}</div>
               </div>
 
               <div>
-                <label style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Status Database</label>
+                <label style={{ fontSize: 11, color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }}>Status Database</label>
                 <div style={{ marginTop: 4 }}>
-                  <span style={{ 
-                    fontSize: 10, 
-                    fontWeight: 700, 
-                    padding: '2px 8px', 
-                    borderRadius: 4, 
-                    color: '#34d399', 
-                    background: 'rgba(52, 211, 153, 0.1)',
-                    border: '1px solid rgba(52, 211, 153, 0.2)'
-                  }}>
+                  <span className="badge badge-emerald">
                     {selectedOffice.status || 'AKTIF'}
                   </span>
                 </div>
@@ -420,9 +381,9 @@ export default function JadwalPickup() {
             </div>
             
             <button 
-              className="btn btn-secondary" 
+              className="btn-primary" 
               onClick={() => setSelectedOffice(null)}
-              style={{ width: '100%', marginTop: 20, padding: '8px 0' }}
+              style={{ width: '100%', marginTop: 20, padding: '8px 0', justifyContent: 'center' }}
             >
               Tutup
             </button>
