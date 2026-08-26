@@ -32,18 +32,18 @@ const RESPONSIVE_STYLES = `
     border: 1px solid transparent;
   }
   .filter-pill.active {
-    background: #0b2e8a;
-    border-color: #0284c7;
+    background: var(--primary-blue);
+    border-color: var(--primary-blue);
     color: #ffffff;
   }
   .filter-pill.inactive {
-    background: #f8fafc;
-    border-color: #e2e8f0;
-    color: #64748b;
+    background: var(--bg-surface-soft);
+    border-color: var(--border-light);
+    color: var(--text-secondary);
   }
   .filter-pill.inactive:hover {
-    background: #e2e8f0;
-    color: #0f172a;
+    background: var(--bg-card);
+    color: var(--text-primary);
   }
   @media (max-width: 768px) {
     .responsive-header-row {

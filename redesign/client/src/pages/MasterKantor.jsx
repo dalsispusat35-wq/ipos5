@@ -3,7 +3,7 @@ import {
   Search, Plus, ChevronLeft, ChevronRight, Building2, Filter, 
   Download, MapPin, Phone, ShieldCheck, CheckCircle2, Copy, 
   ExternalLink, RefreshCw, X, Eye, Navigation, Sparkles, Store, 
-  Boxes, Layers, ArrowRight, Globe
+  Boxes, Layers, ArrowRight, Globe, Check
 } from 'lucide-react';
 import { api } from '../utils/api.js';
 
@@ -111,86 +111,88 @@ export default function MasterKantor() {
     document.body.removeChild(link);
   };
 
-  // Branch Type Badge Renderer
-  const renderBranchBadge = (type = '', isVerified = false) => {
-    const t = String(type).toUpperCase();
-    if (t.includes('KCU') || t === 'KCU') {
+  // Branch Type Badge Renderer with Name-aware categorization
+  const renderBranchBadge = (type = '', name = '', isVerified = false) => {
+    const t = String(type || '').toUpperCase();
+    const n = String(name || '').toUpperCase();
+
+    if (t.includes('KCU') || n.startsWith('KCU') || n.includes('KCU ') || t === 'KCU') {
       return (
-        <span className="badge badge-pink" style={{ fontSize: 10.5, padding: '3px 8px', gap: 4 }}>
-          <Building2 size={11} /> KCU HUB
+        <span className="badge badge-pink" style={{ fontSize: 11, padding: '3px 9px', gap: 5 }}>
+          <Building2 size={12} /> KCU HUB
         </span>
       );
     }
-    if (t.includes('KC') || t === 'KC') {
+    if (t.includes('SPP') || t.includes('DC') || n.includes('SPP') || n.includes('SENTRAL')) {
       return (
-        <span className="badge badge-orange" style={{ fontSize: 10.5, padding: '3px 8px', gap: 4 }}>
-          <Building2 size={11} /> KC UTAMA
+        <span className="badge badge-emerald" style={{ fontSize: 11, padding: '3px 9px', gap: 5 }}>
+          <Boxes size={12} /> SPP / DC HUB
         </span>
       );
     }
-    if (t.includes('SPP') || t.includes('DC') || t.includes('SENTRAL')) {
+    if (t.includes('KC ') || t === 'KC' || n.startsWith('KC ') || n.includes(' KANTOR CABANG UTAMA')) {
       return (
-        <span className="badge badge-emerald" style={{ fontSize: 10.5, padding: '3px 8px', gap: 4 }}>
-          <Boxes size={11} /> SPP / DC HUB
+        <span className="badge badge-amber" style={{ fontSize: 11, padding: '3px 9px', gap: 5 }}>
+          <Building2 size={12} /> KC UTAMA
         </span>
       );
     }
-    if (t.includes('AGEN') || t.includes('AGP')) {
+    if (t.includes('AGEN') || t.includes('AGP') || n.startsWith('AGEN') || n.includes('AGENPOS')) {
       return (
-        <span className="badge" style={{ background: '#faf5ff', color: '#9333ea', border: '1px solid #e9d5ff', fontSize: 10.5, padding: '3px 8px', gap: 4 }}>
-          <Store size={11} /> AGENPOS MITRA
+        <span className="badge badge-purple" style={{ fontSize: 11, padding: '3px 9px', gap: 5 }}>
+          <Store size={12} /> AGENPOS MITRA
         </span>
       );
     }
     return (
-      <span className="badge badge-navy" style={{ fontSize: 10.5, padding: '3px 8px', gap: 4 }}>
-        <Building2 size={11} /> KCP FEEDER
+      <span className="badge badge-navy" style={{ fontSize: 11, padding: '3px 9px', gap: 5 }}>
+        <Building2 size={12} /> KCP FEEDER
       </span>
     );
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, minHeight: '100%', paddingBottom: 24 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20, minHeight: '100%', paddingBottom: 40 }}>
       
-      {/* 1. Header & Page Title */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14 }}>
+      {/* 1. Header & Page Title Banner */}
+      <div className="spatial-card" style={{ padding: '22px 26px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: '#e0f2fe', border: '1px solid #bae6fd', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Building2 size={20} color="#0284c7" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap' }}>
+            <div style={{ width: 38, height: 38, borderRadius: 10, background: 'var(--accent-cyan-bg)', border: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Building2 size={22} color="var(--primary-blue)" />
             </div>
-            <h2 style={{ fontSize: 20, fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: '-0.02em' }}>
-              Master Kantor & Jaringan Pos Logistik
-            </h2>
-            <span className="badge badge-emerald">
-              ● LIVE DB
+            <h1 style={{ fontSize: 20, fontWeight: 900, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em' }}>
+              Master Kantor &amp; Jaringan Pos Logistik
+            </h1>
+            <span className="badge badge-emerald" style={{ fontSize: 11, padding: '3px 8px' }}>
+              ● LIVE DB: master_kantor ({totalCount.toLocaleString()} Unit)
             </span>
           </div>
-          <p style={{ fontSize: 13, color: '#64748b', margin: 0 }}>
-            Database resmi jaringan Kantor Pos Indonesia (KCU, KC, KCP, Agenpos Feeder, dan Sentral Pengolahan Pos Hub)
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>
+            Database resmi jaringan Kantor Pos Indonesia (KCU Hub, KC, KCP, Agenpos Feeder, dan Sentral Pengolahan Pos).
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
           <button 
             onClick={fetchKantor}
             className="btn-ghost" 
-            style={{ fontSize: 12, gap: 6, padding: '7px 14px' }}
+            style={{ fontSize: 12.5, gap: 6, padding: '8px 14px' }}
             title="Refresh Data"
           >
-            <RefreshCw size={13} className={loading ? 'spin' : ''} /> Segarkan
+            <RefreshCw size={14} className={loading ? 'spin' : ''} /> Segarkan
           </button>
           <button 
             onClick={exportCSV}
             className="btn-ghost" 
-            style={{ fontSize: 12, gap: 6, padding: '7px 14px' }}
+            style={{ fontSize: 12.5, gap: 6, padding: '8px 14px' }}
           >
             <Download size={14} /> Export CSV
           </button>
           <button 
             onClick={() => setShowAddModal(true)}
             className="btn-primary" 
-            style={{ fontSize: 12, gap: 6, padding: '7px 16px' }}
+            style={{ fontSize: 12.5, gap: 6, padding: '8px 16px' }}
           >
             <Plus size={15} /> Tambah Kantor Pos
           </button>
@@ -202,31 +204,31 @@ export default function MasterKantor() {
         {[
           { 
             label: 'TOTAL KANTOR POS NASIONAL', 
-            value: (summaryStats.total || 13768).toLocaleString(), 
+            value: (summaryStats.total || 13768).toLocaleString('id-ID'), 
             sub: 'Tersebar di seluruh Indonesia',
             icon: Building2, 
-            color: '#0284c7', 
+            color: 'var(--primary-blue)', 
           },
           { 
             label: 'JARINGAN BANDUNG & CIMAHI', 
             value: '19 Kantor', 
             sub: '100% Terverifikasi GPS & Rute',
             icon: Sparkles, 
-            color: '#10b981', 
+            color: 'var(--accent-emerald)', 
           },
           { 
             label: 'KCU & KANTOR CABANG UTAMA', 
-            value: '1,834 KCU', 
+            value: '1.834 KCU', 
             sub: 'Kantor Pengelola Wilayah / KPRK',
             icon: Layers, 
-            color: '#f59e0b', 
+            color: 'var(--accent-amber)', 
           },
           { 
             label: 'KCP & AGENPOS FEEDER', 
-            value: '11,915 Unit', 
+            value: '11.915 Unit', 
             sub: 'Titik Loket Pick-Up & Antaran',
             icon: Store, 
-            color: '#a855f7', 
+            color: 'var(--accent-purple)', 
           }
         ].map(kpi => {
           const IconComp = kpi.icon;
@@ -246,15 +248,15 @@ export default function MasterKantor() {
                 <span style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.06em' }}>
                   {kpi.label}
                 </span>
-                <div style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--bg-workspace)', border: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <IconComp size={14} color={kpi.color} />
+                <div style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--bg-surface-soft)', border: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <IconComp size={15} color={kpi.color} />
                 </div>
               </div>
               <div>
-                <div style={{ fontSize: 22, fontWeight: 900, color: kpi.color, fontFamily: 'monospace' }}>
+                <div style={{ fontSize: 22, fontWeight: 900, color: kpi.color, fontFamily: 'var(--font-mono)' }}>
                   {kpi.value}
                 </div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, fontWeight: 600 }}>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2, fontWeight: 600 }}>
                   {kpi.sub}
                 </div>
               </div>
@@ -269,10 +271,10 @@ export default function MasterKantor() {
         <div className="scrollable-chips" style={{ paddingBottom: 4 }}>
           {[
             { id: 'BANDUNG_CIMAHI', label: 'Bandung & Cimahi (19 Kantor)', icon: Sparkles, count: 19 },
-            { id: 'ALL', label: 'Semua Kantor (Nasional)', icon: Globe, count: '13,768' },
-            { id: 'KCU', label: 'KCU Hub Utama', icon: Building2, count: '1,834' },
+            { id: 'ALL', label: 'Semua Kantor (Nasional)', icon: Globe, count: '13.768' },
+            { id: 'KCU', label: 'KCU Hub Utama', icon: Building2, count: '1.834' },
             { id: 'KC', label: 'Kantor Cabang (KC)', icon: Building2, count: '412' },
-            { id: 'KCP', label: 'KCP Feeder', icon: Building2, count: '11,001' },
+            { id: 'KCP', label: 'KCP Feeder', icon: Building2, count: '11.001' },
             { id: 'AGENPOS', label: 'Agenpos Mitra', icon: Store, count: '914' },
             { id: 'SPP_DC', label: 'SPP Bandung (Hub)', icon: MapPin, count: '1' }
           ].map(tab => {
@@ -288,7 +290,7 @@ export default function MasterKantor() {
                   fontSize: 12,
                   fontWeight: isActive ? 800 : 600,
                   color: isActive ? '#ffffff' : 'var(--text-secondary)',
-                  background: isActive ? 'var(--primary-blue)' : 'var(--bg-workspace)',
+                  background: isActive ? 'var(--primary-blue)' : 'var(--bg-card)',
                   border: isActive ? '1px solid var(--primary-blue)' : '1px solid var(--border-light)',
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
@@ -301,11 +303,11 @@ export default function MasterKantor() {
                 <TabIcon size={14} style={{ opacity: isActive ? 1 : 0.8 }} />
                 <span>{tab.label}</span>
                 <span style={{ 
-                  background: isActive ? 'rgba(255,255,255,0.2)' : 'var(--bg-card)', 
-                  color: isActive ? '#ffffff' : 'var(--text-muted)', 
+                  background: isActive ? 'rgba(255,255,255,0.25)' : 'var(--bg-surface-soft)', 
+                  color: isActive ? '#ffffff' : 'var(--text-secondary)', 
                   fontSize: 10, 
                   fontWeight: 800, 
-                  padding: '1px 6px', 
+                  padding: '1px 7px', 
                   borderRadius: 99,
                   border: '1px solid var(--border-light)'
                 }}>
@@ -331,7 +333,7 @@ export default function MasterKantor() {
                 setPage(1);
               }}
               placeholder="Cari berdasarkan kode Nopend (misal: 40000, 40511A), nama kantor, kecamatan, kota..."
-              style={{ paddingLeft: 40, paddingRight: 36, fontSize: 13, height: 42, width: '100%', borderRadius: 10, background: 'var(--bg-workspace)', border: '1px solid var(--border-light)', color: 'var(--text-primary)', outline: 'none', boxSizing: 'border-box' }}
+              style={{ paddingLeft: 40, paddingRight: 36, fontSize: 13, height: 42, width: '100%', borderRadius: 10, background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--input-text)', outline: 'none', boxSizing: 'border-box' }}
             />
             {search && (
               <button
@@ -348,16 +350,21 @@ export default function MasterKantor() {
       {/* 4. Main Data Table */}
       <div className="spatial-card" style={{ borderRadius: 16, overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: 0 }}>
         
+<<<<<<< Updated upstream
         {/* Table Container with Fully Opaque Sticky Header */}
         <div className="table-responsive-container" style={{ border: 'none', background: 'transparent' }}>
+=======
+        {/* Table Container */}
+        <div style={{ overflowX: 'auto', width: '100%' }}>
+>>>>>>> Stashed changes
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
-              <tr style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)' }}>
+              <tr style={{ background: 'var(--bg-surface-soft)', borderBottom: '1px solid var(--border-light)' }}>
                 <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 800, color: 'var(--primary-blue)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                   KODE NOPEND
                 </th>
                 <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                  NAMA KANTOR POS & ALAMAT
+                  NAMA KANTOR POS &amp; ALAMAT
                 </th>
                 <th style={{ padding: '12px 16px', fontSize: 11, fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                   TIPE JARINGAN
@@ -400,12 +407,13 @@ export default function MasterKantor() {
                 offices.map((o, idx) => {
                   const isVerified = o.is_real_verified;
                   const hasCoordinates = o.latitude && o.longitude;
+                  const officeName = o.nama_kantor || o.nama_nopend || '';
                   return (
                     <tr 
                       key={o.nopend || idx} 
                       style={{ 
                         borderBottom: '1px solid var(--border-light)',
-                        background: isVerified ? 'rgba(2, 132, 199, 0.08)' : 'transparent',
+                        background: isVerified ? 'rgba(2, 132, 199, 0.06)' : 'transparent',
                         transition: 'background 0.15s ease'
                       }}
                     >
@@ -415,11 +423,11 @@ export default function MasterKantor() {
                           <button
                             onClick={() => handleCopyNopend(o.nopend)}
                             style={{
-                              fontFamily: 'monospace',
+                              fontFamily: 'var(--font-mono)',
                               fontSize: 12.5,
                               fontWeight: 800,
                               color: isVerified ? 'var(--primary-blue)' : 'var(--text-primary)',
-                              background: 'var(--bg-workspace)',
+                              background: 'var(--bg-surface-soft)',
                               border: isVerified ? '1px solid var(--primary-blue)' : '1px solid var(--border-light)',
                               padding: '3px 8px',
                               borderRadius: 6,
@@ -432,7 +440,7 @@ export default function MasterKantor() {
                           >
                             {o.nopend}
                             {copiedCode === o.nopend ? (
-                              <CheckCircle2 size={12} color="#10b981" />
+                              <CheckCircle2 size={12} color="var(--accent-emerald)" />
                             ) : (
                               <Copy size={11} color="var(--text-muted)" />
                             )}
@@ -451,22 +459,22 @@ export default function MasterKantor() {
                       {/* 2. Office Name & Address */}
                       <td style={{ padding: '12px 16px', verticalAlign: 'middle', maxWidth: 300 }}>
                         <div style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: 13, marginBottom: 2 }}>
-                          {o.nama_kantor || o.nama_nopend}
+                          {officeName}
                         </div>
                         <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {o.alamat !== '-' ? o.alamat : `${o.kelurahan || ''} ${o.kecamatan || ''}`.trim() || 'Wilayah Bandung Raya'}
+                          {o.alamat && o.alamat !== '-' ? o.alamat : `${o.kelurahan || ''} ${o.kecamatan || ''}`.trim() || 'Wilayah Bandung Raya'}
                         </div>
                       </td>
 
                       {/* 3. Branch Type Badge */}
                       <td style={{ padding: '12px 16px', verticalAlign: 'middle' }}>
-                        {renderBranchBadge(o.jenis_kantor || o.tipe, isVerified)}
+                        {renderBranchBadge(o.jenis_kantor || o.tipe, officeName, isVerified)}
                       </td>
 
                       {/* 4. City / Regency */}
                       <td style={{ padding: '12px 16px', verticalAlign: 'middle', fontSize: 12.5, color: 'var(--text-primary)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <MapPin size={12} color="#f59e0b" />
+                          <MapPin size={12} color="var(--accent-amber)" />
                           <span style={{ fontWeight: 600 }}>{o.kabupaten_kota}</span>
                         </div>
                         <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginLeft: 18 }}>
@@ -480,9 +488,9 @@ export default function MasterKantor() {
                           <button
                             onClick={() => setSelectedMapOffice(o)}
                             style={{
-                              background: 'rgba(16, 185, 129, 0.12)',
-                              border: '1px solid rgba(52, 211, 153, 0.3)',
-                              color: '#10b981',
+                              background: 'var(--accent-emerald-bg)',
+                              border: '1px solid rgba(16, 185, 129, 0.3)',
+                              color: 'var(--accent-emerald)',
                               padding: '3px 8px',
                               borderRadius: 6,
                               fontSize: 11,
@@ -516,7 +524,7 @@ export default function MasterKantor() {
                           <button
                             onClick={() => setSelectedOffice(o)}
                             className="btn-ghost"
-                            style={{ padding: '4px 10px', fontSize: 11, borderRadius: 6, gap: 4 }}
+                            style={{ padding: '4px 10px', fontSize: 11.5, borderRadius: 6, gap: 4 }}
                           >
                             <Eye size={12} /> Detail
                           </button>
@@ -544,12 +552,12 @@ export default function MasterKantor() {
           }}
         >
           <div style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span>Menampilkan data ke</span>
+            <span>Menampilkan</span>
             <strong style={{ color: 'var(--text-primary)' }}>{Math.min((page - 1) * PAGE_SIZE + 1, totalCount)}</strong>
-            <span>sampai</span>
+            <span>-</span>
             <strong style={{ color: 'var(--text-primary)' }}>{Math.min(page * PAGE_SIZE, totalCount)}</strong>
-            <span>dari total</span>
-            <strong style={{ color: 'var(--primary-blue)' }}>{totalCount.toLocaleString()}</strong>
+            <span>dari</span>
+            <strong style={{ color: 'var(--primary-blue)' }}>{totalCount.toLocaleString('id-ID')}</strong>
             <span>kantor pos</span>
           </div>
 
@@ -560,7 +568,7 @@ export default function MasterKantor() {
               className="btn-ghost"
               style={{ padding: '4px 8px', fontSize: 11, borderRadius: 6, opacity: page === 1 ? 0.4 : 1 }}
             >
-              First
+              Awal
             </button>
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -587,12 +595,13 @@ export default function MasterKantor() {
                     width: 32,
                     height: 32,
                     borderRadius: 8,
-                    background: isCurrent ? '#0b2e8a' : '#f8fafc',
-                    border: isCurrent ? 'none' : '1px solid #e2e8f0',
-                    color: isCurrent ? '#ffffff' : '#64748b',
+                    background: isCurrent ? 'var(--primary-blue)' : 'var(--bg-surface-soft)',
+                    border: isCurrent ? '1px solid var(--primary-blue)' : '1px solid var(--border-light)',
+                    color: isCurrent ? '#ffffff' : 'var(--text-secondary)',
                     fontSize: 12,
                     fontWeight: isCurrent ? 800 : 600,
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
                   }}
                 >
                   {pageNum}
@@ -614,116 +623,163 @@ export default function MasterKantor() {
               className="btn-ghost"
               style={{ padding: '4px 8px', fontSize: 11, borderRadius: 6, opacity: page === totalPages ? 0.4 : 1 }}
             >
-              Last ({totalPages})
+              Akhir ({totalPages})
             </button>
           </div>
         </div>
       </div>
 
-      {/* 6. Office Detail Drawer / Modal */}
-      {selectedOffice && (
-        <div 
-          className="modal-overlay" 
-          style={{ zIndex: 1000 }}
-          onClick={(e) => { if (e.target === e.currentTarget) setSelectedOffice(null); }}
-        >
-          <div className="modal-content" style={{ maxWidth: '640px', width: '95%', padding: 0, overflow: 'hidden' }}>
-            
-            {/* Modal Header */}
-            <div className="modal-header" style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-surface-soft)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 42, height: 42, borderRadius: 12, background: 'var(--accent-cyan-bg)', border: '1px solid rgba(2, 132, 199, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Building2 size={22} color="var(--accent-cyan)" />
-                </div>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: 17, fontWeight: 800 }}>
-                      {selectedOffice.nama_kantor || selectedOffice.nama_nopend}
-                    </h3>
-                  </div>
-                  <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
-                    Nopend: {selectedOffice.nopend}
-                  </span>
-                </div>
-              </div>
-              <button 
-                onClick={() => setSelectedOffice(null)}
-                className="capsule-btn-circle"
-                style={{ width: 32, height: 32 }}
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 18 }}>
+      {/* 6. Harmonized Office Detail Modal */}
+      {selectedOffice && (() => {
+        const officeName = selectedOffice.nama_kantor || selectedOffice.nama_nopend || '';
+        return (
+          <div 
+            className="modal-overlay" 
+            style={{ zIndex: 1000 }}
+            onClick={(e) => { if (e.target === e.currentTarget) setSelectedOffice(null); }}
+          >
+            <div 
+              className="modal-content" 
+              style={{ 
+                maxWidth: '640px', 
+                width: '95%', 
+                padding: 0, 
+                overflow: 'hidden',
+                background: 'var(--bg-card)',
+                border: '1px solid rgba(2, 132, 199, 0.35)',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+              }}
+            >
               
-              {/* Type Badge & Status */}
-              <div className="surface-soft" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderRadius: 12 }}>
-                <div>
-                  <div style={{ fontSize: 10, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 800, marginBottom: 4 }}>
-                    KLASIFIKASI KANTOR
+              {/* Modal Header */}
+              <div 
+                style={{ 
+                  padding: '20px 24px', 
+                  borderBottom: '1px solid var(--border-light)', 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center', 
+                  background: 'var(--bg-surface-soft)' 
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--accent-cyan-bg)', border: '1px solid rgba(2, 132, 199, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Building2 size={22} color="var(--primary-blue)" />
                   </div>
-                  {renderBranchBadge(selectedOffice.jenis_kantor || selectedOffice.tipe, selectedOffice.is_real_verified)}
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 10, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 800, marginBottom: 4 }}>
-                    STATUS OPERASIONAL
+                  <div>
+                    <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: 17, fontWeight: 900, letterSpacing: '-0.01em' }}>
+                      {officeName}
+                    </h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 3 }}>
+                      <span style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 600 }}>
+                        Kode Nopend:
+                      </span>
+                      <span style={{ fontSize: 12, color: 'var(--primary-blue)', fontFamily: 'var(--font-mono)', fontWeight: 800, background: 'var(--bg-card)', padding: '1px 6px', borderRadius: 4, border: '1px solid var(--border-light)' }}>
+                        {selectedOffice.nopend}
+                      </span>
+                    </div>
                   </div>
-                  <span style={{ color: 'var(--accent-emerald)', fontWeight: 800, fontSize: 12 }}>
-                    ● {selectedOffice.status || 'AKTIF'}
-                  </span>
                 </div>
+                <button 
+                  onClick={() => setSelectedOffice(null)}
+                  className="capsule-btn-circle"
+                  style={{ width: 32, height: 32 }}
+                >
+                  <X size={16} />
+                </button>
               </div>
 
-              {/* Spec Details Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 }}>
-                <div className="surface-soft" style={{ padding: 14 }}>
-                  <div style={{ fontSize: 10.5, color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>
-                    ALAMAT KANTOR
+              {/* Modal Body */}
+              <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 18 }}>
+                
+                {/* Type Badge & Status Banner */}
+                <div 
+                  className="surface-soft" 
+                  style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    padding: '12px 18px', 
+                    borderRadius: 12,
+                    background: 'var(--bg-surface-soft)',
+                    border: '1px solid var(--border-light)'
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: 10, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 800, marginBottom: 5 }}>
+                      KLASIFIKASI KANTOR
+                    </div>
+                    {renderBranchBadge(selectedOffice.jenis_kantor || selectedOffice.tipe, officeName, selectedOffice.is_real_verified)}
                   </div>
-                  <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text-primary)' }}>
-                    {selectedOffice.alamat !== '-' ? selectedOffice.alamat : 'Jl. Asia Afrika / Feeder Bandung'}
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: 10, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 800, marginBottom: 5 }}>
+                      STATUS OPERASIONAL
+                    </div>
+                    <span className="badge badge-emerald" style={{ fontSize: 11, padding: '3px 8px' }}>
+                      ● {selectedOffice.status || 'AKTIF'}
+                    </span>
                   </div>
                 </div>
 
-                <div className="surface-soft" style={{ padding: 14 }}>
-                  <div style={{ fontSize: 10.5, color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>
-                    KELURAHAN / KECAMATAN
+                {/* Spec Details Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 }}>
+                  <div className="surface-soft" style={{ padding: 14, borderRadius: 10, border: '1px solid var(--border-light)' }}>
+                    <div style={{ fontSize: 10.5, color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 800, marginBottom: 4, letterSpacing: '0.04em' }}>
+                      ALAMAT KANTOR
+                    </div>
+                    <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.4 }}>
+                      {selectedOffice.alamat && selectedOffice.alamat !== '-' ? selectedOffice.alamat : 'Jl. Asia Afrika / Feeder Bandung'}
+                    </div>
                   </div>
-                  <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text-primary)' }}>
-                    {selectedOffice.kelurahan || '-'} / {selectedOffice.kecamatan || '-'}
+
+                  <div className="surface-soft" style={{ padding: 14, borderRadius: 10, border: '1px solid var(--border-light)' }}>
+                    <div style={{ fontSize: 10.5, color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 800, marginBottom: 4, letterSpacing: '0.04em' }}>
+                      KELURAHAN / KECAMATAN
+                    </div>
+                    <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.4 }}>
+                      {selectedOffice.kelurahan || '-'} / {selectedOffice.kecamatan || '-'}
+                    </div>
+                  </div>
+
+                  <div className="surface-soft" style={{ padding: 14, borderRadius: 10, border: '1px solid var(--border-light)' }}>
+                    <div style={{ fontSize: 10.5, color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 800, marginBottom: 4, letterSpacing: '0.04em' }}>
+                      KABUPATEN / KOTA &amp; PROVINSI
+                    </div>
+                    <div style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--primary-blue)', lineHeight: 1.4 }}>
+                      {selectedOffice.kabupaten_kota}, {selectedOffice.provinsi || 'Jawa Barat'}
+                    </div>
+                  </div>
+
+                  <div className="surface-soft" style={{ padding: 14, borderRadius: 10, border: '1px solid var(--border-light)' }}>
+                    <div style={{ fontSize: 10.5, color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 800, marginBottom: 4, letterSpacing: '0.04em' }}>
+                      CONTACT CENTER
+                    </div>
+                    <div style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--accent-amber)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Phone size={13} /> {selectedOffice.contact_center || '1500161'}
+                    </div>
                   </div>
                 </div>
 
-                <div className="surface-soft" style={{ padding: 14 }}>
-                  <div style={{ fontSize: 10.5, color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>
-                    KABUPATEN / KOTA & PROVINSI
-                  </div>
-                  <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--primary-navy)' }}>
-                    {selectedOffice.kabupaten_kota}, {selectedOffice.provinsi || 'Jawa Barat'}
-                  </div>
-                </div>
-
-                <div className="surface-soft" style={{ padding: 14 }}>
-                  <div style={{ fontSize: 10.5, color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>
-                    CONTACT CENTER
-                  </div>
-                  <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--accent-amber)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Phone size={12} /> {selectedOffice.contact_center || '1500161'}
-                  </div>
-                </div>
-              </div>
-
-              {/* GPS Coordinates Section */}
-              {selectedOffice.latitude && selectedOffice.longitude && (
-                <div style={{ background: '#f0fdf4', padding: 16, borderRadius: 12, border: '1px solid #bbf7d0' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                {/* Harmonized GPS Coordinates Section */}
+                {selectedOffice.latitude && selectedOffice.longitude && (
+                  <div 
+                    style={{ 
+                      background: 'var(--accent-emerald-bg)', 
+                      padding: 16, 
+                      borderRadius: 12, 
+                      border: '1px solid rgba(16, 185, 129, 0.3)',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: 12
+                    }}
+                  >
                     <div>
-                      <div style={{ fontSize: 11, fontWeight: 800, color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <MapPin size={13} /> KOORDINAT GPS TERVERIFIKASI
+                      <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--accent-emerald)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <MapPin size={14} /> KOORDINAT GPS TERVERIFIKASI
                       </div>
-                      <div style={{ fontSize: 13, fontWeight: 800, color: '#0f172a', fontFamily: 'monospace', marginTop: 4 }}>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', marginTop: 4 }}>
                         Lat: {selectedOffice.latitude}, Lng: {selectedOffice.longitude}
                       </div>
                     </div>
@@ -732,36 +788,45 @@ export default function MasterKantor() {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="btn-ghost"
-                      style={{ padding: '6px 12px', fontSize: 11.5, gap: 5, color: '#16a34a', borderColor: '#bbf7d0' }}
+                      style={{ 
+                        padding: '6px 14px', 
+                        fontSize: 12, 
+                        gap: 6, 
+                        color: 'var(--accent-emerald)', 
+                        background: 'var(--bg-card)',
+                        border: '1px solid rgba(16, 185, 129, 0.35)',
+                        textDecoration: 'none'
+                      }}
                     >
-                      Buka Google Maps <ExternalLink size={12} />
+                      Buka Google Maps <ExternalLink size={13} />
                     </a>
                   </div>
+                )}
+
+                {/* Bottom Action Buttons */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 6, paddingTop: 12, borderTop: '1px solid var(--border-light)' }}>
+                  <button
+                    onClick={() => handleCopyNopend(selectedOffice.nopend)}
+                    className="btn-ghost"
+                    style={{ fontSize: 12, gap: 6, padding: '7px 14px' }}
+                  >
+                    {copiedCode === selectedOffice.nopend ? <Check size={13} color="var(--accent-emerald)" /> : <Copy size={13} />}
+                    {copiedCode === selectedOffice.nopend ? 'Nopend Tersalin!' : 'Salin Nopend'}
+                  </button>
+                  <button
+                    onClick={() => setSelectedOffice(null)}
+                    className="btn-primary"
+                    style={{ fontSize: 12, padding: '7px 18px' }}
+                  >
+                    Tutup
+                  </button>
                 </div>
-              )}
 
-              {/* Bottom Action Buttons */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 6 }}>
-                <button
-                  onClick={() => handleCopyNopend(selectedOffice.nopend)}
-                  className="btn-ghost"
-                  style={{ fontSize: 12, gap: 6 }}
-                >
-                  <Copy size={13} /> {copiedCode === selectedOffice.nopend ? 'Nopend Tersalin!' : 'Salin Nopend'}
-                </button>
-                <button
-                  onClick={() => setSelectedOffice(null)}
-                  className="btn-primary"
-                  style={{ fontSize: 12 }}
-                >
-                  Tutup
-                </button>
               </div>
-
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* 7. Quick GPS Map View Modal */}
       {selectedMapOffice && (
@@ -770,7 +835,7 @@ export default function MasterKantor() {
           style={{ zIndex: 1000 }}
           onClick={(e) => { if (e.target === e.currentTarget) setSelectedMapOffice(null); }}
         >
-          <div className="modal-content" style={{ maxWidth: '600px', width: '95%', padding: 24 }}>
+          <div className="modal-content" style={{ maxWidth: '600px', width: '95%', padding: 24, background: 'var(--bg-card)', border: '1px solid var(--border-light)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <MapPin size={20} color="var(--accent-emerald)" />
@@ -820,7 +885,7 @@ export default function MasterKantor() {
           style={{ zIndex: 1000 }}
           onClick={(e) => { if (e.target === e.currentTarget) setShowAddModal(false); }}
         >
-          <div className="modal-content" style={{ maxWidth: '500px', width: '95%', padding: 24 }}>
+          <div className="modal-content" style={{ maxWidth: '500px', width: '95%', padding: 24, background: 'var(--bg-card)', border: '1px solid var(--border-light)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
               <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: 16, fontWeight: 800 }}>Tambah Kantor Pos Baru</h3>
               <button onClick={() => setShowAddModal(false)} className="capsule-btn-circle" style={{ width: 30, height: 30 }}>
