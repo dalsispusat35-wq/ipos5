@@ -100,11 +100,11 @@ const Login = ({ onLoginSuccess }) => {
       <div className="surface-card" style={{
         width: '100%',
         maxWidth: 980,
-        borderRadius: 32,
+        borderRadius: 28,
         padding: 0,
         boxShadow: 'var(--spatial-shadow)',
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
         overflow: 'hidden',
         border: '1px solid var(--border-light)',
         minHeight: 520
@@ -112,7 +112,7 @@ const Login = ({ onLoginSuccess }) => {
 
         {/* ── LEFT COLUMN: LOG IN FORM ── */}
         <div style={{
-          padding: '44px 48px',
+          padding: 'clamp(24px, 5vw, 44px) clamp(20px, 5vw, 48px)',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',

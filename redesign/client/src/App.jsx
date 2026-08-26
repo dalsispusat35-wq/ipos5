@@ -543,7 +543,7 @@ function AppContent() {
       {isMobileDrawerOpen && (
         <div 
           className="modal-overlay" 
-          style={{ zIndex: 9999, justifyContent: 'flex-start', padding: 0 }}
+          style={{ zIndex: 9999, justifyContent: 'flex-start', padding: 0, alignItems: 'stretch' }}
           onClick={() => setIsMobileDrawerOpen(false)}
         >
           <div 
@@ -553,14 +553,16 @@ function AppContent() {
               maxWidth: 320, 
               height: '100vh', 
               borderRadius: 0, 
-              padding: 16, 
+              padding: '16px 14px', 
               display: 'flex', 
               flexDirection: 'column', 
               gap: 12,
-              overflowY: 'auto' 
+              overflowY: 'auto',
+              boxShadow: '4px 0 25px rgba(0, 0, 0, 0.4)' 
             }}
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Drawer Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 10, borderBottom: '1px solid var(--border-light)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <div style={{
@@ -576,19 +578,70 @@ function AppContent() {
                 }}>
                   <img src={currentLogo} alt="Logo" style={{ width: 26, height: 26, objectFit: 'contain' }} />
                 </div>
-                <span style={{ fontWeight: 900, fontSize: 17, color: 'var(--primary-navy)' }}>IPOS<span style={{ color: 'var(--accent-orange)' }}>5</span></span>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontWeight: 900, fontSize: 17, color: 'var(--primary-navy)', lineHeight: 1.1 }}>
+                    IPOS<span style={{ color: 'var(--accent-orange)' }}>5</span>
+                  </span>
+                  <span style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.5px' }}>LOGISTICS SUITE</span>
+                </div>
               </div>
               <button 
                 type="button"
                 onClick={() => setIsMobileDrawerOpen(false)}
                 className="capsule-btn-circle"
-                style={{ width: 30, height: 30 }}
+                style={{ width: 32, height: 32 }}
+                title="Tutup Menu"
               >
-                <X size={14} />
+                <X size={15} />
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {/* User Quick Info Card */}
+            <div style={{
+              background: 'var(--bg-surface-soft)',
+              border: '1px solid var(--border-light)',
+              borderRadius: 12,
+              padding: '10px 12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10
+            }}>
+              <div style={{
+                width: 34,
+                height: 34,
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, var(--primary-navy), var(--primary-blue))',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 12,
+                fontWeight: 800,
+                color: '#ffffff',
+                flexShrink: 0
+              }}>
+                {currentUser?.avatar ? (
+                  <img src={currentUser.avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  currentUser?.name ? currentUser.name.slice(0, 2).toUpperCase() : 'LB'
+                )}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {currentUser?.name || 'Liam Brooks'}
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span>{currentUser?.branch || 'Shop Owner'}</span>
+                  <span className="badge-emerald" style={{ fontSize: 8.5, padding: '1px 5px', borderRadius: 4 }}>ONLINE</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Menu Items List */}
+            <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.6px', textTransform: 'uppercase', padding: '2px 6px 0' }}>
+              Daftar Modul Sistem
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1 }}>
               {navMenuItems.map((item) => {
                 const IconComponent = item.icon;
                 const active = location.pathname === item.to;
@@ -601,13 +654,14 @@ function AppContent() {
                       display: 'flex',
                       alignItems: 'center',
                       gap: 10,
-                      padding: '10px 12px',
+                      padding: '9px 12px',
                       borderRadius: 10,
-                      fontSize: 13,
+                      fontSize: 12.5,
                       fontWeight: active ? 700 : 500,
                       color: active ? 'var(--primary-navy)' : 'var(--text-primary)',
                       background: active ? 'var(--accent-cyan-bg)' : 'transparent',
-                      textDecoration: 'none'
+                      textDecoration: 'none',
+                      transition: 'all 0.15s ease'
                     }}
                   >
                     <IconComponent size={16} color={active ? 'var(--primary-navy)' : 'var(--text-muted)'} />
@@ -616,14 +670,89 @@ function AppContent() {
                 );
               })}
             </div>
+
+            {/* Drawer Footer Actions */}
+            <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <Link
+                to="/profile"
+                onClick={() => setIsMobileDrawerOpen(false)}
+                className="btn-ghost"
+                style={{ justifyContent: 'flex-start', padding: '8px 12px', fontSize: 12, borderRadius: 8, width: '100%' }}
+              >
+                <User size={14} />
+                <span>Profil Akun</span>
+              </Link>
+              <button
+                type="button"
+                onClick={() => { setIsMobileDrawerOpen(false); handleLogout(); }}
+                className="btn-ghost"
+                style={{ justifyContent: 'flex-start', padding: '8px 12px', fontSize: 12, borderRadius: 8, color: 'var(--accent-pink)', width: '100%' }}
+              >
+                <LogOut size={14} />
+                <span>Keluar Akun</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* ── 2. MAIN WORKSPACE VIEWPORT ── */}
+      {/* ── 2. FLOATING MOBILE BOTTOM NAVIGATION BAR ── */}
+      <nav className="mobile-bottom-bar" aria-label="Navigasi Bawah Mobile">
+        <Link 
+          to="/" 
+          className={`mobile-tab-item ${location.pathname === '/' ? 'active' : ''}`}
+          title="Dashboard Overview"
+        >
+          <LayoutDashboard size={18} />
+          <span>Overview</span>
+          {location.pathname === '/' && <span className="mobile-tab-dot" />}
+        </Link>
+
+        <Link 
+          to="/checker" 
+          className={`mobile-tab-item ${location.pathname.startsWith('/checker') ? 'active' : ''}`}
+          title="Tracking Connote"
+        >
+          <Search size={18} />
+          <span>Tracking</span>
+          {location.pathname.startsWith('/checker') && <span className="mobile-tab-dot" />}
+        </Link>
+
+        <Link 
+          to="/transaksi" 
+          className={`mobile-tab-item ${location.pathname.startsWith('/transaksi') ? 'active' : ''}`}
+          title="Invoices & Transaksi"
+        >
+          <FileText size={18} />
+          <span>Invoices</span>
+          {location.pathname.startsWith('/transaksi') && <span className="mobile-tab-dot" />}
+        </Link>
+
+        <Link 
+          to="/kendaraan" 
+          className={`mobile-tab-item ${location.pathname.startsWith('/kendaraan') ? 'active' : ''}`}
+          title="Fleet Armada"
+        >
+          <Truck size={18} />
+          <span>Armada</span>
+          {location.pathname.startsWith('/kendaraan') && <span className="mobile-tab-dot" />}
+        </Link>
+
+        <button 
+          type="button"
+          onClick={() => setIsMobileDrawerOpen(true)}
+          className="mobile-tab-item"
+          title="Buka Menu Lainnya"
+        >
+          <Menu size={18} />
+          <span>Menu</span>
+        </button>
+      </nav>
+
+      {/* ── 3. MAIN WORKSPACE VIEWPORT ── */}
       <div className="spatial-viewport">
 
-        {/* ── 3. MAIN WORKSPACE CANVAS ── */}
+        {/* ── 4. MAIN WORKSPACE CANVAS ── */}
         <main className="spatial-workspace">
 
           {/* Routes Viewport */}

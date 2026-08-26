@@ -232,6 +232,7 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
                 top: 'calc(100% + 8px)',
                 right: 0,
                 width: 290,
+                maxWidth: 'calc(100vw - 32px)',
                 borderRadius: 16,
                 padding: '12px',
                 boxShadow: 'var(--spatial-shadow)',
@@ -1053,7 +1054,7 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
           </div>
 
           {/* Table Search & Link */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
             <div style={{
               display: 'flex',
               alignItems: 'center',
@@ -1062,7 +1063,8 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
               borderRadius: 9999,
               padding: '6px 14px',
               gap: 8,
-              width: 260
+              width: 260,
+              maxWidth: '100%'
             }}>
               <Search size={14} color="var(--text-muted)" />
               <input
@@ -1102,7 +1104,7 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
         </div>
 
         {/* Live Manifest Table */}
-        <div style={{ overflowX: 'auto', maxHeight: 380, overflowY: 'auto' }}>
+        <div className="table-responsive-container" style={{ maxHeight: 380, overflowY: 'auto' }}>
           <table className="data-table">
             <thead>
               <tr>

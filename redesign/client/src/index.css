@@ -947,7 +947,7 @@ select option {
 }
 
 /* ============================================================
-   RESPONSIVE GRIDS & MEDIA QUERIES
+   RESPONSIVE GRIDS, UTILITIES & MULTI-TIER BREAKPOINTS
    ============================================================ */
 .grid-6 {
   display: grid;
@@ -985,8 +985,132 @@ select option {
   gap: 14px;
 }
 
-/* Tablet & Smaller Desktop Breakpoint */
-@media (max-width: 1200px) {
+/* Master-Detail Split Grid Utility */
+.responsive-split {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 18px;
+  align-items: start;
+}
+
+.responsive-split-wide {
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 20px;
+  align-items: start;
+}
+
+/* Universal Responsive Table Wrapper with Smooth Touch Scroll */
+.table-responsive-container {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-light);
+  background: var(--bg-card);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.02);
+}
+
+.table-responsive-container table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px;
+}
+
+/* Horizontal Scrollable Chips / Pills Strip */
+.scrollable-chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+  max-width: 100%;
+}
+.scrollable-chips::-webkit-scrollbar {
+  display: none;
+}
+
+/* Micro-Interaction Utilities */
+.hover-lift {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px -4px rgba(15, 23, 42, 0.08);
+}
+[data-theme="dark"] .hover-lift:hover,
+.dark-theme .hover-lift:hover {
+  box-shadow: 0 8px 28px -4px rgba(0, 0, 0, 0.5);
+}
+
+.touch-target {
+  min-height: 42px;
+  min-width: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Live Pulse Radar for Active Fleets / Status Badges */
+@keyframes livePulse {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }
+  70% { box-shadow: 0 0 0 7px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.live-pulse-emerald {
+  animation: livePulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes bluePulse {
+  0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.6); }
+  70% { box-shadow: 0 0 0 7px rgba(59, 130, 246, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+}
+
+.live-pulse-blue {
+  animation: bluePulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* GPS Modal Layout */
+.gps-modal-body {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  min-height: 0;
+  flex: 1;
+}
+
+@media (max-width: 860px) {
+  .gps-modal-body {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+}
+
+/* Floating Mobile Bottom Navigation Bar (Tabs) */
+.mobile-bottom-bar {
+  display: none;
+}
+
+/* ────────────────────────────────────────────────────────────
+   BREAKPOINT 1: Large Desktops & Ultra-Wide (> 1440px)
+   ──────────────────────────────────────────────────────────── */
+@media (min-width: 1440px) {
+  .spatial-environment {
+    padding: 14px 20px 16px;
+  }
+  .spatial-workspace {
+    padding: 26px 32px;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────
+   BREAKPOINT 2: Laptop Standard & Small Desktop (1025px - 1366px)
+   ──────────────────────────────────────────────────────────── */
+@media (max-width: 1280px) {
   .grid-6 {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -996,23 +1120,65 @@ select option {
   .grid-4 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  .spatial-workspace {
+    padding: 18px 20px;
+  }
 }
 
-/* Tablet & Mobile Breakpoint */
-@media (max-width: 900px) {
+/* ────────────────────────────────────────────────────────────
+   BREAKPOINT 3: iPad / Tablet Landscape & Portrait (769px - 1024px)
+   ──────────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .responsive-split,
+  .responsive-split-wide {
+    grid-template-columns: 1fr;
+  }
+  
+  .pill-nav-container {
+    gap: 2px;
+  }
+  .pill-nav-item {
+    padding: 5px 9px;
+    font-size: 11px;
+  }
+
+  .grid-6 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .grid-5 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .grid-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .spatial-workspace {
+    padding: 16px 18px;
+    gap: 16px;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────
+   BREAKPOINT 4: Small Tablet & Smartphones (<= 768px)
+   ──────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
   .spatial-environment {
     height: auto;
     min-height: 100vh;
     max-height: none;
     overflow-y: auto;
-    padding: 8px 10px;
+    padding: 6px 8px;
   }
 
   .spatial-top-bar {
     height: auto;
-    min-height: 50px;
-    padding: 8px 12px;
+    min-height: 48px;
+    padding: 6px 10px;
     border-radius: var(--radius-lg);
+    margin-bottom: 8px;
   }
 
   .spatial-viewport {
@@ -1029,15 +1195,18 @@ select option {
     height: auto;
     max-height: none;
     overflow-y: visible;
-    padding: 16px 14px;
+    padding: 14px 12px 88px 12px !important; /* Space for mobile bottom bar */
     border-radius: var(--radius-lg);
+    gap: 14px;
   }
 
   .grid-6, .grid-5, .grid-3 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
   }
   .grid-4, .grid-2 {
     grid-template-columns: 1fr;
+    gap: 10px;
   }
 
   .hide-on-mobile {
@@ -1047,25 +1216,136 @@ select option {
   #mobile-nav-toggle {
     display: flex !important;
   }
-}
 
-/* Small Smartphone Breakpoint */
-@media (max-width: 600px) {
-  .grid-6, .grid-5, .grid-4, .grid-3, .grid-2 {
-    grid-template-columns: 1fr;
+  /* Sleek Floating Glassmorphic Mobile Bottom Tab Bar */
+  .mobile-bottom-bar {
+    display: flex;
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+    height: 58px;
+    background: var(--spatial-glass-capsule);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-full);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+    z-index: 999;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 6px;
   }
-  
-  .spatial-environment {
-    padding: 6px;
+
+  [data-theme="dark"] .mobile-bottom-bar,
+  .dark-theme .mobile-bottom-bar {
+    background: rgba(15, 23, 42, 0.94);
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 10px 32px rgba(0, 0, 0, 0.6);
   }
-  
-  .spatial-workspace {
-    padding: 12px 10px;
+
+  .mobile-tab-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 9.5px;
+    font-weight: 700;
+    padding: 6px 8px;
+    border-radius: 12px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    flex: 1;
+    max-width: 68px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+  }
+
+  .mobile-tab-item:hover,
+  .mobile-tab-item.active {
+    color: var(--primary-navy);
+  }
+
+  [data-theme="dark"] .mobile-tab-item:hover,
+  [data-theme="dark"] .mobile-tab-item.active,
+  .dark-theme .mobile-tab-item:hover,
+  .dark-theme .mobile-tab-item.active {
+    color: var(--primary-navy);
+  }
+
+  .mobile-tab-item:active {
+    transform: scale(0.92);
+  }
+
+  .mobile-tab-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--primary-navy);
+    position: absolute;
+    bottom: 2px;
+  }
+
+  /* Modal Bottom-Sheet Behavior on Mobile */
+  .modal-overlay {
+    padding: 0 !important;
+    align-items: flex-end !important;
   }
 
   .modal-content {
-    max-height: 95vh;
-    border-radius: var(--radius-lg);
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 92vh !important;
+    border-radius: 20px 20px 0 0 !important;
+    margin: 0 !important;
+    padding: 16px !important;
+  }
+}
+
+/* ────────────────────────────────────────────────────────────
+   BREAKPOINT 5: Smartphone Compact / iPhone SE (< 480px)
+   ──────────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .grid-6, .grid-5, .grid-4, .grid-3, .grid-2 {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  .spatial-environment {
+    padding: 4px;
+  }
+  
+  .spatial-workspace {
+    padding: 12px 10px 88px 10px !important;
+    border-radius: var(--radius-md);
+  }
+
+  .spatial-top-bar {
+    padding: 4px 8px;
+    gap: 6px;
+  }
+
+  .capsule-btn-circle {
+    width: 32px;
+    height: 32px;
+  }
+
+  .btn-primary, .btn-ghost {
+    padding: 6px 12px;
+    font-size: 11.5px;
+  }
+
+  .kpi-card-blue,
+  .kpi-card-cyan,
+  .kpi-card-green,
+  .kpi-card-pink,
+  .kpi-card-purple {
+    padding: 12px 14px !important;
+    min-height: 80px !important;
   }
 }
 

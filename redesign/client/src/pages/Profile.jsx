@@ -466,8 +466,8 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div style={{ display: 'flex', gap: 20, marginTop: 28, borderBottom: '1px solid var(--border-light)', paddingBottom: 2, overflowX: 'auto' }}>
+        {/* Navigation Tabs (Swipeable on Mobile) */}
+        <div className="scrollable-chips" style={{ borderBottom: '1px solid var(--border-light)', gap: 24, marginTop: 12 }}>
           {[
             { id: 'overview', label: 'Ringkasan User', icon: <User size={15} /> },
             { id: 'users_crud', label: 'Kelola Pengguna (CRUD)', icon: <Users size={15} /> },
@@ -501,7 +501,7 @@ export default function Profile() {
 
       {/* ── TAB 1: OVERVIEW ── */}
       {activeTab === 'overview' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
           
           {/* Card 1: Authority & Office Detail */}
           <div className="surface-card" style={{ padding: 24 }}>

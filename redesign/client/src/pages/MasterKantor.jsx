@@ -266,7 +266,7 @@ export default function MasterKantor() {
       {/* 3. Filter Tabs & Search Bar */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {/* Navigation Filter Tabs */}
-        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
+        <div className="scrollable-chips" style={{ paddingBottom: 4 }}>
           {[
             { id: 'BANDUNG_CIMAHI', label: 'Bandung & Cimahi (19 Kantor)', icon: Sparkles, count: 19 },
             { id: 'ALL', label: 'Semua Kantor (Nasional)', icon: Globe, count: '13,768' },
@@ -349,7 +349,7 @@ export default function MasterKantor() {
       <div className="spatial-card" style={{ borderRadius: 16, overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: 0 }}>
         
         {/* Table Container with Fully Opaque Sticky Header */}
-        <div style={{ overflowX: 'auto', width: '100%' }}>
+        <div className="table-responsive-container" style={{ border: 'none', background: 'transparent' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)' }}>

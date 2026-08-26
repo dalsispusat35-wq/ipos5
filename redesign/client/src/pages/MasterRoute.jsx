@@ -253,7 +253,7 @@ export default function MasterRoute() {
       </div>
 
       {/* Main Container */}
-      <div style={{ display: 'grid', gridTemplateColumns: showForm ? '1fr 380px' : '1fr', gap: 20 }}>
+      <div className={showForm ? 'responsive-split' : ''} style={{ display: showForm ? undefined : 'block', gap: 20 }}>
         {/* Route Cards List */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {filteredRoutes.map((route) => (

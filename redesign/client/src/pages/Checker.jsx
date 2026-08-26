@@ -153,7 +153,7 @@ function PaginatedGroupCard({
       {/* Accordion Content Body (Paginated Table) */}
       {isExpanded && (
         <div style={{ padding: '8px 16px 16px' }}>
-          <div style={{ overflowX: 'auto' }}>
+          <div className="table-responsive-container" style={{ border: 'none', background: 'transparent' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11.5 }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-light)', textAlign: 'left', color: 'var(--text-secondary)' }}>
@@ -1034,9 +1034,9 @@ export default function Checker() {
               </button>
             </div>
 
-            {/* Quick Test Samples */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', paddingTop: 8, borderTop: '1px solid var(--border-light)' }}>
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            {/* Quick Test Samples (Swipeable Chips Strip) */}
+            <div className="scrollable-chips" style={{ alignItems: 'center', paddingTop: 8, borderTop: '1px solid var(--border-light)' }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0 }}>
                 SAMPEL RESI DATABASE:
               </span>
               {SAMPLE_RESIS.map((s) => (

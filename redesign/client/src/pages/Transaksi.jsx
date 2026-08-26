@@ -778,7 +778,7 @@ export default function Transaksi() {
       ) : (
         <div className="spatial-card" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
           
-          <div style={{ overflowX: 'auto', maxHeight: 520, overflowY: 'auto' }}>
+          <div className="table-responsive-container" style={{ maxHeight: 520, overflowY: 'auto' }}>
             <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse' }}>
               <thead style={{ position: 'sticky', top: 0, background: 'var(--bg-card)', zIndex: 10 }}>
                 <tr style={{ borderBottom: '1px solid var(--border-light)', textAlign: 'left', color: 'var(--text-secondary)', fontSize: 11, fontWeight: 700 }}>

@@ -82,59 +82,63 @@ export default function JadwalTransportasi() {
         </div>
       </div>
 
-      {/* Transport Calendar Grid */}
+      {/* Transport Calendar Grid (Responsive Scroll Container) */}
       <div className="spatial-card" style={{ overflow: 'hidden', padding: 0 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '60px repeat(7, 1fr)', borderBottom: '1px solid var(--border-light)', background: 'var(--bg-surface-soft)' }}>
-          <div style={{ padding: '10px', borderRight: '1px solid var(--border-light)' }} />
-          {days.map((d, i) => (
-            <div key={d} style={{ padding: '10px 0', textAlign: 'center', borderRight: i < 6 ? '1px solid var(--border-light)' : 'none' }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: i === 3 ? 'var(--accent-cyan)' : 'var(--text-secondary)', textTransform: 'uppercase' }}>{d}</div>
-              <div style={{ fontSize: 17, fontWeight: 900, color: i === 3 ? 'var(--primary-blue)' : 'var(--text-primary)', marginTop: 2 }}>{17 + i}</div>
+        <div className="table-responsive-container" style={{ border: 'none', background: 'transparent' }}>
+          <div style={{ minWidth: 720 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '60px repeat(7, 1fr)', borderBottom: '1px solid var(--border-light)', background: 'var(--bg-surface-soft)' }}>
+              <div style={{ padding: '10px', borderRight: '1px solid var(--border-light)' }} />
+              {days.map((d, i) => (
+                <div key={d} style={{ padding: '10px 0', textAlign: 'center', borderRight: i < 6 ? '1px solid var(--border-light)' : 'none' }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: i === 3 ? 'var(--accent-cyan)' : 'var(--text-secondary)', textTransform: 'uppercase' }}>{d}</div>
+                  <div style={{ fontSize: 17, fontWeight: 900, color: i === 3 ? 'var(--primary-blue)' : 'var(--text-primary)', marginTop: 2 }}>{17 + i}</div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
 
-        <div style={{ overflowY: 'auto', maxHeight: 440, display: 'grid', gridTemplateColumns: '60px repeat(7, 1fr)' }}>
-          <div style={{ background: 'var(--bg-surface-soft)' }}>
-            {hours.map((h) => (
-              <div key={h} style={{ height: CELL_H, borderRight: '1px solid var(--border-light)', borderBottom: '1px solid var(--border-light)', padding: '6px 8px' }}>
-                <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{h.toString().padStart(2, '0')}:00</span>
-              </div>
-            ))}
-          </div>
-
-          {days.map((_, dayIdx) => (
-            <div key={dayIdx} style={{ borderRight: dayIdx < 6 ? '1px solid var(--border-light)' : 'none', position: 'relative' }}>
-              {hours.map((h) => <div key={h} style={{ height: CELL_H, borderBottom: '1px solid var(--border-light)' }} />)}
-              {trips.filter((t) => t.day === dayIdx).map((trip) => {
-                const top = (trip.startHour - 6) * CELL_H;
-                const height = trip.duration * CELL_H - 4;
-                return (
-                  <div
-                    key={trip.id}
-                    style={{
-                      position: 'absolute',
-                      top: top + 2,
-                      left: 4,
-                      right: 4,
-                      height,
-                      borderRadius: 8,
-                      background: 'var(--accent-cyan-bg)',
-                      border: '1px solid var(--border-light)',
-                      padding: '6px 8px',
-                      cursor: 'pointer',
-                      overflow: 'hidden',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-                    }}
-                  >
-                    <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--primary-blue)', fontFamily: 'monospace' }}>{trip.startHour.toString().padStart(2, '0')}:00</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-primary)', fontWeight: 700, lineHeight: 1.2 }}>{trip.route}</div>
-                    <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 2, fontFamily: 'monospace' }}>{trip.vehicle}</div>
+            <div style={{ overflowY: 'auto', maxHeight: 440, display: 'grid', gridTemplateColumns: '60px repeat(7, 1fr)' }}>
+              <div style={{ background: 'var(--bg-surface-soft)' }}>
+                {hours.map((h) => (
+                  <div key={h} style={{ height: CELL_H, borderRight: '1px solid var(--border-light)', borderBottom: '1px solid var(--border-light)', padding: '6px 8px' }}>
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{h.toString().padStart(2, '0')}:00</span>
                   </div>
-                );
-              })}
+                ))}
+              </div>
+
+              {days.map((_, dayIdx) => (
+                <div key={dayIdx} style={{ borderRight: dayIdx < 6 ? '1px solid var(--border-light)' : 'none', position: 'relative' }}>
+                  {hours.map((h) => <div key={h} style={{ height: CELL_H, borderBottom: '1px solid var(--border-light)' }} />)}
+                  {trips.filter((t) => t.day === dayIdx).map((trip) => {
+                    const top = (trip.startHour - 6) * CELL_H;
+                    const height = trip.duration * CELL_H - 4;
+                    return (
+                      <div
+                        key={trip.id}
+                        style={{
+                          position: 'absolute',
+                          top: top + 2,
+                          left: 4,
+                          right: 4,
+                          height,
+                          borderRadius: 8,
+                          background: 'var(--accent-cyan-bg)',
+                          border: '1px solid var(--border-light)',
+                          padding: '6px 8px',
+                          cursor: 'pointer',
+                          overflow: 'hidden',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                        }}
+                      >
+                        <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--primary-blue)', fontFamily: 'monospace' }}>{trip.startHour.toString().padStart(2, '0')}:00</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-primary)', fontWeight: 700, lineHeight: 1.2 }}>{trip.route}</div>
+                        <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 2, fontFamily: 'monospace' }}>{trip.vehicle}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
       </div>
     </div>

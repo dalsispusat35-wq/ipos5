@@ -193,10 +193,10 @@ export default function MasterKendaraan() {
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: showForm ? '1fr 340px' : '1fr', gap: 16 }}>
+      <div className={showForm ? 'responsive-split' : ''} style={{ display: showForm ? undefined : 'block', gap: 16 }}>
         {/* Vehicles Table */}
         <div className="spatial-card" style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: 0 }}>
-          <div style={{ overflowX: 'auto' }}>
+          <div className="table-responsive-container" style={{ border: 'none', background: 'transparent' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 12.5 }}>
               <thead>
                 <tr style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', color: 'var(--text-secondary)', fontWeight: 700 }}>

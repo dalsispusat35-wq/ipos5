@@ -607,11 +607,9 @@ export default function LiveGpsMapModal({
           </button>
         </div>
 
-        {/* Modal Main Body (Grid 2-Cols: Left Driver Panel, Right Leaflet Map) */}
-        <div style={{
+        {/* Modal Main Body (Grid 2-Cols on Desktop, Stacked on Mobile) */}
+        <div className="gps-modal-body" style={{
           flex: 1,
-          display: 'grid',
-          gridTemplateColumns: '320px 1fr',
           minHeight: 0,
           position: 'relative'
         }}>

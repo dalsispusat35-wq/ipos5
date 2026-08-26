@@ -76,7 +76,7 @@ export default function MasterProduk() {
       </div>
 
       {/* Product Cards Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(270px, 1fr))', gap: 16 }}>
         {products.map((p) => {
           const catColor = categoryColor[p.category] || 'var(--primary-navy)';
           return (

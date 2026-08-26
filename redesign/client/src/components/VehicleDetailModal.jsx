@@ -147,7 +147,7 @@ export default function VehicleDetailModal({ nopol, onClose }) {
         </div>
 
         {/* ── COCKPIT TAB SELECTOR ── */}
-        <div style={{ display: 'flex', background: 'var(--bg-surface-soft)', borderBottom: '1px solid var(--border-light)', padding: '0 20px', gap: 6, overflowX: 'auto' }}>
+        <div className="scrollable-chips" style={{ background: 'var(--bg-surface-soft)', borderBottom: '1px solid var(--border-light)', padding: '0 20px', gap: 6 }}>
           {[
             { id: 'summary', label: 'Ringkasan Armada', icon: BarChart2 },
             { id: 'route', label: 'Rute & Stop Points', icon: Route },
@@ -439,7 +439,7 @@ export default function VehicleDetailModal({ nopol, onClose }) {
                     </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      <div className="table-responsive" style={{ maxHeight: 380, overflowY: 'auto' }}>
+                      <div className="table-responsive-container" style={{ maxHeight: 380, overflowY: 'auto' }}>
                         <table className="data-table" style={{ width: '100%', fontSize: 11 }}>
                           <thead>
                             <tr>
