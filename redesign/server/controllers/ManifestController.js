@@ -406,6 +406,153 @@ class ManifestController {
       res.status(500).json({ success: false, message: error.message });
     }
   }
+
+  // ─── Real-Time Gate & Transit Pipeline Hub ──────────────────────────────────
+  async getGatePipeline(req, res) {
+    try {
+      const db = await DbConnection.getDb();
+      
+      // 1. Fetch active/latest vehicle info
+      const vehicles = await db.collection('master_kendaraan').find({ status: 'AKTIF' }).toArray();
+      const vehicle = vehicles.find(v => v.nopol === 'B 9910 PCX') || vehicles[0] || {
+        nopol: 'D 9021 AB',
+        nama_kendaraan: 'Mitsubishi Canter Box',
+        driver: 'Hendra Kusuma',
+        assigned_route_id: 'Cimahi → Bandung SC (Main)'
+      };
+
+      // 2. Fetch all manifests to determine active manifest
+      const manifests = await db.collection('manifests').find({}).sort({ createdAt: -1 }).limit(10).toArray();
+      const activeManifest = manifests.find(m => m.status_perjalanan === 'Draft' || m.status_perjalanan === 'Transit') || manifests[0];
+
+      // 3. Query all relevant transactions
+      const allTx = await db.collection('transaksi').find({}).sort({ createdAt: -1, _id: -1 }).limit(100).toArray();
+
+      // Normalize transaction item helper
+      const formatItem = (t) => {
+        const connote = t.connote_code || t.connote?.connote_code || String(t._id);
+        const city = t.connote?.connote_receiver_city || t.destination_city || '';
+        const destNopen = t.custom_field?.destination_nopen || t.location_data_created?.custom_field?.destination_nopen || t.destination_nopen || '40400';
+        const destName = city ? `${city} (${destNopen})` : (t.connote?.connote_receiver_address || `SPP Bandung (${destNopen})`);
+        const weightKg = Number(t.connote?.actual_weight || t.actual_weight || t.weight || 1.5);
+        const service = t.connote?.connote_service || t.service || 'Pos Reguler';
+        
+        let timeStr = '08:00 WIB';
+        const rawDate = t.connote?.created_at || t.createdAt || t.created_at;
+        if (rawDate) {
+          try {
+            const d = new Date(rawDate);
+            if (!isNaN(d.getTime())) {
+              timeStr = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+            }
+          } catch (e) {
+            timeStr = '08:00 WIB';
+          }
+        }
+
+        const state = (t.connote?.connote_state || t.connote_state || 'DITERIMA_DI_CIMAHI').toUpperCase();
+
+        return {
+          connote,
+          dest: destName,
+          weight: `${weightKg.toFixed(1)} kg`,
+          weightNum: weightKg,
+          service,
+          time: timeStr,
+          state,
+          manifest_id: t.manifest_id || null,
+          sender: t.connote?.connote_sender_name || t.sender_name || 'KCU Cimahi',
+          amount: t.connote?.connote_amount || 0
+        };
+      };
+
+      const s1Items = [];
+      const s2Items = [];
+      const s3Items = [];
+
+      allTx.forEach(t => {
+        const item = formatItem(t);
+        const state = item.state;
+
+        if (state === 'DITERIMA_DI_CIMAHI' || state === 'ENTRY' || (!item.manifest_id && !['IN_MANIFEST', 'TRANSIT_SPP_BANDUNG', 'IN_TRANSIT', 'TIBA_DI_SPP_TUJUAN', 'DELIVERED'].includes(state))) {
+          if (s1Items.length < 20) s1Items.push(item);
+        } else if (state === 'IN_MANIFEST' || state === 'TRANSIT_SPP_BANDUNG' || state === 'IN_TRANSIT' || state === 'TRANSIT' || state === 'LOADED') {
+          if (s2Items.length < 20) s2Items.push(item);
+        } else if (state === 'TIBA_DI_SPP_TUJUAN' || state === 'ARRIVED' || state === 'DELIVERED' || state === 'TERKIRIM') {
+          if (s3Items.length < 20) s3Items.push(item);
+        } else {
+          if (s1Items.length < 20) s1Items.push(item);
+        }
+      });
+
+      // If S1 is empty and no active pipeline items, seed top items into S1
+      if (s1Items.length === 0 && s2Items.length === 0) {
+        allTx.slice(0, 5).forEach(t => s1Items.push(formatItem(t)));
+      }
+
+      const todayStr = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+
+      res.json({
+        success: true,
+        message: 'Real-time gate pipeline loaded from MongoDB database',
+        data: {
+          session: {
+            dispatch_id: `TRP-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-008`,
+            date: todayStr,
+            vehicle: `${vehicle.nopol} — ${vehicle.nama_kendaraan || 'Truk Box Canter'}`,
+            driver: vehicle.driver || 'Hendra Kusuma',
+            route: vehicle.assigned_route_id || 'Cimahi → Bandung SC (Main)',
+            departure_time: '08:30 WIB'
+          },
+          active_manifest_code: activeManifest ? activeManifest.master_manifest_code : `MNFST-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-001`,
+          active_manifest_status: activeManifest ? activeManifest.status_perjalanan : 'Draft',
+          stage1_items: s1Items,
+          stage2_items: s2Items,
+          stage3_items: s3Items,
+          total_db_transactions: allTx.length,
+          last_sync: new Date().toISOString()
+        }
+      });
+    } catch (error) {
+      console.error('Error loading gate pipeline:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
+
+  // ─── Reset Gate Pipeline In MongoDB ─────────────────────────────────────────
+  async resetGatePipeline(req, res) {
+    try {
+      const db = await DbConnection.getDb();
+      const col = db.collection('transaksi');
+      
+      // Reset top 15 records in MongoDB back to DITERIMA_DI_CIMAHI and unmanifested
+      const sampleDocs = await col.find({}).sort({ createdAt: -1 }).limit(15).toArray();
+      const ids = sampleDocs.map(d => d._id);
+
+      if (ids.length > 0) {
+        await col.updateMany(
+          { _id: { $in: ids } },
+          { 
+            $set: { 
+              connote_state: 'DITERIMA_DI_CIMAHI', 
+              'connote.connote_state': 'DITERIMA_DI_CIMAHI',
+              manifest_id: null,
+              updatedAt: new Date()
+            } 
+          }
+        );
+      }
+
+      res.json({
+        success: true,
+        message: `${ids.length} paket di database berhasil di-reset ke status DITERIMA_DI_CIMAHI untuk pengujian real-time.`,
+        resetCount: ids.length
+      });
+    } catch (error) {
+      console.error('Error resetting gate pipeline:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  }
 }
 
 export default new ManifestController();

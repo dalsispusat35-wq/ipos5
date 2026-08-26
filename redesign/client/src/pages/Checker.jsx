@@ -4,7 +4,7 @@ import {
   Search, MapPin, CheckCircle2, Circle, Clock, Package, Truck, Navigation, 
   Copy, Check, RefreshCw, ShieldCheck, Zap, X, Filter, Eye,
   Calendar, CalendarDays, ArrowRight, Layers, FileSpreadsheet,
-  AlertCircle, AlertTriangle, ChevronDown, ChevronRight, User, Building2, Weight,
+  AlertCircle, AlertTriangle, ChevronDown, ChevronRight, ChevronLeft, User, Building2, Weight,
   Car, TrendingUp, Activity, BoxIcon, Timer, AlertOctagon, Info, ArrowUpRight,
   Printer, History, Sparkles, Pause, Play, SkipForward, SkipBack, RotateCcw,
   ListFilter, LayoutGrid, Table, Phone, Gauge, CheckSquare
@@ -78,6 +78,267 @@ const getWaypointSubLabel = (stop, idx, total) => {
   return `Transit Stop #${stop?.seq || idx + 1}`;
 };
 
+// ─── Paginated Destination Group Accordion Component ────────────────────────
+function PaginatedGroupCard({
+  grp,
+  isExpanded,
+  onToggle,
+  formatWeight,
+  mapStateToBadge
+}) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+
+  const packages = grp.packages || [];
+  const totalPackages = packages.length;
+  const totalPages = Math.max(1, Math.ceil(totalPackages / pageSize));
+  
+  // Safe bounded page number
+  const safePage = Math.min(currentPage, totalPages);
+
+  // Sync current page if totalPackages shrink
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [totalPackages, totalPages, currentPage]);
+
+  const startIndex = (safePage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalPackages);
+  const currentPackages = packages.slice(startIndex, endIndex);
+
+  const handlePageSizeChange = (newSize) => {
+    setPageSize(newSize);
+    setCurrentPage(1);
+  };
+
+  return (
+    <div 
+      className="surface-card"
+      style={{
+        padding: 0,
+        overflow: 'hidden'
+      }}
+    >
+      {/* Accordion Group Header */}
+      <div
+        onClick={onToggle}
+        style={{
+          padding: '12px 16px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          cursor: 'pointer',
+          background: 'var(--bg-surface-soft)',
+          userSelect: 'none'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          {isExpanded ? <ChevronDown size={16} color="var(--primary-blue)" /> : <ChevronRight size={16} color="var(--text-muted)" />}
+          <span style={{ fontSize: 13, fontWeight: 900, color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <Building2 size={14} color="var(--primary-blue)" /> {grp.destination_office_name || `Kantor Tujuan ${grp.destination_nopen}`}
+          </span>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>
+            (Nopen: {grp.destination_nopen})
+          </span>
+          <span className="badge badge-navy" style={{ fontSize: 10, padding: '2px 8px' }}>
+            {totalPackages} PAKET • {(grp.total_weight_kg || 0).toFixed(1)} KG
+          </span>
+        </div>
+        <span style={{ fontSize: 11, color: 'var(--accent-cyan)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+          {isExpanded ? <>Tutup <ChevronDown size={12} style={{ transform: 'rotate(180deg)' }} /></> : <>Buka Rincian <ChevronDown size={12} /></>}
+        </span>
+      </div>
+
+      {/* Accordion Content Body (Paginated Table) */}
+      {isExpanded && (
+        <div style={{ padding: '8px 16px 16px' }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11.5 }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border-light)', textAlign: 'left', color: 'var(--text-secondary)' }}>
+                  <th style={{ padding: '8px 6px', width: 36 }}>#</th>
+                  <th style={{ padding: '8px 6px' }}>NO RESI</th>
+                  <th style={{ padding: '8px 6px' }}>LAYANAN</th>
+                  <th style={{ padding: '8px 6px' }}>BERAT</th>
+                  <th style={{ padding: '8px 6px' }}>PENGIRIM / PENERIMA</th>
+                  <th style={{ padding: '8px 6px' }}>STATUS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {currentPackages.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} style={{ padding: '20px 0', textAlign: 'center', color: 'var(--text-muted)' }}>
+                      Tidak ada paket pada tujuan ini
+                    </td>
+                  </tr>
+                ) : (
+                  currentPackages.map((pkg, idx) => (
+                    <tr key={pkg.connote_code || idx} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                      <td style={{ padding: '8px 6px', color: 'var(--text-muted)', fontSize: 10.5, fontFamily: 'monospace' }}>
+                        {startIndex + idx + 1}
+                      </td>
+                      <td style={{ padding: '8px 6px', fontWeight: 800, fontFamily: 'monospace', color: 'var(--primary-blue)' }}>
+                        {pkg.connote_code}
+                      </td>
+                      <td style={{ padding: '8px 6px', color: 'var(--text-secondary)' }}>
+                        {pkg.service}
+                      </td>
+                      <td style={{ padding: '8px 6px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                        {formatWeight(pkg.weight_kg)}
+                      </td>
+                      <td style={{ padding: '8px 6px', color: 'var(--text-primary)' }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>{pkg.sender_name || 'Pengirim'}</span> <ArrowRight size={11} style={{ display: 'inline', margin: '0 3px', color: 'var(--text-muted)' }} /> <strong style={{ color: 'var(--text-primary)' }}>{pkg.receiver_name || 'Penerima'}</strong>
+                      </td>
+                      <td style={{ padding: '8px 6px' }}>
+                        <span className={mapStateToBadge(pkg.state).class} style={{ fontSize: 9.5, padding: '2px 7px' }}>
+                          {mapStateToBadge(pkg.state).label}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Group Pagination Controls */}
+          {totalPackages > 0 && (
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: 10,
+              paddingTop: 12,
+              marginTop: 8,
+              borderTop: '1px solid var(--border-light)',
+              fontSize: 11.5
+            }}>
+              {/* Summary text & Page size selector (20, 50, 100) */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, color: 'var(--text-secondary)' }}>
+                <span>
+                  Menampilkan <strong style={{ color: 'var(--text-primary)' }}>{startIndex + 1}</strong> - <strong style={{ color: 'var(--text-primary)' }}>{endIndex}</strong> dari <strong style={{ color: 'var(--text-primary)' }}>{totalPackages}</strong> paket
+                </span>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Tampilkan:</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                    style={{
+                      background: 'var(--bg-workspace)',
+                      border: '1px solid var(--border-light)',
+                      borderRadius: 6,
+                      padding: '3px 8px',
+                      color: 'var(--text-primary)',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      outline: 'none',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value={20}>20 / hal</option>
+                    <option value={50}>50 / hal</option>
+                    <option value={100}>100 / hal</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Prev / Page Pills / Next Buttons */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={safePage <= 1}
+                  className="btn-ghost"
+                  style={{
+                    padding: '3px 10px',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    cursor: safePage <= 1 ? 'not-allowed' : 'pointer',
+                    opacity: safePage <= 1 ? 0.4 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4
+                  }}
+                >
+                  <ChevronLeft size={13} /> Prev
+                </button>
+
+                {/* Page Number Pill Buttons */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter(pNum => {
+                      if (totalPages <= 7) return true;
+                      if (pNum === 1 || pNum === totalPages) return true;
+                      if (Math.abs(pNum - safePage) <= 1) return true;
+                      return false;
+                    })
+                    .reduce((acc, pNum, idx, arr) => {
+                      if (idx > 0 && pNum - arr[idx - 1] > 1) {
+                        acc.push({ type: 'ellipsis', key: `el-grp-${grp.destination_nopen}-${pNum}` });
+                      }
+                      acc.push({ type: 'page', value: pNum, key: `p-grp-${grp.destination_nopen}-${pNum}` });
+                      return acc;
+                    }, [])
+                    .map(item => {
+                      if (item.type === 'ellipsis') {
+                        return <span key={item.key} style={{ padding: '0 4px', color: 'var(--text-muted)' }}>...</span>;
+                      }
+                      const isAct = item.value === safePage;
+                      return (
+                        <button
+                          key={item.key}
+                          type="button"
+                          onClick={() => setCurrentPage(item.value)}
+                          style={{
+                            minWidth: 26,
+                            height: 26,
+                            padding: '0 6px',
+                            borderRadius: 6,
+                            border: isAct ? '1px solid var(--primary-blue)' : '1px solid transparent',
+                            background: isAct ? 'var(--primary-navy)' : 'transparent',
+                            color: isAct ? '#ffffff' : 'var(--text-secondary)',
+                            fontWeight: isAct ? 800 : 600,
+                            fontSize: 11,
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          {item.value}
+                        </button>
+                      );
+                    })}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={safePage >= totalPages}
+                  className="btn-ghost"
+                  style={{
+                    padding: '3px 10px',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    cursor: safePage >= totalPages ? 'not-allowed' : 'pointer',
+                    opacity: safePage >= totalPages ? 0.4 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4
+                  }}
+                >
+                  Next <ChevronRight size={13} />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Checker() {
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -107,6 +368,8 @@ export default function Checker() {
   const [cargoViewMode, setCargoViewMode] = useState('GROUPED'); // 'GROUPED' vs 'TABLE'
   const [showOnlyNewlyLoaded, setShowOnlyNewlyLoaded] = useState(false);
   const [selectedDestFilter, setSelectedDestFilter] = useState('ALL');
+  const [flatTablePage, setFlatTablePage] = useState(1);
+  const [flatTablePageSize, setFlatTablePageSize] = useState(20);
 
   // Auto-Refresh States
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -124,6 +387,11 @@ export default function Checker() {
   const [selectedStopFilter, setSelectedStopFilter] = useState(null);
 
   const lastParamCodeRef = useRef(undefined);
+
+  // Reset flatTablePage when search/filter/view mode changes
+  useEffect(() => {
+    setFlatTablePage(1);
+  }, [cargoSearchTerm, showOnlyNewlyLoaded, selectedDestFilter, selectedStopFilter, cargoViewMode]);
 
   // Fetch fleet list from database
   const loadFleetList = useCallback(async (targetDate, showSpinner = true) => {
@@ -347,8 +615,33 @@ export default function Checker() {
     if (selectedStopFilter) {
       groups = groups.filter(g => String(g.destination_nopen) === String(selectedStopFilter));
     }
+
+    if (cargoSearchTerm.trim() || showOnlyNewlyLoaded) {
+      const q = cargoSearchTerm.toLowerCase().trim();
+      groups = groups.map(g => {
+        let pkgs = g.packages || [];
+        if (showOnlyNewlyLoaded) {
+          pkgs = pkgs.filter(p => p.loaded_at_seq === activeSeq);
+        }
+        if (q) {
+          pkgs = pkgs.filter(p =>
+            (p.connote_code || '').toLowerCase().includes(q) ||
+            (p.receiver_name || '').toLowerCase().includes(q) ||
+            (p.sender_name || '').toLowerCase().includes(q) ||
+            (p.service || '').toLowerCase().includes(q)
+          );
+        }
+        return {
+          ...g,
+          packages: pkgs,
+          package_count: pkgs.length,
+          total_weight_kg: pkgs.reduce((sum, p) => sum + (p.weight_kg || 0), 0)
+        };
+      }).filter(g => g.packages.length > 0);
+    }
+
     return groups;
-  }, [result?.cargoGroupedByDestination, selectedDestFilter, selectedStopFilter]);
+  }, [result?.cargoGroupedByDestination, selectedDestFilter, selectedStopFilter, cargoSearchTerm, showOnlyNewlyLoaded, activeSeq]);
 
   // Dynamically compute tracking timeline based on activeSeq and routeStops
   const displayTimeline = useMemo(() => {
@@ -1439,132 +1732,228 @@ export default function Checker() {
             {/* ── VIEW MODE 1: GROUPED ACCORDION VIEW ── */}
             {cargoViewMode === 'GROUPED' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {filteredCargoGroups.map((grp) => {
-                  const isExpanded = expandedDestGroups[grp.destination_nopen] !== false;
-                  return (
-                    <div 
+                {filteredCargoGroups.length === 0 ? (
+                  <div className="surface-card" style={{ padding: '36px 20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                    <Package size={36} style={{ margin: '0 auto 10px', opacity: 0.5 }} />
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>Tidak ada data muatan paket</div>
+                    <div style={{ fontSize: 11.5, marginTop: 4 }}>Sesuaikan kata kunci pencarian atau filter waypoint untuk melihat paket.</div>
+                  </div>
+                ) : (
+                  filteredCargoGroups.map((grp) => (
+                    <PaginatedGroupCard
                       key={grp.destination_nopen}
-                      className="surface-card"
-                      style={{
-                        padding: 0,
-                        overflow: 'hidden'
-                      }}
-                    >
-                      <div
-                        onClick={() => toggleDestGroup(grp.destination_nopen)}
-                        style={{
-                          padding: '12px 16px',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          cursor: 'pointer',
-                          background: 'var(--bg-surface-soft)'
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                          {isExpanded ? <ChevronDown size={16} color="var(--primary-blue)" /> : <ChevronRight size={16} color="var(--text-muted)" />}
-                          <span style={{ fontSize: 13, fontWeight: 900, color: 'var(--text-primary)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                            <Building2 size={14} color="var(--primary-blue)" /> {grp.destination_office_name || `Kantor Tujuan ${grp.destination_nopen}`}
-                          </span>
-                          <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'monospace' }}>
-                            (Nopen: {grp.destination_nopen})
-                          </span>
-                          <span className="badge badge-navy" style={{ fontSize: 10, padding: '2px 8px' }}>
-                            {grp.package_count || (grp.packages || []).length} PAKET • {(grp.total_weight_kg || 0).toFixed(1)} KG
-                          </span>
-                        </div>
-                        <span style={{ fontSize: 11, color: 'var(--accent-cyan)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
-                          {isExpanded ? <>Tutup <ChevronDown size={12} style={{ transform: 'rotate(180deg)' }} /></> : <>Buka Rincian <ChevronDown size={12} /></>}
-                        </span>
-                      </div>
-
-                      {isExpanded && (
-                        <div style={{ padding: '8px 16px 16px', overflowX: 'auto' }}>
-                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11.5 }}>
-                            <thead>
-                              <tr style={{ borderBottom: '1px solid var(--border-light)', textAlign: 'left', color: 'var(--text-secondary)' }}>
-                                <th style={{ padding: '8px 6px' }}>NO RESI</th>
-                                <th style={{ padding: '8px 6px' }}>LAYANAN</th>
-                                <th style={{ padding: '8px 6px' }}>BERAT</th>
-                                <th style={{ padding: '8px 6px' }}>PENGIRIM / PENERIMA</th>
-                                <th style={{ padding: '8px 6px' }}>STATUS</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {(grp.packages || []).map((pkg) => (
-                                <tr key={pkg.connote_code} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                                  <td style={{ padding: '8px 6px', fontWeight: 800, fontFamily: 'monospace', color: 'var(--primary-blue)' }}>
-                                    {pkg.connote_code}
-                                  </td>
-                                  <td style={{ padding: '8px 6px', color: 'var(--text-secondary)' }}>
-                                    {pkg.service}
-                                  </td>
-                                  <td style={{ padding: '8px 6px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                                    {formatWeight(pkg.weight_kg)}
-                                  </td>
-                                  <td style={{ padding: '8px 6px', color: 'var(--text-primary)' }}>
-                                    <span style={{ color: 'var(--text-secondary)' }}>{pkg.sender_name || 'Pengirim'}</span> <ArrowRight size={11} style={{ display: 'inline', margin: '0 3px', color: 'var(--text-muted)' }} /> <strong style={{ color: 'var(--text-primary)' }}>{pkg.receiver_name || 'Penerima'}</strong>
-                                  </td>
-                                  <td style={{ padding: '8px 6px' }}>
-                                    <span className={mapStateToBadge(pkg.state).class} style={{ fontSize: 9.5, padding: '2px 7px' }}>
-                                      {mapStateToBadge(pkg.state).label}
-                                    </span>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                      grp={grp}
+                      isExpanded={expandedDestGroups[grp.destination_nopen] !== false}
+                      onToggle={() => toggleDestGroup(grp.destination_nopen)}
+                      formatWeight={formatWeight}
+                      mapStateToBadge={mapStateToBadge}
+                    />
+                  ))
+                )}
               </div>
             )}
 
             {/* ── VIEW MODE 2: FLAT TABLE VIEW ── */}
-            {cargoViewMode === 'TABLE' && (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                  <thead>
-                    <tr style={{ background: 'var(--bg-surface-soft)', borderBottom: '1px solid var(--border-light)', textAlign: 'left', color: 'var(--text-secondary)' }}>
-                      <th style={{ padding: '10px 12px' }}>NO RESI CONNOTE</th>
-                      <th style={{ padding: '10px 12px' }}>LAYANAN</th>
-                      <th style={{ padding: '10px 12px' }}>BERAT</th>
-                      <th style={{ padding: '10px 12px' }}>ASAL (ORIGIN)</th>
-                      <th style={{ padding: '10px 12px' }}>TUJUAN (DEST)</th>
-                      <th style={{ padding: '10px 12px' }}>STATUS</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredCargoItems.map((item) => (
-                      <tr key={item.connote_code} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                        <td style={{ padding: '10px 12px', fontWeight: 800, fontFamily: 'monospace', color: 'var(--primary-blue)' }}>
-                          {item.connote_code}
-                        </td>
-                        <td style={{ padding: '10px 12px', color: 'var(--text-secondary)' }}>
-                          {item.service}
-                        </td>
-                        <td style={{ padding: '10px 12px', fontWeight: 700, color: 'var(--text-primary)' }}>
-                          {formatWeight(item.weight_kg)}
-                        </td>
-                        <td style={{ padding: '10px 12px', color: 'var(--text-primary)' }}>
-                          {item.origin_office_name || `Nopen ${item.origin_nopen}`}
-                        </td>
-                        <td style={{ padding: '10px 12px', color: 'var(--text-primary)' }}>
-                          {item.destination_office_name || `Nopen ${item.destination_nopen}`}
-                        </td>
-                        <td style={{ padding: '10px 12px' }}>
-                          <span className={mapStateToBadge(item.state).class} style={{ fontSize: 9.5, padding: '2px 8px' }}>
-                            {mapStateToBadge(item.state).label}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+            {cargoViewMode === 'TABLE' && (() => {
+              const totalFlatItems = filteredCargoItems.length;
+              const totalFlatPages = Math.max(1, Math.ceil(totalFlatItems / flatTablePageSize));
+              const safeFlatPage = Math.min(flatTablePage, totalFlatPages);
+              const flatStartIndex = (safeFlatPage - 1) * flatTablePageSize;
+              const flatEndIndex = Math.min(flatStartIndex + flatTablePageSize, totalFlatItems);
+              const currentFlatItems = filteredCargoItems.slice(flatStartIndex, flatEndIndex);
+
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                      <thead>
+                        <tr style={{ background: 'var(--bg-surface-soft)', borderBottom: '1px solid var(--border-light)', textAlign: 'left', color: 'var(--text-secondary)' }}>
+                          <th style={{ padding: '10px 10px', width: 36 }}>#</th>
+                          <th style={{ padding: '10px 12px' }}>NO RESI CONNOTE</th>
+                          <th style={{ padding: '10px 12px' }}>LAYANAN</th>
+                          <th style={{ padding: '10px 12px' }}>BERAT</th>
+                          <th style={{ padding: '10px 12px' }}>ASAL (ORIGIN)</th>
+                          <th style={{ padding: '10px 12px' }}>TUJUAN (DEST)</th>
+                          <th style={{ padding: '10px 12px' }}>STATUS</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {currentFlatItems.length === 0 ? (
+                          <tr>
+                            <td colSpan={7} style={{ padding: '36px 0', textAlign: 'center', color: 'var(--text-muted)' }}>
+                              <Package size={32} style={{ margin: '0 auto 8px', opacity: 0.5 }} />
+                              <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Tidak ada data muatan paket yang sesuai</div>
+                            </td>
+                          </tr>
+                        ) : (
+                          currentFlatItems.map((item, idx) => (
+                            <tr key={item.connote_code || idx} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                              <td style={{ padding: '10px 10px', color: 'var(--text-muted)', fontSize: 11, fontFamily: 'monospace' }}>
+                                {flatStartIndex + idx + 1}
+                              </td>
+                              <td style={{ padding: '10px 12px', fontWeight: 800, fontFamily: 'monospace', color: 'var(--primary-blue)' }}>
+                                {item.connote_code}
+                              </td>
+                              <td style={{ padding: '10px 12px', color: 'var(--text-secondary)' }}>
+                                {item.service}
+                              </td>
+                              <td style={{ padding: '10px 12px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                                {formatWeight(item.weight_kg)}
+                              </td>
+                              <td style={{ padding: '10px 12px', color: 'var(--text-primary)' }}>
+                                {item.origin_office_name || `Nopen ${item.origin_nopen}`}
+                              </td>
+                              <td style={{ padding: '10px 12px', color: 'var(--text-primary)' }}>
+                                {item.destination_office_name || `Nopen ${item.destination_nopen}`}
+                              </td>
+                              <td style={{ padding: '10px 12px' }}>
+                                <span className={mapStateToBadge(item.state).class} style={{ fontSize: 9.5, padding: '2px 8px' }}>
+                                  {mapStateToBadge(item.state).label}
+                                </span>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Pagination Bar for Flat Table */}
+                  {totalFlatItems > 0 && (
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: 10,
+                      paddingTop: 12,
+                      borderTop: '1px solid var(--border-light)',
+                      fontSize: 12
+                    }}>
+                      {/* Left: Summary & Selector (20, 50, 100) */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 14, color: 'var(--text-secondary)' }}>
+                        <span>
+                          Menampilkan <strong style={{ color: 'var(--text-primary)' }}>{flatStartIndex + 1}</strong> - <strong style={{ color: 'var(--text-primary)' }}>{flatEndIndex}</strong> dari <strong style={{ color: 'var(--text-primary)' }}>{totalFlatItems}</strong> paket
+                        </span>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Tampilkan:</span>
+                          <select
+                            value={flatTablePageSize}
+                            onChange={(e) => {
+                              setFlatTablePageSize(Number(e.target.value));
+                              setFlatTablePage(1);
+                            }}
+                            style={{
+                              background: 'var(--bg-workspace)',
+                              border: '1px solid var(--border-light)',
+                              borderRadius: 6,
+                              padding: '3px 8px',
+                              color: 'var(--text-primary)',
+                              fontSize: 11.5,
+                              fontWeight: 700,
+                              outline: 'none',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <option value={20}>20 / hal</option>
+                            <option value={50}>50 / hal</option>
+                            <option value={100}>100 / hal</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Right: Page Navigation & Buttons */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <button
+                          type="button"
+                          onClick={() => setFlatTablePage(p => Math.max(1, p - 1))}
+                          disabled={safeFlatPage <= 1}
+                          className="btn-ghost"
+                          style={{
+                            padding: '4px 12px',
+                            fontSize: 11.5,
+                            fontWeight: 700,
+                            cursor: safeFlatPage <= 1 ? 'not-allowed' : 'pointer',
+                            opacity: safeFlatPage <= 1 ? 0.4 : 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4
+                          }}
+                        >
+                          <ChevronLeft size={13} /> Prev
+                        </button>
+
+                        {/* Page Numbers */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                          {Array.from({ length: totalFlatPages }, (_, i) => i + 1)
+                            .filter(pNum => {
+                              if (totalFlatPages <= 7) return true;
+                              if (pNum === 1 || pNum === totalFlatPages) return true;
+                              if (Math.abs(pNum - safeFlatPage) <= 1) return true;
+                              return false;
+                            })
+                            .reduce((acc, pNum, idx, arr) => {
+                              if (idx > 0 && pNum - arr[idx - 1] > 1) {
+                                acc.push({ type: 'ellipsis', key: `el-flat-${pNum}` });
+                              }
+                              acc.push({ type: 'page', value: pNum, key: `p-flat-${pNum}` });
+                              return acc;
+                            }, [])
+                            .map(item => {
+                              if (item.type === 'ellipsis') {
+                                return <span key={item.key} style={{ padding: '0 4px', color: 'var(--text-muted)' }}>...</span>;
+                              }
+                              const isAct = item.value === safeFlatPage;
+                              return (
+                                <button
+                                  key={item.key}
+                                  type="button"
+                                  onClick={() => setFlatTablePage(item.value)}
+                                  style={{
+                                    minWidth: 28,
+                                    height: 28,
+                                    padding: '0 6px',
+                                    borderRadius: 6,
+                                    border: isAct ? '1px solid var(--primary-blue)' : '1px solid transparent',
+                                    background: isAct ? 'var(--primary-navy)' : 'transparent',
+                                    color: isAct ? '#ffffff' : 'var(--text-secondary)',
+                                    fontWeight: isAct ? 800 : 600,
+                                    fontSize: 11.5,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease'
+                                  }}
+                                >
+                                  {item.value}
+                                </button>
+                              );
+                            })}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setFlatTablePage(p => Math.min(totalFlatPages, p + 1))}
+                          disabled={safeFlatPage >= totalFlatPages}
+                          className="btn-ghost"
+                          style={{
+                            padding: '4px 12px',
+                            fontSize: 11.5,
+                            fontWeight: 700,
+                            cursor: safeFlatPage >= totalFlatPages ? 'not-allowed' : 'pointer',
+                            opacity: safeFlatPage >= totalFlatPages ? 0.4 : 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4
+                          }}
+                        >
+                          Next <ChevronRight size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
           </div>
 

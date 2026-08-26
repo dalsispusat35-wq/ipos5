@@ -594,6 +594,7 @@ router.delete('/jadwal/:id', requireDb, (req, res) => JadwalController.delete(re
 router.post('/jadwal/generate', requireDb, (req, res) => JadwalController.generate(req, res));
 
 // Slide 2 PPT - jadwal pickup malam yang divalidasi terhadap master_kantor
+router.get('/pickup-schedules', requireDb, (req, res) => PickupScheduleController.getSlide2Night(req, res));
 router.get('/pickup-schedules/slide-2/night', requireDb, (req, res) => PickupScheduleController.getSlide2Night(req, res));
 
 // ─── Routing Checker / Package Tracking Routes ──────────────────────────────
@@ -611,6 +612,8 @@ router.put('/transaksi/:connoteCode/status', requireDb, (req, res) => Transactio
 
 // ─── Manifest Operations Routing ─────────────────────────────────────────────
 router.get('/manifests', requireDb, (req, res) => ManifestController.getAll(req, res));
+router.get('/manifests/gate-pipeline', requireDb, (req, res) => ManifestController.getGatePipeline(req, res));
+router.post('/manifests/gate-pipeline/reset', requireDb, (req, res) => ManifestController.resetGatePipeline(req, res));
 router.get('/manifests/:code', requireDb, (req, res) => ManifestController.getByCode(req, res));
 router.post('/manifests', requireDb, (req, res) => ManifestController.create(req, res));
 router.post('/manifests/transit', requireDb, (req, res) => ManifestController.transit(req, res));

@@ -138,6 +138,7 @@ export const api = {
   generateJadwal: (data) => fetchApi('/jadwal/generate', { method: 'POST', body: data }),
 
   // Slide 2 PPT - pickup malam tervalidasi master_kantor
+  getPickupSchedule: () => fetchApi('/pickup-schedules/slide-2/night'),
   getSlide2NightPickup: () => fetchApi('/pickup-schedules/slide-2/night'),
 
   // Dynamic Capacity Routing (Milk Run)
@@ -182,6 +183,11 @@ export const api = {
   updateTransactionStatus: (connoteCode, status) => fetchApi(`/transaksi/${connoteCode}/status`, { method: 'PUT', body: { status } }),
   getManifests: (params = '') => fetchApi(`/manifests?${params}`),
   getManifestByCode: (code) => fetchApi(`/manifests/${encodeURIComponent(code)}`),
+  getGatePipeline: () => fetchApi('/manifests/gate-pipeline'),
+  resetGatePipeline: () => fetchApi('/manifests/gate-pipeline/reset', { method: 'POST' }),
+  createManifest: (data) => fetchApi('/manifests', { method: 'POST', body: typeof data === 'object' && !Array.isArray(data) ? data : { connote_codes: data } }),
+  markTransit: (code) => fetchApi('/manifests/transit', { method: 'POST', body: { master_manifest_code: code } }),
+  arriveManifest: (code) => fetchApi('/manifests/arrive', { method: 'POST', body: { master_manifest_code: code } }),
   // Daily Operation CSV Importer (Tooling Testing)
   importDailyOperationCsv: (csvText) => fetchApi('/daily-operation/import-csv', {
     method: 'POST',
