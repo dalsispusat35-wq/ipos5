@@ -1292,24 +1292,24 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
         <div className="modal-overlay" onClick={() => setIsPopularCategoriesModalOpen(false)}>
           <div
             className="modal-content"
-            style={{ maxWidth: 880, width: '95%', maxHeight: '90vh' }}
+            style={{ maxWidth: 880, width: '100%', maxHeight: '90vh' }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="modal-header" style={{ padding: '16px 22px', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-surface-soft)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(2, 132, 199, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary-blue)' }}>
+            <div className="modal-header" style={{ padding: '14px 20px', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, background: 'var(--bg-surface-soft)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: '1 1 240px' }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(2, 132, 199, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary-blue)', flexShrink: 0 }}>
                   <PieChartIcon size={20} />
                 </div>
                 <div>
-                  <h2 style={{ fontSize: 16.5, fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <h2 style={{ fontSize: 16, fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
                     Detail Popular Categories
                     <span className="badge badge-navy" style={{ fontSize: 10.5, padding: '2px 8px' }}>
                       {popularCategoriesList.length} Layanan
                     </span>
                   </h2>
-                  <p style={{ margin: 0, fontSize: 11.5, color: 'var(--text-secondary)' }}>
-                    Rincian pangsa pasar, volume transaksi, nilai pendapatan, dan bobot tonase per produk kiriman pos
+                  <p style={{ margin: 0, fontSize: 11, color: 'var(--text-secondary)' }}>
+                    Rincian pangsa pasar, volume transaksi, nilai pendapatan, dan bobot tonase per produk pos
                   </p>
                 </div>
               </div>
@@ -1317,17 +1317,17 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
                 type="button"
                 className="btn-ghost"
                 onClick={() => setIsPopularCategoriesModalOpen(false)}
-                style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, border: '1px solid var(--border-light)' }}
+                style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, border: '1px solid var(--border-light)', flexShrink: 0 }}
               >
                 <X size={16} />
               </button>
             </div>
 
             {/* Modal Scrollable Body */}
-            <div style={{ padding: '20px 22px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 18 }}>
+            <div style={{ padding: '16px 20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
               
-              {/* 1. Summary KPI Mini Cards */}
-              <div className="grid-4" style={{ gap: 12 }}>
+              {/* 1. Summary KPI Mini Cards (Fluid Responsive Grid) */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
                 <div className="stat-card" style={{ padding: '12px 14px', background: 'var(--bg-surface-soft)', border: '1px solid var(--border-light)', borderRadius: 10 }}>
                   <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600 }}>Total Kiriman</span>
                   <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', marginTop: 4 }}>
@@ -1357,9 +1357,9 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
                 </div>
               </div>
 
-              {/* 2. Visual Donut Breakdown Card */}
+              {/* 2. Visual Donut Breakdown Card (Responsive Wrap) */}
               {popularCategoriesList.length > 0 && (
-                <div style={{ padding: 16, background: 'var(--bg-surface-soft)', border: '1px solid var(--border-light)', borderRadius: 12, display: 'grid', gridTemplateColumns: '170px 1fr', gap: 20, alignItems: 'center' }}>
+                <div style={{ padding: 16, background: 'var(--bg-surface-soft)', border: '1px solid var(--border-light)', borderRadius: 12, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 18, alignItems: 'center' }}>
                   {/* SVG Donut */}
                   <div style={{ position: 'relative', width: 140, height: 140, margin: '0 auto' }}>
                     {(() => {
@@ -1445,9 +1445,9 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
                 </div>
               )}
 
-              {/* 3. Search & Sorting Controls */}
+              {/* 3. Search & Sorting Controls (Responsive Wrap) */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
-                <div style={{ position: 'relative', width: 280 }}>
+                <div style={{ position: 'relative', flex: '1 1 220px', minWidth: 180 }}>
                   <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                   <input
                     type="text"
@@ -1455,7 +1455,7 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
                     value={categoryDetailSearch}
                     onChange={(e) => setCategoryDetailSearch(e.target.value)}
                     className="form-control"
-                    style={{ paddingLeft: 32, fontSize: 11.5, height: 34 }}
+                    style={{ paddingLeft: 32, fontSize: 11.5, height: 34, width: '100%' }}
                   />
                   {categoryDetailSearch && (
                     <button
@@ -1468,13 +1468,13 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
                   )}
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11.5 }}>
-                  <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>Urutkan:</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', flex: '1 1 auto', justifyContent: 'flex-end' }}>
+                  <span style={{ color: 'var(--text-secondary)', fontWeight: 600, fontSize: 11.5 }}>Urutkan:</span>
                   <select
                     className="form-control"
                     value={categorySortKey}
                     onChange={(e) => setCategorySortKey(e.target.value)}
-                    style={{ fontSize: 11.5, height: 34, padding: '4px 10px', width: 170 }}
+                    style={{ fontSize: 11.5, height: 34, padding: '4px 10px', minWidth: 150, flex: '1 1 auto' }}
                   >
                     <option value="count">Jumlah Resi (Volume)</option>
                     <option value="percentage">Pangsa Pasar (%)</option>
@@ -1486,7 +1486,7 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
                     type="button"
                     className="btn-ghost"
                     onClick={() => setCategorySortOrder(categorySortOrder === 'desc' ? 'asc' : 'desc')}
-                    style={{ height: 34, padding: '0 10px', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}
+                    style={{ height: 34, padding: '0 10px', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}
                     title={categorySortOrder === 'desc' ? 'Urutan Menurun (Tinggi ke Rendah)' : 'Urutan Menaik (Rendah ke Tinggi)'}
                   >
                     <ArrowUpDown size={12} />
@@ -1495,9 +1495,9 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
                 </div>
               </div>
 
-              {/* 4. Full Table Breakdown */}
-              <div style={{ border: '1px solid var(--border-light)', borderRadius: 10, overflow: 'hidden' }}>
-                <table className="data-table" style={{ width: '100%', fontSize: 11.5, margin: 0 }}>
+              {/* 4. Full Table Breakdown (Touch-Scroll Responsive Container) */}
+              <div className="table-responsive-container" style={{ border: '1px solid var(--border-light)', borderRadius: 10, width: '100%', overflowX: 'auto' }}>
+                <table className="data-table" style={{ width: '100%', minWidth: 680, fontSize: 11.5, margin: 0 }}>
                   <thead>
                     <tr>
                       <th style={{ width: 40 }}>#</th>
@@ -1595,8 +1595,8 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
 
             </div>
 
-            {/* Modal Footer */}
-            <div style={{ padding: '14px 22px', borderTop: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-surface-soft)' }}>
+            {/* Modal Footer (Responsive Wrap) */}
+            <div style={{ padding: '12px 20px', borderTop: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, background: 'var(--bg-surface-soft)' }}>
               <div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>
                 Filter Aktif: <strong style={{ color: 'var(--text-primary)' }}>{selectedDateRange}</strong> &bull; Data tersinkronisasi MongoDB
               </div>
