@@ -8,7 +8,7 @@ import {
   Cpu, Copy, Check, SlidersHorizontal, ArrowDown, ArrowUp, Compass,
   RadioTower, Wifi, Sun, Play, Navigation, AlertTriangle, Package,
   Search, Plane, Filter, Terminal, Globe, Crosshair, HelpCircle, ChevronDown,
-  X, ArrowRight
+  X, ArrowRight, ArrowUpDown
 } from 'lucide-react';
 import { api } from '../utils/api.js';
 
@@ -30,6 +30,12 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
   const [datePreset, setDatePreset] = useState('today');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
+
+  // Popular Categories Detail Modal States
+  const [isPopularCategoriesModalOpen, setIsPopularCategoriesModalOpen] = useState(false);
+  const [categoryDetailSearch, setCategoryDetailSearch] = useState('');
+  const [categorySortKey, setCategorySortKey] = useState('count'); // 'count' | 'percentage' | 'totalRevenue' | 'totalWeightKg' | 'name'
+  const [categorySortOrder, setCategorySortOrder] = useState('desc'); // 'desc' | 'asc'
 
   const datePresetsList = [
     { label: 'Hari Ini', preset: 'today', sub: 'Real-Time Hari Ini' },
@@ -163,6 +169,26 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
 
   // Popular Categories from Real MongoDB Database
   const popularCategoriesList = dbStats?.popularCategories || [];
+  const totalCatShipments = popularCategoriesList.reduce((acc, c) => acc + (c.count || 0), 0);
+  const totalCatRevenue = popularCategoriesList.reduce((acc, c) => acc + (c.totalRevenue || 0), 0);
+  const totalCatWeightKg = popularCategoriesList.reduce((acc, c) => acc + (c.totalWeightKg || 0), 0);
+  const topCategoryItem = popularCategoriesList.length > 0 ? popularCategoriesList[0] : null;
+
+  // Filtered & Sorted Categories for Detail Modal
+  const modalCategoriesFiltered = popularCategoriesList
+    .filter(cat => (cat.name || '').toLowerCase().includes(categoryDetailSearch.toLowerCase()))
+    .sort((a, b) => {
+      let valA = a[categorySortKey];
+      let valB = b[categorySortKey];
+      if (categorySortKey === 'name') {
+        return categorySortOrder === 'asc'
+          ? (valA || '').localeCompare(valB || '')
+          : (valB || '').localeCompare(valA || '');
+      }
+      return categorySortOrder === 'asc'
+        ? (Number(valA) || 0) - (Number(valB) || 0)
+        : (Number(valB) || 0) - (Number(valA) || 0);
+    });
 
   // Av Check (Average Revenue per Service from DB)
   const avCheckData = dbStats?.avCheck || [];
@@ -840,9 +866,28 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
             <h3 style={{ fontSize: 15, fontWeight: 800, margin: 0 }}>
               Popular Categories
             </h3>
-            <Link to="/produk" style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--primary-blue)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 2 }}>
+            <button
+              type="button"
+              onClick={() => setIsPopularCategoriesModalOpen(true)}
+              className="btn-ghost"
+              style={{
+                fontSize: 11.5,
+                fontWeight: 700,
+                color: 'var(--primary-blue)',
+                padding: '3px 8px',
+                borderRadius: 6,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 3,
+                cursor: 'pointer',
+                border: '1px solid rgba(2, 132, 199, 0.2)',
+                background: 'rgba(2, 132, 199, 0.05)',
+                transition: 'all 0.2s ease'
+              }}
+              title="Buka rincian lengkap Popular Categories"
+            >
               See All <ArrowUpRight size={13} />
-            </Link>
+            </button>
           </div>
 
           {popularCategoriesList.length === 0 ? (
@@ -1241,6 +1286,333 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
         </div>
 
       </div>
+
+      {/* ── MODAL: DETAIL POPULAR CATEGORIES (BREAKDOWN LENGKAP DISTRIBUSI LAYANAN) ── */}
+      {isPopularCategoriesModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsPopularCategoriesModalOpen(false)}>
+          <div
+            className="modal-content"
+            style={{ maxWidth: 880, width: '95%', maxHeight: '90vh' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="modal-header" style={{ padding: '16px 22px', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-surface-soft)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(2, 132, 199, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary-blue)' }}>
+                  <PieChartIcon size={20} />
+                </div>
+                <div>
+                  <h2 style={{ fontSize: 16.5, fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    Detail Popular Categories
+                    <span className="badge badge-navy" style={{ fontSize: 10.5, padding: '2px 8px' }}>
+                      {popularCategoriesList.length} Layanan
+                    </span>
+                  </h2>
+                  <p style={{ margin: 0, fontSize: 11.5, color: 'var(--text-secondary)' }}>
+                    Rincian pangsa pasar, volume transaksi, nilai pendapatan, dan bobot tonase per produk kiriman pos
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={() => setIsPopularCategoriesModalOpen(false)}
+                style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, border: '1px solid var(--border-light)' }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Modal Scrollable Body */}
+            <div style={{ padding: '20px 22px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 18 }}>
+              
+              {/* 1. Summary KPI Mini Cards */}
+              <div className="grid-4" style={{ gap: 12 }}>
+                <div className="stat-card" style={{ padding: '12px 14px', background: 'var(--bg-surface-soft)', border: '1px solid var(--border-light)', borderRadius: 10 }}>
+                  <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600 }}>Total Kiriman</span>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', marginTop: 4 }}>
+                    {totalCatShipments.toLocaleString('id-ID')} <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Resi</span>
+                  </div>
+                </div>
+
+                <div className="stat-card" style={{ padding: '12px 14px', background: 'var(--bg-surface-soft)', border: '1px solid var(--border-light)', borderRadius: 10 }}>
+                  <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600 }}>Total Revenue</span>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--accent-emerald)', marginTop: 4 }}>
+                    Rp {totalCatRevenue.toLocaleString('id-ID')}
+                  </div>
+                </div>
+
+                <div className="stat-card" style={{ padding: '12px 14px', background: 'var(--bg-surface-soft)', border: '1px solid var(--border-light)', borderRadius: 10 }}>
+                  <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600 }}>Total Bobot Kargo</span>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--primary-blue)', marginTop: 4 }}>
+                    {totalCatWeightKg >= 1000 ? `${(totalCatWeightKg / 1000).toFixed(2)} Ton` : `${totalCatWeightKg.toLocaleString('id-ID')} kg`}
+                  </div>
+                </div>
+
+                <div className="stat-card" style={{ padding: '12px 14px', background: 'var(--bg-surface-soft)', border: '1px solid var(--border-light)', borderRadius: 10 }}>
+                  <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600 }}>Kategori Teratas (#1)</span>
+                  <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--accent-amber)', marginTop: 5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {topCategoryItem ? `${topCategoryItem.name} (${topCategoryItem.percentage}%)` : '-'}
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. Visual Donut Breakdown Card */}
+              {popularCategoriesList.length > 0 && (
+                <div style={{ padding: 16, background: 'var(--bg-surface-soft)', border: '1px solid var(--border-light)', borderRadius: 12, display: 'grid', gridTemplateColumns: '170px 1fr', gap: 20, alignItems: 'center' }}>
+                  {/* SVG Donut */}
+                  <div style={{ position: 'relative', width: 140, height: 140, margin: '0 auto' }}>
+                    {(() => {
+                      const DONUT_COLORS = ['#0284c7', '#f59e0b', '#10b981', '#a855f7', '#ec4899', '#6366f1', '#14b8a6', '#f97316', '#84cc16', '#06b6d4', '#64748b'];
+                      const r = 38;
+                      const circumference = 2 * Math.PI * r;
+                      let accumulatedOffset = 0;
+                      const totalPct = popularCategoriesList.reduce((acc, c) => acc + (c.percentage || 0), 0) || 100;
+
+                      return (
+                        <svg viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)', width: '100%', height: '100%' }}>
+                          <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="11" />
+                          {popularCategoriesList.map((cat, idx) => {
+                            const normalizedPct = cat.percentage > 0 ? (cat.percentage / totalPct) * 100 : 0;
+                            const strokeLength = (normalizedPct / 100) * circumference;
+                            const strokeDasharray = `${strokeLength} ${circumference}`;
+                            const strokeDashoffset = -accumulatedOffset;
+                            accumulatedOffset += strokeLength;
+                            const color = DONUT_COLORS[idx % DONUT_COLORS.length];
+
+                            return (
+                              <circle
+                                key={cat.name + idx}
+                                cx="50"
+                                cy="50"
+                                r="38"
+                                fill="none"
+                                stroke={color}
+                                strokeWidth="11"
+                                strokeDasharray={strokeDasharray}
+                                strokeDashoffset={strokeDashoffset}
+                              />
+                            );
+                          })}
+                        </svg>
+                      );
+                    })()}
+                    <div style={{
+                      position: 'absolute',
+                      inset: 0,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      textAlign: 'center',
+                      fontSize: 11,
+                      fontWeight: 800,
+                      color: 'var(--text-primary)',
+                      lineHeight: 1.2
+                    }}>
+                      <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Dominasi</span>
+                      <strong style={{ fontSize: 12.5, color: 'var(--primary-blue)' }}>{popularCategoriesList.length} Layanan</strong>
+                    </div>
+                  </div>
+
+                  {/* Progress bars list for all categories */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 2 }}>
+                      Komparasi Pangsa Pasar (Market Share)
+                    </div>
+                    {popularCategoriesList.map((cat, idx) => {
+                      const DONUT_COLORS = ['#0284c7', '#f59e0b', '#10b981', '#a855f7', '#ec4899', '#6366f1', '#14b8a6', '#f97316', '#84cc16', '#06b6d4', '#64748b'];
+                      const color = DONUT_COLORS[idx % DONUT_COLORS.length];
+                      const revenueSharePct = totalCatRevenue > 0 ? Math.round((cat.totalRevenue / totalCatRevenue) * 100) : 0;
+                      return (
+                        <div key={cat.name} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11 }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, color: 'var(--text-primary)' }}>
+                              <span style={{ width: 8, height: 8, borderRadius: '50%', background: color }} />
+                              {cat.name}
+                            </span>
+                            <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>
+                              <strong style={{ color: color }}>{cat.percentage}%</strong> ({cat.count.toLocaleString('id-ID')} resi &bull; Rev {revenueSharePct}%)
+                            </span>
+                          </div>
+                          <div style={{ width: '100%', height: 6, background: 'rgba(255, 255, 255, 0.07)', borderRadius: 4, overflow: 'hidden' }}>
+                            <div style={{ width: `${Math.min(100, Math.max(2, cat.percentage))}%`, height: '100%', background: color, borderRadius: 4, transition: 'width 0.4s ease' }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* 3. Search & Sorting Controls */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+                <div style={{ position: 'relative', width: 280 }}>
+                  <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                  <input
+                    type="text"
+                    placeholder="Cari kategori produk layanan..."
+                    value={categoryDetailSearch}
+                    onChange={(e) => setCategoryDetailSearch(e.target.value)}
+                    className="form-control"
+                    style={{ paddingLeft: 32, fontSize: 11.5, height: 34 }}
+                  />
+                  {categoryDetailSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setCategoryDetailSearch('')}
+                      style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11.5 }}>
+                  <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>Urutkan:</span>
+                  <select
+                    className="form-control"
+                    value={categorySortKey}
+                    onChange={(e) => setCategorySortKey(e.target.value)}
+                    style={{ fontSize: 11.5, height: 34, padding: '4px 10px', width: 170 }}
+                  >
+                    <option value="count">Jumlah Resi (Volume)</option>
+                    <option value="percentage">Pangsa Pasar (%)</option>
+                    <option value="totalRevenue">Total Nilai (Revenue)</option>
+                    <option value="totalWeightKg">Total Bobot (kg)</option>
+                    <option value="name">Nama Kategori (A-Z)</option>
+                  </select>
+                  <button
+                    type="button"
+                    className="btn-ghost"
+                    onClick={() => setCategorySortOrder(categorySortOrder === 'desc' ? 'asc' : 'desc')}
+                    style={{ height: 34, padding: '0 10px', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}
+                    title={categorySortOrder === 'desc' ? 'Urutan Menurun (Tinggi ke Rendah)' : 'Urutan Menaik (Rendah ke Tinggi)'}
+                  >
+                    <ArrowUpDown size={12} />
+                    <span>{categorySortOrder.toUpperCase()}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 4. Full Table Breakdown */}
+              <div style={{ border: '1px solid var(--border-light)', borderRadius: 10, overflow: 'hidden' }}>
+                <table className="data-table" style={{ width: '100%', fontSize: 11.5, margin: 0 }}>
+                  <thead>
+                    <tr>
+                      <th style={{ width: 40 }}>#</th>
+                      <th>Kategori Layanan</th>
+                      <th style={{ textAlign: 'center' }}>Pangsa Pasar</th>
+                      <th style={{ textAlign: 'right' }}>Jumlah Resi</th>
+                      <th style={{ textAlign: 'right' }}>Total Revenue</th>
+                      <th style={{ textAlign: 'right' }}>Rata-rata / Resi</th>
+                      <th style={{ textAlign: 'right' }}>Total Tonase</th>
+                      <th style={{ textAlign: 'center', width: 140 }}>Aksi Dashboard</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {modalCategoriesFiltered.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} style={{ textAlign: 'center', padding: '24px 12px', color: 'var(--text-muted)' }}>
+                          Tidak ada kategori yang cocok dengan kata kunci "{categoryDetailSearch}".
+                        </td>
+                      </tr>
+                    ) : (
+                      modalCategoriesFiltered.map((cat, idx) => {
+                        const DONUT_COLORS = ['#0284c7', '#f59e0b', '#10b981', '#a855f7', '#ec4899', '#6366f1', '#14b8a6', '#f97316', '#84cc16', '#06b6d4', '#64748b'];
+                        const originalIdx = popularCategoriesList.findIndex(c => c.name === cat.name);
+                        const color = DONUT_COLORS[(originalIdx >= 0 ? originalIdx : idx) % DONUT_COLORS.length];
+                        const avgPerConnote = cat.count > 0 ? Math.round(cat.totalRevenue / cat.count) : 0;
+                        const avgWeight = cat.count > 0 ? (cat.totalWeightKg / cat.count).toFixed(2) : 0;
+
+                        return (
+                          <tr key={cat.name}>
+                            <td className="font-mono" style={{ color: 'var(--text-muted)' }}>
+                              {String(idx + 1).padStart(2, '0')}
+                            </td>
+                            <td>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span style={{ width: 10, height: 10, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                                <div>
+                                  <div style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{cat.name}</div>
+                                  <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Layanan Pos Indonesia</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td style={{ textAlign: 'center' }}>
+                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                                <div style={{ width: 45, height: 6, background: 'rgba(255, 255, 255, 0.08)', borderRadius: 3, overflow: 'hidden' }}>
+                                  <div style={{ width: `${Math.min(100, cat.percentage)}%`, height: '100%', background: color, borderRadius: 3 }} />
+                                </div>
+                                <strong style={{ color: color, fontSize: 11 }}>{cat.percentage}%</strong>
+                              </div>
+                            </td>
+                            <td className="font-mono" style={{ textAlign: 'right', fontWeight: 700, color: 'var(--text-primary)' }}>
+                              {cat.count.toLocaleString('id-ID')}
+                            </td>
+                            <td className="font-mono" style={{ textAlign: 'right', fontWeight: 800, color: 'var(--accent-emerald)' }}>
+                              Rp {cat.totalRevenue.toLocaleString('id-ID')}
+                            </td>
+                            <td className="font-mono" style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>
+                              Rp {avgPerConnote.toLocaleString('id-ID')}
+                            </td>
+                            <td className="font-mono" style={{ textAlign: 'right', color: 'var(--text-primary)' }}>
+                              {cat.totalWeightKg >= 1000 ? `${(cat.totalWeightKg / 1000).toFixed(2)} Ton` : `${cat.totalWeightKg.toLocaleString('id-ID')} kg`}
+                              <div style={{ fontSize: 9.5, color: 'var(--text-muted)' }}>&plusmn; {avgWeight} kg/resi</div>
+                            </td>
+                            <td style={{ textAlign: 'center' }}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveCategoryFilter(cat.name);
+                                  fetchStatsAndTop20({ service: cat.name });
+                                  setIsPopularCategoriesModalOpen(false);
+                                }}
+                                className="btn-ghost"
+                                style={{
+                                  padding: '4px 10px',
+                                  fontSize: 10.5,
+                                  fontWeight: 700,
+                                  color: 'var(--primary-blue)',
+                                  borderRadius: 6,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4
+                                }}
+                                title={`Filter Dashboard dengan kategori ${cat.name}`}
+                              >
+                                <Filter size={11} />
+                                <span>Filter Dashboard</span>
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{ padding: '14px 22px', borderTop: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-surface-soft)' }}>
+              <div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>
+                Filter Aktif: <strong style={{ color: 'var(--text-primary)' }}>{selectedDateRange}</strong> &bull; Data tersinkronisasi MongoDB
+              </div>
+              <button
+                type="button"
+                className="btn btn-navy"
+                onClick={() => setIsPopularCategoriesModalOpen(false)}
+                style={{ padding: '8px 18px', fontSize: 12, fontWeight: 700 }}
+              >
+                Tutup
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );
