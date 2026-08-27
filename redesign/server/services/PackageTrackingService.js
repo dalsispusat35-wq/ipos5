@@ -30,7 +30,7 @@ class PackageTrackingService {
   }
 
   /**
-   * Normalize office codes (nopend, 5 digits).
+   * Normalize office codes (nopend, 5-7 digits).
    */
   normalizeCode(val) {
     return String(val ?? '').trim();
@@ -42,7 +42,9 @@ class PackageTrackingService {
   normalizeState(stateStr) {
     if (!stateStr) return 'ENTRY';
     const s = String(stateStr).toUpperCase().trim();
-    if (s.includes('DELIVERED') || s.includes('SELESAI')) return 'DELIVERED';
+    if (s.includes('DELIVERED') || s.includes('SELESAI') || s.includes('SUKSES')) return 'DELIVERED';
+    if (s.includes('RETURN') || s.includes('RETUR') || s.includes('GAGAL') || s.includes('CANCEL')) return 'RETURNED';
+    if (s.includes('HOLD') || s.includes('PENDING')) return 'ON_HOLD';
     if (s.includes('UNLOADED') || s.includes('BONGKAR')) return 'UNLOADED';
     if (s.includes('ARRIVED') || s.includes('TIBA') || s.includes('GATE_IN')) return 'ARRIVED';
     if (s.includes('DEPARTED') || s.includes('IN_TRANSIT') || s.includes('TRANSIT') || s.includes('GATE_OUT')) return 'IN_TRANSIT';
@@ -53,30 +55,45 @@ class PackageTrackingService {
   }
 
   /**
-   * Extract origin nopen
+   * Extract origin nopen from multiple possible nested schema fields.
    */
   getOriginNopen(tx) {
     if (!tx) return '40511';
+    const connoteObj = tx.connote || {};
     const locCreated = tx.location_data_created?.custom_field || {};
     const custom = tx.custom_field || {};
-    const code = locCreated.nopen || locCreated.nopend || locCreated.origin_nopen || custom.origin_nopen || custom.origin_kprk || tx.origin_nopen;
+    const code = connoteObj.origin_nopen || 
+                 connoteObj.connote_origin_nopend || 
+                 connoteObj.origin_kprk ||
+                 locCreated.nopen || 
+                 locCreated.nopend || 
+                 locCreated.origin_nopen || 
+                 custom.origin_nopen || 
+                 custom.origin_kprk || 
+                 tx.origin_nopen;
     return this.normalizeCode(code) || '40511';
   }
 
   /**
-   * Extract destination nopen
+   * Extract destination nopen from multiple possible nested schema fields.
    */
   getDestinationNopen(tx) {
     if (!tx) return '40400';
-    const custom = tx.custom_field || {};
-    const locCreated = tx.location_data_created?.custom_field || {};
     const connoteObj = tx.connote || {};
-    const code = custom.destination_nopen || locCreated.destination_nopen || connoteObj.destination_nopen || custom.destination_kprk || tx.destination_nopen;
+    const locCreated = tx.location_data_created?.custom_field || {};
+    const custom = tx.custom_field || {};
+    const code = connoteObj.destination_nopen || 
+                 connoteObj.connote_destination_nopend || 
+                 connoteObj.destination_kprk ||
+                 custom.destination_nopen || 
+                 locCreated.destination_nopen || 
+                 custom.destination_kprk || 
+                 tx.destination_nopen;
     return this.normalizeCode(code) || '40400';
   }
 
   /**
-   * Batch lookup office names from master_kantor collection.
+   * Batch lookup office names & GPS coordinates from master_kantor collection.
    */
   async lookupOfficeNames(db, nopendList = []) {
     const cleanCodes = [...new Set(nopendList.map(c => this.normalizeCode(c)).filter(Boolean))];
@@ -88,14 +105,47 @@ class PackageTrackingService {
 
     const officeMap = new Map();
     for (const off of offices) {
-      officeMap.set(String(off.nopend).trim(), {
-        nopend: String(off.nopend).trim(),
+      const codeKey = String(off.nopend).trim();
+      officeMap.set(codeKey, {
+        nopend: codeKey,
         name: off.nama_nopend || off.nama_kantor || `Kantor ${off.nopend}`,
         type: off.tipe || off.tipe_kantor || 'KCP',
-        regional: off.kdregional || '-'
+        regional: off.kdregional || '-',
+        latitude: off.latitude || null,
+        longitude: off.longitude || null,
+        alamat: off.alamat || off.address || ''
       });
     }
     return officeMap;
+  }
+
+  /**
+   * Intelligent helper to determine feeder vehicle & route based on Origin Nopend.
+   */
+  getCorridorVehicleFallback(originNopen) {
+    const code = String(originNopen || '').trim();
+    // Koridor Barat & Utara
+    if (['40184U5', '40215C6', '40351U2', '40116A', '40115B', '40114A'].includes(code)) {
+      return {
+        vehicle_nopol: 'D 8812 AB',
+        route_id: 'RT-MALAM-D8812-AB',
+        nama_route: 'Rute Malam Feeder Barat & Utara (D 8812 AB) -> SPP Bandung'
+      };
+    }
+    // Koridor Pusat & Timur
+    if (['40000', '40115A', '40122B', '40122D1', '40123A', '40100'].includes(code)) {
+      return {
+        vehicle_nopol: 'B 9945 PCY',
+        route_id: 'RT-MALAM-B9945-PCY',
+        nama_route: 'Rute Malam Feeder Timur & Pusat (B 9945 PCY) -> SPP Bandung'
+      };
+    }
+    // Koridor Cimahi Raya (Default)
+    return {
+      vehicle_nopol: 'B 9910 PCX',
+      route_id: 'RT-MALAM-B9910-PCX',
+      nama_route: 'Rute Malam Feeder Cimahi Raya (B 9910 PCX) -> SPP Bandung'
+    };
   }
 
   /**
@@ -208,6 +258,7 @@ class PackageTrackingService {
     let inTransitCount = 0;
     let arrivedCount = 0;
     let deliveredCount = 0;
+    let returnedCount = 0;
 
     for (const tx of allTx) {
       const w = this.parseWeightKg(tx);
@@ -215,6 +266,7 @@ class PackageTrackingService {
       const st = this.normalizeState(tx.connote_state || tx.connote?.connote_state);
 
       if (st === 'DELIVERED') deliveredCount++;
+      else if (st === 'RETURNED') returnedCount++;
       else if (st === 'ARRIVED' || st === 'UNLOADED') arrivedCount++;
       else if (st === 'IN_TRANSIT') inTransitCount++;
       else if (st === 'LOADED' || st === 'MANIFESTED') loadedCount++;
@@ -302,6 +354,7 @@ class PackageTrackingService {
         inTransitCount,
         arrivedCount,
         deliveredCount,
+        returnedCount,
         activeVehiclesCount: activeVehicleList.length,
         totalFleetMaxCapKg,
         totalFleetCurrentLoadKg,
@@ -313,7 +366,7 @@ class PackageTrackingService {
   }
 
   /**
-   * MODE B: Package Search Details (Exact Match, No Dummy Fallback).
+   * MODE B: Package Search Details (Exact & Smart Insensitive Match).
    */
   async getPackageDetails(connoteCodeInput, dateStrInput) {
     const cleanCode = String(connoteCodeInput || '').trim();
@@ -324,20 +377,25 @@ class PackageTrackingService {
     const dateStr = dateStrInput || this.getWibDateStr();
     const db = await DbConnection.getDb();
 
-    // 1. Build exact match variants
-    const codeVariants = [cleanCode];
-    if (cleanCode.startsWith('P26') && !cleanCode.startsWith('P2026')) {
-      codeVariants.push('P20' + cleanCode.slice(1));
-    } else if (cleanCode.startsWith('P2026')) {
-      codeVariants.push('P2' + cleanCode.slice(3));
+    // 1. Build smart match variants (case-insensitive & prefix variants)
+    const upperCode = cleanCode.toUpperCase();
+    const codeVariants = [cleanCode, upperCode];
+    if (upperCode.startsWith('P26') && !upperCode.startsWith('P2026')) {
+      codeVariants.push('P20' + upperCode.slice(1));
+    } else if (upperCode.startsWith('P2026')) {
+      codeVariants.push('P2' + upperCode.slice(3));
     }
+
+    const exactRegex = new RegExp(`^${cleanCode.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
 
     const txDoc = await db.collection('transaksi').findOne({
       $or: [
         { 'connote.connote_code': { $in: codeVariants } },
         { connote_code: { $in: codeVariants } },
         { connoteCode: { $in: codeVariants } },
-        { 'connote.connote_booking_code': { $in: codeVariants } }
+        { 'connote.connote_booking_code': { $in: codeVariants } },
+        { connote_code: { $regex: exactRegex } },
+        { 'connote.connote_code': { $regex: exactRegex } }
       ]
     });
 
@@ -355,7 +413,7 @@ class PackageTrackingService {
     const service = txDoc.connote?.connote_service || txDoc.connote_service || 'Pos Nextday';
     const state = this.normalizeState(txDoc.connote_state || txDoc.connote?.connote_state);
 
-    // 2. Resolve Origin & Destination Nopend
+    // 2. Resolve Origin & Destination Nopend from all fields
     let originNopen = this.getOriginNopen(txDoc) || '40511';
     let destinationNopen = this.getDestinationNopen(txDoc) || '40400';
 
@@ -411,11 +469,12 @@ class PackageTrackingService {
       }
     }
 
-    // Default fallback vehicle if needed
+    // Priority 4: Intelligent Corridor Mapping Fallback based on Origin Office
     if (!assignedVehicleNopol) {
-      assignedVehicleNopol = 'B 9910 PCX';
-      assignedRouteId = 'RT-MALAM-B9910-PCX';
-      vehicleAssignmentSource = 'DEFAULT_FLEET_ROUTE';
+      const fallback = this.getCorridorVehicleFallback(originNopen);
+      assignedVehicleNopol = fallback.vehicle_nopol;
+      assignedRouteId = fallback.route_id;
+      vehicleAssignmentSource = 'CORRIDOR_AUTO_MAPPING';
     }
 
     // 4. Fetch Vehicle Info and Journey for dateStr
@@ -436,21 +495,67 @@ class PackageTrackingService {
       vehicle_code: evt.vehicle_code || assignedVehicleNopol
     }));
 
+    // Comprehensive Timeline Synthesis if raw events are empty
     if (timeline.length === 0) {
       timeline.push({
         event_id: `INIT_${resiCode}`,
-        stage: state,
+        stage: 'ENTRY',
         note: `Paket ${resiCode} dicatat & diterima di loket ${originOffice.name}.`,
         time: txDoc.createdAt ? new Date(txDoc.createdAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : 'Hari ini',
         location: originOffice.name,
         vehicle_code: assignedVehicleNopol
       });
-      if (state === 'IN_TRANSIT' || state === 'LOADED') {
+
+      if (['LOADED', 'IN_TRANSIT', 'ARRIVED', 'DELIVERED', 'RETURNED'].includes(state)) {
         timeline.push({
           event_id: `LOAD_${resiCode}`,
           stage: 'LOADED',
-          note: `Paket dimuat ke armada truk ${assignedVehicleNopol} (${assignedRouteId || 'RT-MALAM-B9910-PCX'}).`,
-          time: new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }),
+          note: `Paket dimuat ke armada truk ${assignedVehicleNopol} (${assignedRouteId || 'Feeder Route'}).`,
+          time: 'Hari ini',
+          location: originOffice.name,
+          vehicle_code: assignedVehicleNopol
+        });
+      }
+
+      if (['IN_TRANSIT', 'ARRIVED', 'DELIVERED', 'RETURNED'].includes(state)) {
+        timeline.push({
+          event_id: `TRANSIT_${resiCode}`,
+          stage: 'IN_TRANSIT',
+          note: `Armada ${assignedVehicleNopol} dalam perjalanan menuju ${destinationOffice.name}.`,
+          time: 'Hari ini',
+          location: `Lintas Rute ${assignedRouteId || ''}`,
+          vehicle_code: assignedVehicleNopol
+        });
+      }
+
+      if (['ARRIVED', 'DELIVERED'].includes(state)) {
+        timeline.push({
+          event_id: `ARRIVE_${resiCode}`,
+          stage: 'ARRIVED',
+          note: `Paket tiba & selesai pembongkaran di gate entry ${destinationOffice.name}.`,
+          time: 'Hari ini',
+          location: destinationOffice.name,
+          vehicle_code: assignedVehicleNopol
+        });
+      }
+
+      if (state === 'DELIVERED') {
+        timeline.push({
+          event_id: `DELIV_${resiCode}`,
+          stage: 'DELIVERED',
+          note: `Paket sukses diserahkan kepada penerima (${txDoc.connote?.connote_receiver_name || txDoc.receiver_name || 'Pelanggan'}).`,
+          time: 'Hari ini',
+          location: txDoc.connote?.connote_receiver_address || destinationOffice.name,
+          vehicle_code: assignedVehicleNopol
+        });
+      }
+
+      if (state === 'RETURNED') {
+        timeline.push({
+          event_id: `RET_${resiCode}`,
+          stage: 'RETURNED',
+          note: `Paket gagal antar atau diretur ke loket asal ${originOffice.name}.`,
+          time: 'Hari ini',
           location: originOffice.name,
           vehicle_code: assignedVehicleNopol
         });
@@ -498,7 +603,7 @@ class PackageTrackingService {
   }
 
   /**
-   * MODE C: Vehicle Tracking Details (Accurate Multi-Stop Load & Full Cargo from Database).
+   * MODE C: Vehicle Tracking Details (Accurate Multi-Stop Load, GPS Coordinates & Full Cargo).
    */
   async getVehicleTrackingDetails(nopolInput, dateStrInput) {
     const cleanNopol = String(nopolInput || '').trim();
@@ -560,7 +665,7 @@ class PackageTrackingService {
       .sort({ seq: 1 })
       .toArray();
 
-    // Collect all nopens to resolve names
+    // Collect all nopens to resolve names and GPS coordinates
     const nopendList = [
       ...detailWaypoints.map(w => w.tujuan_nopen || w.asal_nopen),
       ...cargoItems.map(c => c.destination_nopen),
@@ -573,9 +678,20 @@ class PackageTrackingService {
     // Ensure currentStopSeq does not exceed total stops
     const currentStopSeq = Math.min(Math.max(1, rawStopSeq), totalStopsCount);
 
-    // Compute cumulative load at each stop sequence
-    let baseTimeMinutes = 10 * 60; // 10:00 WIB
-    const routeStops = detailWaypoints.map((w, idx) => {
+    // Dynamic start time calculation (check route schedule or default)
+    let startHour = 10;
+    let startMin = 0;
+    if (journeyDoc?.jam_berangkat) {
+      const [h, m] = String(journeyDoc.jam_berangkat).split(':').map(Number);
+      if (!isNaN(h)) { startHour = h; startMin = m || 0; }
+    } else if (routeId.includes('MALAM')) {
+      startHour = 19;
+      startMin = 30;
+    }
+    let baseTimeMinutes = startHour * 60 + startMin;
+
+    // Compute cumulative load and ETA at each stop sequence
+    const routeStops = detailWaypoints.map((w) => {
       const off = officeMap.get(String(w.tujuan_nopen || w.asal_nopen).trim());
       let stStatus = 'UPCOMING';
       if (w.seq < currentStopSeq) stStatus = 'PASSED';
@@ -612,6 +728,9 @@ class PackageTrackingService {
         nopen: w.tujuan_nopen || w.asal_nopen,
         officeName: off?.name || w.tujuan_nama || `Kantor ${w.tujuan_nopen}`,
         officeType: off?.type || 'KCP',
+        latitude: off?.latitude || null,
+        longitude: off?.longitude || null,
+        alamat: off?.alamat || '',
         estimasi_menit: w.estimasi_menit || 15,
         jarakKm: w.jarak_km || 5.0,
         etaTime,

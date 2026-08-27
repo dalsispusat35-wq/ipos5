@@ -618,8 +618,8 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
               ? dbStats.salesTrend
               : shipmentBarData.map(b => ({
                   label: b.month,
-                  revenue: b.revenue || (b.total * 150000),
-                  revenueFormatted: `Rp ${(b.revenue || (b.total * 150000)).toLocaleString('id-ID')}`,
+                  revenue: b.revenue ?? (b.total * 150000),
+                  revenueFormatted: `Rp ${(b.revenue ?? (b.total * 150000)).toLocaleString('id-ID')}`,
                   connotesCount: b.total,
                   onDelivery: b.onDelivery,
                   delivered: b.delivered

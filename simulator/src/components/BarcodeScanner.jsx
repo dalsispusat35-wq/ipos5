@@ -1,6 +1,74 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { QrCode, Scan, Camera, CameraOff, Send, CheckCircle, AlertCircle, Building2, Weight, Box, Sparkles, RefreshCw, Barcode, Info } from 'lucide-react';
+import { 
+  QrCode, 
+  Scan, 
+  Camera, 
+  CameraOff, 
+  Send, 
+  CheckCircle, 
+  AlertCircle, 
+  Building2, 
+  Weight, 
+  Box, 
+  Sparkles, 
+  Barcode, 
+  Info, 
+  ArrowRight,
+  Zap,
+  Copy,
+  Check
+} from 'lucide-react';
 import { sounds } from '../utils/sound.js';
+
+// SVG Barcode Generator Component (Code 128 / Code 39 Style)
+function BarcodeSvg({ value }) {
+  if (!value) return null;
+  
+  // Deterministic bar widths based on char codes
+  const bars = [];
+  for (let i = 0; i < value.length; i++) {
+    const code = value.charCodeAt(i);
+    bars.push((code % 3) + 1);
+    bars.push(((code >> 1) % 2) + 1);
+    bars.push(((code >> 2) % 3) + 1);
+  }
+
+  let totalW = 12;
+  const rects = [];
+  
+  // Start guard bars
+  rects.push(<rect key="g1" x={0} y={0} width={3} height={46} fill="#0f172a" />);
+  rects.push(<rect key="g2" x={5} y={0} width={2} height={46} fill="#0f172a" />);
+  rects.push(<rect key="g3" x={9} y={0} width={1.5} height={46} fill="#0f172a" />);
+
+  // Data bars
+  for (let i = 0; i < bars.length; i++) {
+    const w = bars[i];
+    if (i % 2 === 0) {
+      rects.push(<rect key={`b_${i}`} x={totalW} y={0} width={w * 1.8} height={40} fill="#0f172a" />);
+    }
+    totalW += w * 1.8 + 2;
+  }
+
+  // End guard bars
+  rects.push(<rect key="ge1" x={totalW} y={0} width={1.5} height={46} fill="#0f172a" />);
+  rects.push(<rect key="ge2" x={totalW + 4} y={0} width={2} height={46} fill="#0f172a" />);
+  rects.push(<rect key="ge3" x={totalW + 8} y={0} width={3} height={46} fill="#0f172a" />);
+  totalW += 14;
+
+  return (
+    <div className="barcode-badge-card" style={{ width: '100%', background: '#ffffff', border: '1.5px solid var(--border-light)', borderRadius: 12, padding: '12px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+      <div style={{ width: '100%', maxWidth: 360, overflow: 'hidden' }}>
+        <svg viewBox={`0 0 ${totalW} 48`} style={{ width: '100%', height: 44, display: 'block' }}>
+          {rects}
+        </svg>
+      </div>
+      <div className="barcode-text-code font-mono" style={{ fontSize: 13, fontWeight: 900, letterSpacing: '0.18em', color: '#0f172a', marginTop: 6 }}>
+        {value}
+      </div>
+    </div>
+  );
+}
 
 export default function BarcodeScanner({
   options,
@@ -8,7 +76,7 @@ export default function BarcodeScanner({
   onInjectSingle,
   selectedNopol
 }) {
-  const [scannedCode, setScannedCode] = useState('');
+  const [scannedCode, setScannedCode] = useState('P260827000101');
   const [selectedOfficeNopen, setSelectedOfficeNopen] = useState('40511A');
   const [weightKg, setWeightKg] = useState('2.5');
   const [service, setService] = useState('Pos Nextday');
@@ -16,6 +84,7 @@ export default function BarcodeScanner({
   const [injecting, setInjecting] = useState(false);
   const [lastScannedResult, setLastScannedResult] = useState(null);
   const [scanMessage, setScanMessage] = useState('');
+  const [isCopied, setIsCopied] = useState(false);
 
   const videoRef = useRef(null);
   const streamRef = useRef(null);
@@ -34,10 +103,10 @@ export default function BarcodeScanner({
         videoRef.current.play();
       }
       setIsCameraActive(true);
-      setScanMessage('Kamera aktif. Arahkan barcode resi ke dalam kotak bidik laser.');
+      setScanMessage('Kamera aktif. Arahkan barcode resi fisik ke dalam kotak bidik laser.');
     } catch (err) {
       console.error('Camera access error:', err);
-      setScanMessage('Gagal mengakses kamera web. Anda tetap bisa scan dengan barcode scanner USB atau ketik manual.');
+      setScanMessage('Kamera tidak terdeteksi atau izin ditolak. Anda tetap bisa scan dengan barcode scanner USB atau generate otomatis.');
     }
   };
 
@@ -73,7 +142,7 @@ export default function BarcodeScanner({
       sounds.playScanSuccess();
       if (res && res.data) {
         setLastScannedResult(res.data);
-        setScannedCode('');
+        handleGenerateSampleCode();
       }
     } catch (err) {
       sounds.playError();
@@ -85,9 +154,17 @@ export default function BarcodeScanner({
 
   const handleGenerateSampleCode = () => {
     sounds.init();
-    const cleanDateCompact = (selectedDate || '').replace(/-/g, '').slice(2);
+    sounds.playBeep?.();
+    const cleanDateCompact = (selectedDate || '').replace(/-/g, '').slice(2) || '260827';
     const randCode = `P${cleanDateCompact}${Math.floor(100000 + Math.random() * 900000)}`;
     setScannedCode(randCode);
+  };
+
+  const handleCopyCode = () => {
+    if (!scannedCode) return;
+    navigator.clipboard.writeText(scannedCode);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 1600);
   };
 
   return (
@@ -101,7 +178,7 @@ export default function BarcodeScanner({
           <div>
             <h3 className="tool-card-title">Barcode & QR Scanner (Loket & Gate Entry)</h3>
             <p className="tool-card-subtitle">
-              Pindai barcode fisik via kamera atau ketik nomor resi connote kustom untuk disimpan ke database
+              Pindai barcode fisik via kamera web, scanner USB fisik, atau generate resi connote otomatis untuk disimpan ke database
             </p>
           </div>
         </div>
@@ -117,15 +194,25 @@ export default function BarcodeScanner({
                 <Camera size={15} /> KAMERA SCANNER VIEW
               </span>
 
-              {!isCameraActive ? (
-                <button type="button" className="btn-ghost-sm" onClick={startCamera}>
-                  <Camera size={13} /> Aktifkan Kamera
+              <div className="flex-align gap-6">
+                <button 
+                  type="button" 
+                  className="btn-ghost-sm" 
+                  onClick={handleGenerateSampleCode}
+                  title="Simulasi Scan Barcode Baru"
+                >
+                  <Zap size={13} className="text-orange" /> Scan Demo
                 </button>
-              ) : (
-                <button type="button" className="btn-danger-sm" onClick={stopCamera}>
-                  <CameraOff size={13} /> Matikan Kamera
-                </button>
-              )}
+                {!isCameraActive ? (
+                  <button type="button" className="btn-ghost-sm" onClick={startCamera}>
+                    <Camera size={13} /> Aktifkan Kamera
+                  </button>
+                ) : (
+                  <button type="button" className="btn-danger-sm" onClick={stopCamera}>
+                    <CameraOff size={13} /> Matikan Kamera
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="hologram-camera-frame">
@@ -139,12 +226,14 @@ export default function BarcodeScanner({
                 <video ref={videoRef} className="camera-video-feed" playsInline />
               ) : (
                 <div className="camera-offline-content">
-                  <Barcode size={54} className="text-purple-glow" />
-                  <div style={{ marginTop: 12, fontSize: 12.5, fontWeight: 700, color: '#fff' }}>
+                  <div style={{ width: 64, height: 64, borderRadius: 16, background: 'rgba(168, 85, 247, 0.15)', border: '1px solid rgba(168, 85, 247, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
+                    <Scan size={36} color="#c084fc" />
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: '#ffffff', letterSpacing: '-0.01em' }}>
                     Optical Barcode Scanner Ready
                   </div>
-                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>
-                    Gunakan kamera web atau scanner barcode USB (Plug & Play)
+                  <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 4, maxWidth: 260 }}>
+                    Arahkan scanner USB fisik, aktifkan kamera web, atau klik tombol <strong>Scan Demo</strong>
                   </div>
                 </div>
               )}
@@ -155,7 +244,28 @@ export default function BarcodeScanner({
 
             {scanMessage && (
               <div className="scanner-message-banner">
-                {scanMessage}
+                <Info size={14} />
+                <span>{scanMessage}</span>
+              </div>
+            )}
+
+            {/* Live Rendered Barcode Graphic */}
+            {scannedCode && (
+              <div style={{ marginTop: 14 }}>
+                <div className="flex-between mb-4">
+                  <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-secondary)' }}>
+                    PREVIEW FISIK BARCODE CONNOTE:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleCopyCode}
+                    style={{ background: 'none', border: 'none', color: 'var(--primary-blue)', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+                  >
+                    {isCopied ? <Check size={12} color="#16a34a" /> : <Copy size={12} />}
+                    {isCopied ? 'Tersalin' : 'Salin Resi'}
+                  </button>
+                </div>
+                <BarcodeSvg value={scannedCode} />
               </div>
             )}
           </div>
@@ -177,7 +287,7 @@ export default function BarcodeScanner({
               <input
                 type="text"
                 className="custom-dark-input font-mono"
-                placeholder="Scan barcode atau ketik (contoh: P260820000001)..."
+                placeholder="Scan barcode atau ketik (contoh: P260827000001)..."
                 value={scannedCode}
                 onChange={(e) => setScannedCode(e.target.value)}
                 style={{ fontSize: 15, fontWeight: 900, color: 'var(--primary-blue)' }}

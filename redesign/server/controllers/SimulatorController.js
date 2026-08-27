@@ -196,7 +196,7 @@ class SimulatorController {
 
       const dateStr = this.getWibDateStr(target_date);
       const db = await DbConnection.getDb();
-      const numToInject = Math.min(Math.max(1, parseInt(count, 10) || 1), 200);
+      const numToInject = Math.min(Math.max(1, parseInt(count, 10) || 1), 500);
 
       let offices = await db.collection('master_kantor')
         .find({ status: 'AKTIF', is_real_verified: true, nopend: { $ne: '40400' } })
@@ -239,7 +239,12 @@ class SimulatorController {
           chosenService = SERVICE_POOL[i % SERVICE_POOL.length];
         }
 
-        // 4. Generate Weight & Amount based on chosen service & weight range
+        // 4. Resolve Effective Weight Range (Support RANDOM / Acak Campur)
+        const effWeightRange = (!weight_range || weight_range === 'RANDOM' || weight_range === 'ACAK' || weight_range === 'ALL')
+          ? (['LIGHT', 'MEDIUM', 'HEAVY'][Math.floor(Math.random() * 3)])
+          : weight_range;
+
+        // Generate Weight & Amount based on chosen service & weight range
         let weightKg = 2.5;
         let amount = 15000;
 
@@ -247,14 +252,14 @@ class SimulatorController {
           weightKg = Number((12.0 + Math.random() * 28.0).toFixed(1));
           amount = 45000 + Math.round(weightKg * 4500);
         } else if (chosenService === 'Pos Sameday') {
-          weightKg = weight_range === 'LIGHT' ? Number((0.5 + Math.random() * 1.5).toFixed(1)) : Number((1.0 + Math.random() * 3.5).toFixed(1));
+          weightKg = effWeightRange === 'LIGHT' ? Number((0.5 + Math.random() * 1.5).toFixed(1)) : Number((1.0 + Math.random() * 3.5).toFixed(1));
           amount = 25000 + Math.round(weightKg * 14000);
         } else if (chosenService === 'Pos Nextday') {
-          weightKg = weight_range === 'LIGHT' ? Number((0.4 + Math.random() * 1.6).toFixed(1)) : (weight_range === 'HEAVY' ? Number((8.0 + Math.random() * 12.0).toFixed(1)) : Number((1.0 + Math.random() * 4.0).toFixed(1)));
+          weightKg = effWeightRange === 'LIGHT' ? Number((0.4 + Math.random() * 1.6).toFixed(1)) : (effWeightRange === 'HEAVY' ? Number((8.0 + Math.random() * 12.0).toFixed(1)) : Number((1.0 + Math.random() * 4.0).toFixed(1)));
           amount = 18000 + Math.round(weightKg * 11000);
         } else {
           // Pos Reguler
-          weightKg = weight_range === 'LIGHT' ? Number((0.5 + Math.random() * 2.0).toFixed(1)) : (weight_range === 'HEAVY' ? Number((10.0 + Math.random() * 15.0).toFixed(1)) : Number((1.5 + Math.random() * 6.0).toFixed(1)));
+          weightKg = effWeightRange === 'LIGHT' ? Number((0.5 + Math.random() * 2.0).toFixed(1)) : (effWeightRange === 'HEAVY' ? Number((10.0 + Math.random() * 15.0).toFixed(1)) : Number((1.5 + Math.random() * 6.0).toFixed(1)));
           amount = 10000 + Math.round(weightKg * 8000);
         }
 

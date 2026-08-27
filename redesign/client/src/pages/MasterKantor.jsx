@@ -350,13 +350,8 @@ export default function MasterKantor() {
       {/* 4. Main Data Table */}
       <div className="spatial-card" style={{ borderRadius: 16, overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: 0 }}>
         
-<<<<<<< Updated upstream
         {/* Table Container with Fully Opaque Sticky Header */}
         <div className="table-responsive-container" style={{ border: 'none', background: 'transparent' }}>
-=======
-        {/* Table Container */}
-        <div style={{ overflowX: 'auto', width: '100%' }}>
->>>>>>> Stashed changes
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ background: 'var(--bg-surface-soft)', borderBottom: '1px solid var(--border-light)' }}>

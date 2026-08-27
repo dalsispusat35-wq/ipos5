@@ -56,9 +56,10 @@ export default function BulkInjector({
     }
   };
 
-  const PRESETS = [5, 10, 25, 50, 100, 140];
+  const PRESETS = [10, 25, 50, 100, 250, 500];
 
   const WEIGHT_OPTIONS = [
+    { id: 'RANDOM', label: 'Acak / Campur (Semua Bobot)', desc: 'Bagi rata Ringan, Reguler, dan Cargo', icon: Shuffle },
     { id: 'LIGHT', label: 'Ringan (Dokumen)', desc: '0.5 kg - 3.0 kg', icon: FileText },
     { id: 'MEDIUM', label: 'Reguler (Paket)', desc: '2.0 kg - 10.0 kg', icon: Package },
     { id: 'HEAVY', label: 'Cargo (Dus Besar)', desc: '12.0 kg - 35.0 kg', icon: Box }
@@ -83,7 +84,7 @@ export default function BulkInjector({
           <div>
             <h3 className="tool-card-title">Suntik Resi Massal (Bulk Parcel Generator)</h3>
             <p className="tool-card-subtitle">
-              Hasilkan puluhan resi otomatis ke 18 kantor pos riil & armada kendaraan dalam 1 kali klik
+              Hasilkan puluhan hingga 500 resi otomatis ke 18 kantor pos riil & armada kendaraan dalam 1 kali klik
             </p>
           </div>
         </div>
@@ -92,15 +93,33 @@ export default function BulkInjector({
       <div className="tool-card-body">
         <form onSubmit={handleInject} className="tool-form-stack">
           
-          {/* 1. QUANTITY SELECTOR (Vibrant Counter + Slider) */}
+          {/* 1. QUANTITY SELECTOR (Vibrant Counter + Direct Input + Slider up to 500) */}
           <div className="form-section-box">
             <div className="flex-between mb-8">
               <label className="section-label flex-align gap-6">
                 <Flame size={14} className="text-orange" /> JUMLAH RESI YANG INGIN DISUNTIKKAN:
               </label>
-              <div className="quantity-counter-badge font-mono">
-                <span className="text-cyan text-bold" style={{ fontSize: 18 }}>{count}</span>
-                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginLeft: 4 }}>PAKET</span>
+              <div className="flex-align gap-8">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Input Manual:</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="500"
+                    value={count}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      setCount(isNaN(val) ? '' : Math.min(500, Math.max(1, val)));
+                    }}
+                    className="custom-dark-input font-mono text-center text-bold"
+                    style={{ width: 85, height: 34, fontSize: 15, padding: '2px 8px', borderRadius: 8, borderColor: 'var(--primary-blue)' }}
+                    placeholder="500"
+                  />
+                </div>
+                <div className="quantity-counter-badge font-mono">
+                  <span className="text-cyan text-bold" style={{ fontSize: 16 }}>{count || 0}</span>
+                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', marginLeft: 4 }}>PAKET</span>
+                </div>
               </div>
             </div>
 
@@ -121,16 +140,16 @@ export default function BulkInjector({
               <input
                 type="range"
                 min="1"
-                max="150"
-                value={count}
+                max="500"
+                value={count || 1}
                 onChange={(e) => setCount(parseInt(e.target.value, 10))}
                 className="custom-range-slider"
               />
               <div className="flex-between text-dim font-mono" style={{ fontSize: 10, marginTop: 4 }}>
                 <span>1 Paket</span>
-                <span>50 Paket</span>
                 <span>100 Paket</span>
-                <span>150 Paket</span>
+                <span>250 Paket</span>
+                <span style={{ fontWeight: 800, color: 'var(--primary-blue)' }}>500 Paket (Maks)</span>
               </div>
             </div>
           </div>

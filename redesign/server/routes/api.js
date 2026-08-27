@@ -231,20 +231,89 @@ router.get('/dashboard-stats', requireDb, async (req, res) => {
 
     const activeTotalCount = activeList.length;
 
-    // Helper function to build period buckets independently
+    // Fetch trend transactions for periodic charts (independent of single-day header filter, respecting service filter)
+    const trendServiceMatch = {};
+    if (service && service !== 'All' && service !== 'Semua') {
+      const s = String(service).trim();
+      const svcRegex = new RegExp(s, 'i');
+      trendServiceMatch.$or = [
+        { 'connote.connote_service': svcRegex },
+        { service: svcRegex },
+        { service_code: svcRegex }
+      ];
+    }
+    const trendTransactions = await col.find(trendServiceMatch).toArray();
+
+    // Helper function to build period buckets independently with strict date boundaries
     const buildPeriodBuckets = (periodName, transactions) => {
       const p = String(periodName || 'Month');
       let buckets = {};
+
+      const now = new Date();
+      // Reference date for the active week/period
+      const refDate = now;
+
       if (p === 'Week') {
-        buckets = {
-          'Sen': { month: 'Sen', onDelivery: 0, delivered: 0, returned: 0, total: 0, revenue: 0 },
-          'Sel': { month: 'Sel', onDelivery: 0, delivered: 0, returned: 0, total: 0, revenue: 0 },
-          'Rab': { month: 'Rab', onDelivery: 0, delivered: 0, returned: 0, total: 0, revenue: 0 },
-          'Kam': { month: 'Kam', onDelivery: 0, delivered: 0, returned: 0, total: 0, revenue: 0 },
-          'Jum': { month: 'Jum', onDelivery: 0, delivered: 0, returned: 0, total: 0, revenue: 0 },
-          'Sab': { month: 'Sab', onDelivery: 0, delivered: 0, returned: 0, total: 0, revenue: 0 },
-          'Min': { month: 'Min', onDelivery: 0, delivered: 0, returned: 0, total: 0, revenue: 0 }
-        };
+        // 1. Calculate Monday 00:00:00.000 to Sunday 23:59:59.999 for active week
+        const dayOfWeek = refDate.getDay(); // 0 = Min, 1 = Sen, ..., 6 = Sab
+        const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+
+        const monday = new Date(refDate);
+        monday.setDate(refDate.getDate() + diffToMonday);
+        monday.setHours(0, 0, 0, 0);
+
+        const sunday = new Date(monday);
+        sunday.setDate(monday.getDate() + 6);
+        sunday.setHours(23, 59, 59, 999);
+
+        const dayNames = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+
+        // 2. Initialize exactly 7 slots for this active week, defaulting strictly to 0
+        for (let i = 0; i < 7; i++) {
+          const d = new Date(monday);
+          d.setDate(monday.getDate() + i);
+          const y = d.getFullYear();
+          const m = String(d.getMonth() + 1).padStart(2, '0');
+          const dt = String(d.getDate()).padStart(2, '0');
+          const dateKey = `${y}-${m}-${dt}`;
+
+          buckets[dateKey] = {
+            month: dayNames[i],
+            label: dayNames[i],
+            dateKey: dateKey,
+            onDelivery: 0,
+            delivered: 0,
+            returned: 0,
+            total: 0,
+            revenue: 0
+          };
+        }
+
+        // 3. Populate buckets ONLY with transactions strictly within this active week range
+        transactions.forEach((t) => {
+          const tDate = parseTransactionDate(t);
+          if (tDate >= monday && tDate <= sunday) {
+            const y = tDate.getFullYear();
+            const m = String(tDate.getMonth() + 1).padStart(2, '0');
+            const dt = String(tDate.getDate()).padStart(2, '0');
+            const dateKey = `${y}-${m}-${dt}`;
+
+            if (buckets[dateKey]) {
+              const state = (t.connote?.connote_state || t.connote_state || 'ENTRY').toUpperCase();
+              const amount = Number(t.connote?.connote_amount || t.connote_service_price || t.amount || 0);
+
+              buckets[dateKey].total += 1;
+              buckets[dateKey].revenue += amount;
+              if (['DELIVERED', 'TERKIRIM', 'SUKSES'].some(s => state.includes(s))) {
+                buckets[dateKey].delivered += 1;
+              } else if (['CANCEL', 'GAGAL', 'RETURN', 'RETUR'].some(s => state.includes(s))) {
+                buckets[dateKey].returned += 1;
+              } else {
+                buckets[dateKey].onDelivery += 1;
+              }
+            }
+          }
+        });
       } else if (p === 'Year') {
         buckets = {
           'Q1': { month: 'Q1 (Jan-Mar)', onDelivery: 0, delivered: 0, returned: 0, total: 0, revenue: 0 },
@@ -252,56 +321,56 @@ router.get('/dashboard-stats', requireDb, async (req, res) => {
           'Q3': { month: 'Q3 (Jul-Sep)', onDelivery: 0, delivered: 0, returned: 0, total: 0, revenue: 0 },
           'Q4': { month: 'Q4 (Okt-Des)', onDelivery: 0, delivered: 0, returned: 0, total: 0, revenue: 0 }
         };
-      } else {
-        buckets = {
-          'Jan': { month: 'Jan', onDelivery: 0, delivered: 0, returned: 0, total: 0, revenue: 0 },
-          'Feb': { month: 'Feb', onDelivery: 0, delivered: 0, returned: 0, total: 0, revenue: 0 },
-          'Mar': { month: 'Mar', onDelivery: 0, delivered: 0, returned: 0, total: 0, revenue: 0 },
-          'Apr': { month: 'Apr', onDelivery: 0, delivered: 0, returned: 0, total: 0, revenue: 0 },
-          'May': { month: 'May', onDelivery: 0, delivered: 0, returned: 0, total: 0, revenue: 0 },
-          'Jun': { month: 'Jun', onDelivery: 0, delivered: 0, returned: 0, total: 0, revenue: 0 },
-          'Jul': { month: 'Jul', onDelivery: 0, delivered: 0, returned: 0, total: 0, revenue: 0 },
-          'Aug': { month: 'Aug', onDelivery: 0, delivered: 0, returned: 0, total: 0, revenue: 0 },
-          'Sep': { month: 'Sep', onDelivery: 0, delivered: 0, returned: 0, total: 0, revenue: 0 }
-        };
-      }
 
-      const dayKeys = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
-      const monthKeys = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-      transactions.forEach((t) => {
-        const state = (t.connote?.connote_state || t.connote_state || 'ENTRY').toUpperCase();
-        const amount = Number(t.connote?.connote_amount || t.connote_service_price || t.amount || 0);
-        const tDate = parseTransactionDate(t);
-
-        let bKey = 'Aug';
-        if (p === 'Week') {
-          bKey = dayKeys[tDate.getDay()] || 'Sen';
-        } else if (p === 'Year') {
+        transactions.forEach((t) => {
+          const state = (t.connote?.connote_state || t.connote_state || 'ENTRY').toUpperCase();
+          const amount = Number(t.connote?.connote_amount || t.connote_service_price || t.amount || 0);
+          const tDate = parseTransactionDate(t);
           const m = tDate.getMonth();
-          bKey = m < 3 ? 'Q1' : m < 6 ? 'Q2' : m < 9 ? 'Q3' : 'Q4';
-        } else {
-          const mIdx = tDate.getMonth();
-          bKey = monthKeys[mIdx] || 'Aug';
-          if (!buckets[bKey]) bKey = 'Aug';
-        }
+          const bKey = m < 3 ? 'Q1' : m < 6 ? 'Q2' : m < 9 ? 'Q3' : 'Q4';
 
-        if (buckets[bKey]) {
-          buckets[bKey].total += 1;
-          buckets[bKey].revenue += amount;
-          if (['DELIVERED', 'TERKIRIM', 'SUKSES'].some(s => state.includes(s))) {
-            buckets[bKey].delivered += 1;
-          } else if (['CANCEL', 'GAGAL', 'RETURN', 'RETUR'].some(s => state.includes(s))) {
-            buckets[bKey].returned += 1;
-          } else {
-            buckets[bKey].onDelivery += 1;
+          if (buckets[bKey]) {
+            buckets[bKey].total += 1;
+            buckets[bKey].revenue += amount;
+            if (['DELIVERED', 'TERKIRIM', 'SUKSES'].some(s => state.includes(s))) {
+              buckets[bKey].delivered += 1;
+            } else if (['CANCEL', 'GAGAL', 'RETURN', 'RETUR'].some(s => state.includes(s))) {
+              buckets[bKey].returned += 1;
+            } else {
+              buckets[bKey].onDelivery += 1;
+            }
           }
-        }
-      });
+        });
+      } else {
+        const monthKeys = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        monthKeys.forEach((m) => {
+          buckets[m] = { month: m, onDelivery: 0, delivered: 0, returned: 0, total: 0, revenue: 0 };
+        });
+
+        transactions.forEach((t) => {
+          const state = (t.connote?.connote_state || t.connote_state || 'ENTRY').toUpperCase();
+          const amount = Number(t.connote?.connote_amount || t.connote_service_price || t.amount || 0);
+          const tDate = parseTransactionDate(t);
+          const mIdx = tDate.getMonth();
+          const bKey = monthKeys[mIdx] || 'Aug';
+
+          if (buckets[bKey]) {
+            buckets[bKey].total += 1;
+            buckets[bKey].revenue += amount;
+            if (['DELIVERED', 'TERKIRIM', 'SUKSES'].some(s => state.includes(s))) {
+              buckets[bKey].delivered += 1;
+            } else if (['CANCEL', 'GAGAL', 'RETURN', 'RETUR'].some(s => state.includes(s))) {
+              buckets[bKey].returned += 1;
+            } else {
+              buckets[bKey].onDelivery += 1;
+            }
+          }
+        });
+      }
 
       return Object.values(buckets).map(b => ({
         month: b.month,
-        label: b.month,
+        label: b.label || b.month,
         onDelivery: b.onDelivery,
         delivered: b.delivered,
         returned: b.returned,
@@ -315,9 +384,9 @@ router.get('/dashboard-stats', requireDb, async (req, res) => {
       }));
     };
 
-    // Format Stacked Bar Data (Shipment) & Sales Trend independently
-    const monthlyShipments = buildPeriodBuckets(shipmentPeriod, activeList);
-    const salesTrend = buildPeriodBuckets(salesPeriod, activeList);
+    // Format Stacked Bar Data (Shipment) & Sales Trend independently using trendTransactions
+    const monthlyShipments = buildPeriodBuckets(shipmentPeriod, trendTransactions);
+    const salesTrend = buildPeriodBuckets(salesPeriod, trendTransactions);
 
     // Format Popular Categories
     const popularCategories = Object.entries(serviceStats)
