@@ -1,12 +1,7 @@
 import BaseController from './BaseController.js';
 import KantorModel from '../models/KantorModel.js';
 import DbConnection from '../config/DbConnection.js';
-
-const REAL_BANDUNG_CIMAHI_CODES = [
-  '40000', '40500', '40400', '40100', '40511A', '40511CB', '40511U3', 
-  '40511CA', '40511U1', '40511U4', '40512', '40114A', '40115A', '40115B', 
-  '40116A', '40122B', '40123A', '40135', '40141C3'
-];
+import KantorWilayah from '../services/KantorWilayahService.js';
 
 class KantorController extends BaseController {
   constructor() {
@@ -35,14 +30,20 @@ class KantorController extends BaseController {
 
   async getAll(req, res) {
     try {
-      const { search, page = 1, limit = 12, sortField, sortOrder, status, category, region } = req.query;
+      const { search, page = 1, limit = 12, sortField, sortOrder, status, category, region, wilayahKode, nopend } = req.query;
       const parsedPage = Math.max(1, parseInt(page, 10) || 1);
-      const parsedLimit = Math.max(1, parseInt(limit, 10) || 12);
+      const parsedLimit = Math.min(100, Math.max(1, parseInt(limit, 10) || 12));
       const skip = (parsedPage - 1) * parsedLimit;
       
       const db = await DbConnection.getDb();
+      const wilayahIndex = await KantorWilayah.getIndex();
       let query = {};
       const conditions = [];
+
+      // 0. Specific Nopend filter
+      if (nopend) {
+        conditions.push({ nopend: String(nopend).trim() });
+      }
 
       // 1. Status Filter
       if (status === 'AKTIF') {
@@ -51,15 +52,15 @@ class KantorController extends BaseController {
         conditions.push({ status: 'NONAKTIF' });
       }
 
-      // 2. Regional Filter (Bandung & Cimahi Active Route)
-      if (region === 'BANDUNG_CIMAHI') {
+      // 2. Bandung/Cimahi office filter, based on stored office location fields.
+      if (region === 'BANDUNG_CIMAHI' && !wilayahKode && !nopend) {
         conditions.push({
           $or: [
-            { is_real_verified: true },
-            { nopend: { $in: REAL_BANDUNG_CIMAHI_CODES } },
-            { nopend: { $regex: '^40' } },
             { kabupaten_kota: { $regex: 'bandung|cimahi', $options: 'i' } },
-            { kota: { $regex: 'bandung|cimahi', $options: 'i' } }
+            { kabupaten: { $regex: 'bandung|cimahi', $options: 'i' } },
+            { kota: { $regex: 'bandung|cimahi', $options: 'i' } },
+            { nama_kcu_kc: { $regex: 'bandung|cimahi|soreang', $options: 'i' } },
+            { nama_kcu: { $regex: 'bandung|cimahi', $options: 'i' } }
           ]
         });
       }
@@ -110,37 +111,40 @@ class KantorController extends BaseController {
         }
       }
 
-      // 4. Search Filter
-      if (search && search.trim()) {
-        conditions.push(this.getSearchFilter(search));
-      }
-
       if (conditions.length === 1) {
         query = conditions[0];
       } else if (conditions.length > 1) {
         query = { $and: conditions };
       }
 
-      const total = await db.collection('master_kantor').countDocuments(query);
-      
       // Default sort prioritizes verified active Bandung/Cimahi operational route offices
       let sort = { is_real_verified: -1, priority: 1, nopend: 1 };
       if (sortField) {
         sort = { [sortField]: sortOrder === 'desc' ? -1 : 1 };
       }
 
-      const rawData = await db.collection('master_kantor')
-        .find(query)
-        .sort(sort)
-        .skip(skip)
-        .limit(parsedLimit)
-        .toArray();
+      const searchTerm = String(search || '').trim().toUpperCase();
+      const cleanNopend = String(nopend || '').trim().toUpperCase();
+      const needsRegionOrSearch = Boolean(searchTerm || wilayahKode || cleanNopend);
+      const cursor = db.collection('master_kantor').find(query).sort(sort);
+      const rawData = needsRegionOrSearch ? await cursor.toArray() : await cursor.skip(skip).limit(parsedLimit).toArray();
+      const filtered = rawData.filter(o => {
+        if (cleanNopend && String(o.nopend || '').trim().toUpperCase() !== cleanNopend) return false;
+        const wilayah = wilayahIndex.resolveOffice(o);
+        if (wilayahKode && !wilayahIndex.isInside(wilayah.kode, wilayahKode)) return false;
+        if (!searchTerm) return true;
+        const fields = [o.nopend, o.nama_nopend, o.nama_kantor, o.alamat, o.provinsi,
+          o.kabupaten_kota, o.kabupaten, o.kota, o.kecamatan, o.kelurahan, o.wilayah_kode, o.kode_wilayah];
+        return fields.some(value => String(value || '').toUpperCase().includes(searchTerm)) ||
+          wilayahIndex.searchRegion(wilayah, searchTerm);
+      });
+      const total = needsRegionOrSearch ? filtered.length : await db.collection('master_kantor').countDocuments(query);
 
       // Normalize fields for UI
-      const data = rawData.map(o => {
+      const data = (needsRegionOrSearch ? filtered.slice(skip, skip + parsedLimit) : filtered).map(o => {
         const nameUpper = String(o.nama_nopend || o.nama_kantor || '').toUpperCase();
-        let resolvedType = o.tipe || 'KCP';
-        let resolvedJenis = o.jenis_kantor || o.tipe_kantor || 'Kantor Cabang Pembantu';
+        let resolvedType = o.tipe || null;
+        let resolvedJenis = o.jenis_kantor || o.tipe_kantor || null;
 
         if (o.nopend === '40400' || nameUpper.includes('SPP') || nameUpper.includes('SENTRAL')) {
           resolvedType = 'SPP_DC';
@@ -163,30 +167,24 @@ class KantorController extends BaseController {
           nama_kantor: o.nama_kantor || o.nama_nopend || '-',
           tipe: resolvedType,
           jenis_kantor: resolvedJenis,
-          alamat: o.alamat || '-',
-          kelurahan: o.kelurahan || '-',
-          kecamatan: o.kecamatan || '-',
-          kabupaten_kota: o.kabupaten_kota || o.kota || o.nama_kcu_kc || 'Kota Bandung / Cimahi',
-          provinsi: o.provinsi || 'JAWA BARAT',
-          contact_center: o.contact_center || o.telepon || '1500161',
+          alamat: o.alamat || null,
+          kelurahan: o.kelurahan || null,
+          kecamatan: o.kecamatan || null,
+          kabupaten_kota: o.kabupaten_kota || o.kabupaten || o.kota || null,
+          provinsi: o.provinsi || null,
+          wilayah: wilayahIndex.resolveOffice(o),
+          contact_center: o.contact_center || o.telepon || null,
           latitude: o.latitude,
           longitude: o.longitude,
           has_gps: !!(o.latitude && o.longitude),
-          is_real_verified: !!(o.is_real_verified || REAL_BANDUNG_CIMAHI_CODES.includes(o.nopend)),
-          status: o.status || 'AKTIF'
+          is_real_verified: !!o.is_real_verified,
+          status: o.status || null
         };
       });
 
       // Quick aggregate summary
-      const summaryStats = {
-        total: 13768,
-        active: 13768,
-        bandungCimahi: REAL_BANDUNG_CIMAHI_CODES.length,
-        kcu: 1834,
-        kcp: 11001,
-        agenpos: 914,
-        sppDc: 19
-      };
+      const summaryStats = { total: await db.collection('master_kantor').countDocuments({}),
+        active: await db.collection('master_kantor').countDocuments({ status: 'AKTIF' }) };
 
       res.json({
         success: true,
@@ -219,6 +217,61 @@ class KantorController extends BaseController {
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }
+  }
+
+  async getWilayahOptions(req, res) {
+    try {
+      const result = await KantorWilayah.getOptions(req.query.parent || null);
+      res.json({ success: true, ...result });
+    } catch (error) { res.status(503).json({ success: false, message: error.message }); }
+  }
+
+  async getWilayahNopens(req, res) {
+    try {
+      const result = await KantorWilayah.getWilayahNopens(req.query.kode || '');
+      res.json({ success: true, count: result.count, data: result.data });
+    } catch (error) { res.status(500).json({ success: false, message: error.message }); }
+  }
+
+  async getWilayahMap(req, res) {
+    try {
+      const data = await KantorWilayah.getMapScene(req.params.kode || req.query.kode || '');
+      res.json({ success: true, data });
+    } catch (error) { res.status(503).json({ success: false, message: error.message }); }
+  }
+
+  async reverseWilayah(req, res) {
+    if (req.query.lat === undefined || req.query.lng === undefined || req.query.lat === '' || req.query.lng === '') {
+      return res.status(400).json({ success: false, message: 'Koordinat wajib diisi' });
+    }
+    try {
+      const data = await KantorWilayah.reverseLookup(Number(req.query.lat), Number(req.query.lng));
+      res.json({ success: true, data });
+    } catch (error) { res.status(400).json({ success: false, message: error.message }); }
+  }
+
+  async create(req, res) {
+    if (req.body.wilayah_kode) {
+      try {
+        const wilayahIndex = await KantorWilayah.getIndex();
+        if (!wilayahIndex.byCode.has(String(req.body.wilayah_kode))) {
+          return res.status(400).json({ success: false, message: 'Kode wilayah Kemendagri tidak valid' });
+        }
+      } catch (error) { return res.status(503).json({ success: false, message: error.message }); }
+    }
+    return super.create(req, res);
+  }
+
+  async update(req, res) {
+    if (req.body.wilayah_kode) {
+      try {
+        const wilayahIndex = await KantorWilayah.getIndex();
+        if (!wilayahIndex.byCode.has(String(req.body.wilayah_kode))) {
+          return res.status(400).json({ success: false, message: 'Kode wilayah Kemendagri tidak valid' });
+        }
+      } catch (error) { return res.status(503).json({ success: false, message: error.message }); }
+    }
+    return super.update(req, res);
   }
 }
 

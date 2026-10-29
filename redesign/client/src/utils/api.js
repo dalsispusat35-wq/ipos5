@@ -213,5 +213,16 @@ export const api = {
 
   // Notifications & Alerts
   getSystemAlerts: () => fetchApi('/notifications/alerts'),
-  markAlertRead: (id) => fetchApi(`/notifications/alerts/${id}/read`, { method: 'POST' })
+  markAlertRead: (id) => fetchApi(`/notifications/alerts/${id}/read`, { method: 'POST' }),
+
+  // POSIND News Feed
+  getNews: (params = '') => {
+    const q = typeof params === 'object' ? new URLSearchParams(params).toString() : params;
+    return fetchApi(`/news${q ? `?${q}` : ''}`);
+  },
+  getNewsById: (id) => fetchApi(`/news/${encodeURIComponent(id)}`),
+  createManualNews: (data) => fetchApi('/news/manual', { method: 'POST', body: data }),
+  updateNews: (id, data) => fetchApi(`/news/${encodeURIComponent(id)}`, { method: 'PUT', body: data }),
+  deleteNews: (id) => fetchApi(`/news/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  scrapeNews: () => fetchApi('/news/scrape', { method: 'POST' })
 };

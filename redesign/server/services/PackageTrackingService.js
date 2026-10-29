@@ -63,14 +63,14 @@ class PackageTrackingService {
     const locCreated = tx.location_data_created?.custom_field || {};
     const custom = tx.custom_field || {};
     const code = connoteObj.origin_nopen || 
-                 connoteObj.connote_origin_nopend || 
-                 connoteObj.origin_kprk ||
-                 locCreated.nopen || 
-                 locCreated.nopend || 
-                 locCreated.origin_nopen || 
-                 custom.origin_nopen || 
-                 custom.origin_kprk || 
-                 tx.origin_nopen;
+                connoteObj.connote_origin_nopend || 
+                connoteObj.origin_kprk ||
+                locCreated.nopen || 
+                locCreated.nopend || 
+                locCreated.origin_nopen || 
+                custom.origin_nopen || 
+                custom.origin_kprk || 
+                tx.origin_nopen;
     return this.normalizeCode(code) || '40511';
   }
 
@@ -83,12 +83,12 @@ class PackageTrackingService {
     const locCreated = tx.location_data_created?.custom_field || {};
     const custom = tx.custom_field || {};
     const code = connoteObj.destination_nopen || 
-                 connoteObj.connote_destination_nopend || 
-                 connoteObj.destination_kprk ||
-                 custom.destination_nopen || 
-                 locCreated.destination_nopen || 
-                 custom.destination_kprk || 
-                 tx.destination_nopen;
+                connoteObj.connote_destination_nopend || 
+                connoteObj.destination_kprk ||
+                custom.destination_nopen || 
+                locCreated.destination_nopen || 
+                custom.destination_kprk || 
+                tx.destination_nopen;
     return this.normalizeCode(code) || '40400';
   }
 
@@ -480,86 +480,126 @@ class PackageTrackingService {
     // 4. Fetch Vehicle Info and Journey for dateStr
     const vehicleDetails = await this.getVehicleTrackingDetails(assignedVehicleNopol, dateStr);
 
-    // 5. Fetch Tracking Events Timeline
+    // 5. Fetch Tracking Events Timeline from both tracking_events collection & txDoc.tracking_history
     const rawEvents = await db.collection('tracking_events')
       .find({ connote_code: resiCode })
       .sort({ event_datetime: 1 })
       .toArray();
 
-    const timeline = rawEvents.map(evt => ({
-      event_id: evt.event_id,
-      stage: evt.event_type || 'SCANNED',
-      note: evt.note || `Status paket: ${evt.event_type}`,
-      time: evt.event_datetime ? new Date(evt.event_datetime).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : '-',
-      location: evt.office_name || evt.location_name || `Kantor ${evt.office_code || ''}`,
-      vehicle_code: evt.vehicle_code || assignedVehicleNopol
-    }));
+    const timeline = [];
 
-    // Comprehensive Timeline Synthesis if raw events are empty
-    if (timeline.length === 0) {
+    // Add entry creation
+    const createdDateStr = txDoc.createdAt || txDoc.connote?.created_at;
+    timeline.push({
+      event_id: `ENTRY_${resiCode}`,
+      stage: 'ENTRY',
+      note: `Paket ${resiCode} dicatat & diterima di loket ${originOffice.name} (Layanan ${service}).`,
+      time: createdDateStr ? new Date(createdDateStr).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : 'Hari ini',
+      location: originOffice.name,
+      vehicle_code: assignedVehicleNopol
+    });
+
+    if (txDoc.manifest_id) {
       timeline.push({
-        event_id: `INIT_${resiCode}`,
-        stage: 'ENTRY',
-        note: `Paket ${resiCode} dicatat & diterima di loket ${originOffice.name}.`,
-        time: txDoc.createdAt ? new Date(txDoc.createdAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : 'Hari ini',
+        event_id: `MNF_${resiCode}`,
+        stage: 'IN_MANIFEST',
+        note: `Paket masuk manifest & bagging ID "${txDoc.manifest_id}" untuk keberangkatan armada ${assignedVehicleNopol}.`,
+        time: txDoc.updatedAt ? new Date(txDoc.updatedAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : 'Hari ini',
         location: originOffice.name,
         vehicle_code: assignedVehicleNopol
       });
+    }
 
-      if (['LOADED', 'IN_TRANSIT', 'ARRIVED', 'DELIVERED', 'RETURNED'].includes(state)) {
-        timeline.push({
-          event_id: `LOAD_${resiCode}`,
-          stage: 'LOADED',
-          note: `Paket dimuat ke armada truk ${assignedVehicleNopol} (${assignedRouteId || 'Feeder Route'}).`,
-          time: 'Hari ini',
-          location: originOffice.name,
-          vehicle_code: assignedVehicleNopol
-        });
-      }
+    if (Array.isArray(txDoc.tracking_history) && txDoc.tracking_history.length > 0) {
+      txDoc.tracking_history.forEach((hist, hIdx) => {
+        const histTo = (hist.to_state || hist.to || hist.state || '').toUpperCase();
+        const histTime = hist.changedAt ? new Date(hist.changedAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : 'Hari ini';
+        
+        if (histTo.includes('MANIFEST') && !txDoc.manifest_id) {
+          timeline.push({
+            event_id: `HIST_${resiCode}_${hIdx}`,
+            stage: 'IN_MANIFEST',
+            note: `Paket dimasukkan ke manifest oleh operator loket.`,
+            time: histTime,
+            location: originOffice.name,
+            vehicle_code: assignedVehicleNopol
+          });
+        } else if (histTo.includes('TRANSIT') || histTo.includes('IN_TRANSIT')) {
+          timeline.push({
+            event_id: `HIST_${resiCode}_${hIdx}`,
+            stage: 'IN_TRANSIT',
+            note: `Armada truk ${assignedVehicleNopol} (${assignedRouteId || 'Feeder Route'}) berangkat dari ${originOffice.name} menuju ${destinationOffice.name}.`,
+            time: histTime,
+            location: `Lintas Rute ${assignedRouteId || 'Cimahi - Bandung'}`,
+            vehicle_code: assignedVehicleNopol
+          });
+        } else if (histTo.includes('TIBA') || histTo.includes('ARRIVED')) {
+          timeline.push({
+            event_id: `HIST_${resiCode}_${hIdx}`,
+            stage: 'ARRIVED',
+            note: `Paket tiba & selesai pembongkaran di Sentral Pengolahan Pos (${destinationOffice.name}).`,
+            time: histTime,
+            location: destinationOffice.name,
+            vehicle_code: assignedVehicleNopol
+          });
+        } else if (histTo.includes('DELIVERED') || histTo.includes('TERKIRIM') || histTo.includes('SELESAI')) {
+          timeline.push({
+            event_id: `HIST_${resiCode}_${hIdx}`,
+            stage: 'DELIVERED',
+            note: `Paket telah diserahkan kepada penerima (${txDoc.connote?.connote_receiver_name || txDoc.receiver_name || 'Pelanggan'}).`,
+            time: histTime,
+            location: destinationOffice.name,
+            vehicle_code: assignedVehicleNopol
+          });
+        }
+      });
+    }
 
-      if (['IN_TRANSIT', 'ARRIVED', 'DELIVERED', 'RETURNED'].includes(state)) {
-        timeline.push({
-          event_id: `TRANSIT_${resiCode}`,
-          stage: 'IN_TRANSIT',
-          note: `Armada ${assignedVehicleNopol} dalam perjalanan menuju ${destinationOffice.name}.`,
-          time: 'Hari ini',
-          location: `Lintas Rute ${assignedRouteId || ''}`,
-          vehicle_code: assignedVehicleNopol
-        });
-      }
+    // Add any raw events from tracking_events collection
+    rawEvents.forEach(evt => {
+      timeline.push({
+        event_id: evt.event_id || `EVT_${Date.now()}`,
+        stage: evt.event_type || 'SCANNED',
+        note: evt.note || `Status paket: ${evt.event_type}`,
+        time: evt.event_datetime ? new Date(evt.event_datetime).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : '-',
+        location: evt.office_name || evt.location_name || `Kantor ${evt.office_code || ''}`,
+        vehicle_code: evt.vehicle_code || assignedVehicleNopol
+      });
+    });
 
-      if (['ARRIVED', 'DELIVERED'].includes(state)) {
-        timeline.push({
-          event_id: `ARRIVE_${resiCode}`,
-          stage: 'ARRIVED',
-          note: `Paket tiba & selesai pembongkaran di gate entry ${destinationOffice.name}.`,
-          time: 'Hari ini',
-          location: destinationOffice.name,
-          vehicle_code: assignedVehicleNopol
-        });
-      }
+    // If state is advanced but history was empty, synthesize the active milestone:
+    const stageNames = timeline.map(t => t.stage);
+    if ((state === 'IN_TRANSIT' || state === 'TRANSIT_SPP_BANDUNG') && !stageNames.includes('IN_TRANSIT')) {
+      timeline.push({
+        event_id: `SYN_TRANSIT_${resiCode}`,
+        stage: 'IN_TRANSIT',
+        note: `Armada truk ${assignedVehicleNopol} (${assignedRouteId || 'Feeder Route'}) berangkat dari ${originOffice.name} menuju ${destinationOffice.name}.`,
+        time: txDoc.updatedAt ? new Date(txDoc.updatedAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : 'Hari ini',
+        location: `Lintas Rute ${assignedRouteId || 'Cimahi - Bandung'}`,
+        vehicle_code: assignedVehicleNopol
+      });
+    }
 
-      if (state === 'DELIVERED') {
-        timeline.push({
-          event_id: `DELIV_${resiCode}`,
-          stage: 'DELIVERED',
-          note: `Paket sukses diserahkan kepada penerima (${txDoc.connote?.connote_receiver_name || txDoc.receiver_name || 'Pelanggan'}).`,
-          time: 'Hari ini',
-          location: txDoc.connote?.connote_receiver_address || destinationOffice.name,
-          vehicle_code: assignedVehicleNopol
-        });
-      }
+    if ((state === 'ARRIVED' || state === 'TIBA_DI_SPP_TUJUAN') && !stageNames.includes('ARRIVED') && !stageNames.includes('TIBA_DI_SPP_TUJUAN')) {
+      timeline.push({
+        event_id: `SYN_ARRIVE_${resiCode}`,
+        stage: 'ARRIVED',
+        note: `Paket tiba di gate entry & fasilitas sortir ${destinationOffice.name}.`,
+        time: txDoc.updatedAt ? new Date(txDoc.updatedAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : 'Hari ini',
+        location: destinationOffice.name,
+        vehicle_code: assignedVehicleNopol
+      });
+    }
 
-      if (state === 'RETURNED') {
-        timeline.push({
-          event_id: `RET_${resiCode}`,
-          stage: 'RETURNED',
-          note: `Paket gagal antar atau diretur ke loket asal ${originOffice.name}.`,
-          time: 'Hari ini',
-          location: originOffice.name,
-          vehicle_code: assignedVehicleNopol
-        });
-      }
+    if (state === 'DELIVERED' && !stageNames.includes('DELIVERED')) {
+      timeline.push({
+        event_id: `SYN_DELIV_${resiCode}`,
+        stage: 'DELIVERED',
+        note: `Paket sukses diserahkan kepada penerima (${txDoc.connote?.connote_receiver_name || txDoc.receiver_name || 'Pelanggan'}).`,
+        time: txDoc.updatedAt ? new Date(txDoc.updatedAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : 'Hari ini',
+        location: txDoc.connote?.connote_receiver_address || destinationOffice.name,
+        vehicle_code: assignedVehicleNopol
+      });
     }
 
     return {

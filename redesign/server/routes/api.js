@@ -17,6 +17,7 @@ import UserController from '../controllers/UserController.js';
 import AnalyticsController from '../controllers/AnalyticsController.js';
 import NotificationController from '../controllers/NotificationController.js';
 import SimulatorController from '../controllers/SimulatorController.js';
+import NewsController from '../controllers/NewsController.js';
 import estimasiRouter from './estimasi.js';
 
 import KantorModel from '../models/KantorModel.js';
@@ -610,6 +611,11 @@ router.get('/dashboard-stats', requireDb, async (req, res) => {
 // ─── Master Kantor Routes ─────────────────────────────────────────────────────
 router.get('/kantor', requireDb, (req, res) => KantorController.getAll(req, res));
 router.get('/kantor/filters', requireDb, (req, res) => KantorController.getFilters(req, res));
+router.get('/kantor/wilayah', requireDb, (req, res) => KantorController.getWilayahOptions(req, res));
+router.get('/kantor/wilayah/nopens', requireDb, (req, res) => KantorController.getWilayahNopens(req, res));
+router.get('/kantor/wilayah/map', requireDb, (req, res) => KantorController.getWilayahMap(req, res));
+router.get('/kantor/wilayah/reverse', requireDb, (req, res) => KantorController.reverseWilayah(req, res));
+router.get('/kantor/wilayah/map/:kode', requireDb, (req, res) => KantorController.getWilayahMap(req, res));
 router.get('/kantor/:id', requireDb, (req, res) => KantorController.getById(req, res));
 router.post('/kantor', requireDb, (req, res) => KantorController.create(req, res));
 router.put('/kantor/:id', requireDb, (req, res) => KantorController.update(req, res));
@@ -745,5 +751,13 @@ router.get('/simulator/options', requireDb, (req, res) => SimulatorController.ge
 router.post('/simulator/inject-bulk', requireDb, (req, res) => SimulatorController.injectBulk(req, res));
 router.post('/simulator/inject-single', requireDb, (req, res) => SimulatorController.injectSingle(req, res));
 router.post('/simulator/clear-date', requireDb, (req, res) => SimulatorController.clearDate(req, res));
+
+// ─── POSIND News Feed Routes ──────────────────────────────────────────────────
+router.get('/news', requireDb, (req, res) => NewsController.getAll(req, res));
+router.get('/news/:id', requireDb, (req, res) => NewsController.getById(req, res));
+router.post('/news/manual', requireDb, (req, res) => NewsController.createManual(req, res));
+router.post('/news/scrape', requireDb, (req, res) => NewsController.triggerScrape(req, res));
+router.put('/news/:id', requireDb, (req, res) => NewsController.update(req, res));
+router.delete('/news/:id', requireDb, (req, res) => NewsController.delete(req, res));
 
 export default router;

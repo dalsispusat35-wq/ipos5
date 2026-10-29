@@ -8,9 +8,10 @@ import {
   Cpu, Copy, Check, SlidersHorizontal, ArrowDown, ArrowUp, Compass,
   RadioTower, Wifi, Sun, Play, Navigation, AlertTriangle, Package,
   Search, Plane, Filter, Terminal, Globe, Crosshair, HelpCircle, ChevronDown,
-  X, ArrowRight, ArrowUpDown
+  X, ArrowRight, ArrowUpDown, Trophy, Scale, Download, Coins
 } from 'lucide-react';
 import { api } from '../utils/api.js';
+import NewsFeed from '../components/NewsFeed.jsx';
 
 export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
   const [dbStats, setDbStats] = useState(null);
@@ -204,6 +205,9 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20, width: '100%', paddingBottom: 20 }}>
       
+      {/* ── 0. KILAS BERITA PT POS INDONESIA (LIVE RSS FEED CAROUSEL) ── */}
+      <NewsFeed />
+
       {/* ── 1. SUBHEADER: PAGE TITLE & ACTIVE DATE FILTER DROPDOWN ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -868,7 +872,12 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
             </h3>
             <button
               type="button"
-              onClick={() => setIsPopularCategoriesModalOpen(true)}
+              onClick={() => {
+                setCategoryDetailSearch('');
+                setCategorySortKey('count');
+                setCategorySortOrder('desc');
+                setIsPopularCategoriesModalOpen(true);
+              }}
               className="btn-ghost"
               style={{
                 fontSize: 11.5,
@@ -1289,232 +1298,581 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
 
       {/* ── MODAL: DETAIL POPULAR CATEGORIES (BREAKDOWN LENGKAP DISTRIBUSI LAYANAN) ── */}
       {isPopularCategoriesModalOpen && (
-        <div className="modal-overlay" onClick={() => setIsPopularCategoriesModalOpen(false)}>
+        <div 
+          className="modal-overlay" 
+          onClick={() => setIsPopularCategoriesModalOpen(false)}
+          style={{
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            background: 'rgba(3, 7, 18, 0.72)',
+            zIndex: 1050
+          }}
+        >
           <div
             className="modal-content"
-            style={{ maxWidth: 880, width: '95%', maxHeight: '90vh' }}
+            style={{ 
+              maxWidth: 1060, 
+              width: '94%', 
+              maxHeight: '92vh',
+              borderRadius: 20,
+              border: '1px solid rgba(2, 132, 199, 0.28)',
+              boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 35px rgba(2, 132, 199, 0.12)',
+              background: 'var(--bg-surface)'
+            }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Header */}
-            <div className="modal-header" style={{ padding: '16px 22px', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-surface-soft)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(2, 132, 199, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary-blue)' }}>
-                  <PieChartIcon size={20} />
+            {/* Modal Header with Gradient Accent */}
+            <div 
+              className="modal-header" 
+              style={{ 
+                padding: '18px 24px', 
+                borderBottom: '1px solid var(--border-light)', 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center', 
+                background: 'linear-gradient(180deg, var(--bg-surface-soft) 0%, var(--bg-surface) 100%)',
+                position: 'relative'
+              }}
+            >
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, #0284c7, #38bdf8, #a855f7, #10b981)' }} />
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ 
+                  width: 44, 
+                  height: 44, 
+                  borderRadius: 12, 
+                  background: 'linear-gradient(135deg, rgba(2, 132, 199, 0.2) 0%, rgba(56, 189, 248, 0.1) 100%)', 
+                  border: '1.5px solid rgba(2, 132, 199, 0.35)',
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  color: 'var(--primary-blue)',
+                  boxShadow: '0 4px 12px rgba(2, 132, 199, 0.2)'
+                }}>
+                  <PieChartIcon size={22} />
                 </div>
                 <div>
-                  <h2 style={{ fontSize: 16.5, fontWeight: 800, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    Detail Popular Categories
-                    <span className="badge badge-navy" style={{ fontSize: 10.5, padding: '2px 8px' }}>
-                      {popularCategoriesList.length} Layanan
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <h2 style={{ fontSize: 18, fontWeight: 900, margin: 0, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
+                      Detail Popular Categories
+                    </h2>
+                    <span className="badge badge-navy" style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, fontWeight: 800, background: 'rgba(2, 132, 199, 0.15)', color: 'var(--primary-blue)', border: '1px solid rgba(2, 132, 199, 0.3)' }}>
+                      {popularCategoriesList.length} Layanan Terdaftar
                     </span>
-                  </h2>
-                  <p style={{ margin: 0, fontSize: 11.5, color: 'var(--text-secondary)' }}>
-                    Rincian pangsa pasar, volume transaksi, nilai pendapatan, dan bobot tonase per produk kiriman pos
+                    <span className="badge badge-emerald" style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#10b981' }} />
+                      Live Data
+                    </span>
+                  </div>
+                  <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--text-secondary)' }}>
+                    Rincian pangsa pasar, volume transaksi, kontribusi omzet revenue, dan total tonase kiriman per produk pos
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                className="btn-ghost"
-                onClick={() => setIsPopularCategoriesModalOpen(false)}
-                style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, border: '1px solid var(--border-light)' }}
-              >
-                <X size={16} />
-              </button>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {/* CSV Download Trigger */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!popularCategoriesList.length) return;
+                    const headers = ['No', 'Kategori Layanan', 'Pangsa Pasar (%)', 'Jumlah Resi', 'Total Revenue (IDR)', 'Rata-rata per Resi (IDR)', 'Total Bobot (kg)'];
+                    const rows = popularCategoriesList.map((c, i) => [
+                      i + 1,
+                      `"${c.name}"`,
+                      `${c.percentage}%`,
+                      c.count,
+                      c.totalRevenue,
+                      c.count > 0 ? Math.round(c.totalRevenue / c.count) : 0,
+                      c.totalWeightKg
+                    ]);
+                    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+                    const encodedUri = encodeURI(csvContent);
+                    const link = document.createElement('a');
+                    link.setAttribute('href', encodedUri);
+                    link.setAttribute('download', `popular_categories_${datePreset}_${new Date().toISOString().slice(0, 10)}.csv`);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                  className="btn-ghost"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontSize: 11.5,
+                    fontWeight: 700,
+                    padding: '6px 12px',
+                    borderRadius: 8,
+                    border: '1px solid var(--border-light)',
+                    background: 'var(--bg-surface-soft)'
+                  }}
+                  title="Export Data Kategori ke File CSV"
+                >
+                  <Download size={13} />
+                  <span>Export CSV</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  onClick={() => setIsPopularCategoriesModalOpen(false)}
+                  style={{ 
+                    width: 36, 
+                    height: 36, 
+                    borderRadius: 10, 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    padding: 0, 
+                    border: '1px solid var(--border-light)',
+                    background: 'var(--bg-surface-soft)',
+                    cursor: 'pointer'
+                  }}
+                  title="Tutup Modal"
+                >
+                  <X size={18} />
+                </button>
+              </div>
             </div>
 
             {/* Modal Scrollable Body */}
-            <div style={{ padding: '20px 22px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 18 }}>
+            <div style={{ padding: '22px 24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
               
-              {/* 1. Summary KPI Mini Cards */}
-              <div className="grid-4" style={{ gap: 12 }}>
-                <div className="stat-card" style={{ padding: '12px 14px', background: 'var(--bg-surface-soft)', border: '1px solid var(--border-light)', borderRadius: 10 }}>
-                  <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600 }}>Total Kiriman</span>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', marginTop: 4 }}>
-                    {totalCatShipments.toLocaleString('id-ID')} <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)' }}>Resi</span>
+              {/* 1. Summary KPI Mini Cards with Vibrant Gradient Top Borders */}
+              <div className="grid-4" style={{ gap: 14 }}>
+                
+                {/* KPI 1: Total Volume */}
+                <div 
+                  className="stat-card" 
+                  style={{ 
+                    padding: '14px 16px', 
+                    background: 'var(--bg-surface-soft)', 
+                    border: '1px solid var(--border-light)', 
+                    borderRadius: 12,
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}
+                >
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: '#0284c7' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 11.5, color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                      Total Kiriman
+                    </span>
+                    <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(2, 132, 199, 0.12)', color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Package size={15} />
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--text-primary)', marginTop: 6, letterSpacing: '-0.02em' }}>
+                    {totalCatShipments.toLocaleString('id-ID')} <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)' }}>Resi</span>
+                  </div>
+                  <div style={{ fontSize: 10.5, color: 'var(--primary-blue)', marginTop: 4, fontWeight: 600 }}>
+                    100% total transaksi periode ini
                   </div>
                 </div>
 
-                <div className="stat-card" style={{ padding: '12px 14px', background: 'var(--bg-surface-soft)', border: '1px solid var(--border-light)', borderRadius: 10 }}>
-                  <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600 }}>Total Revenue</span>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--accent-emerald)', marginTop: 4 }}>
+                {/* KPI 2: Total Revenue */}
+                <div 
+                  className="stat-card" 
+                  style={{ 
+                    padding: '14px 16px', 
+                    background: 'var(--bg-surface-soft)', 
+                    border: '1px solid var(--border-light)', 
+                    borderRadius: 12,
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}
+                >
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: '#10b981' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 11.5, color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                      Total Revenue
+                    </span>
+                    <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(16, 185, 129, 0.12)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Coins size={15} />
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 21, fontWeight: 900, color: 'var(--accent-emerald)', marginTop: 6, letterSpacing: '-0.02em' }}>
                     Rp {totalCatRevenue.toLocaleString('id-ID')}
                   </div>
+                  <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 4 }}>
+                    Rata-rata <strong style={{ color: 'var(--text-primary)' }}>Rp {totalCatShipments > 0 ? Math.round(totalCatRevenue / totalCatShipments).toLocaleString('id-ID') : 0}</strong> / resi
+                  </div>
                 </div>
 
-                <div className="stat-card" style={{ padding: '12px 14px', background: 'var(--bg-surface-soft)', border: '1px solid var(--border-light)', borderRadius: 10 }}>
-                  <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600 }}>Total Bobot Kargo</span>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--primary-blue)', marginTop: 4 }}>
+                {/* KPI 3: Total Weight Tonase */}
+                <div 
+                  className="stat-card" 
+                  style={{ 
+                    padding: '14px 16px', 
+                    background: 'var(--bg-surface-soft)', 
+                    border: '1px solid var(--border-light)', 
+                    borderRadius: 12,
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}
+                >
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: '#38bdf8' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 11.5, color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                      Total Bobot Kargo
+                    </span>
+                    <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(56, 189, 248, 0.12)', color: '#38bdf8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Scale size={15} />
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 22, fontWeight: 900, color: 'var(--primary-blue)', marginTop: 6, letterSpacing: '-0.02em' }}>
                     {totalCatWeightKg >= 1000 ? `${(totalCatWeightKg / 1000).toFixed(2)} Ton` : `${totalCatWeightKg.toLocaleString('id-ID')} kg`}
                   </div>
-                </div>
-
-                <div className="stat-card" style={{ padding: '12px 14px', background: 'var(--bg-surface-soft)', border: '1px solid var(--border-light)', borderRadius: 10 }}>
-                  <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600 }}>Kategori Teratas (#1)</span>
-                  <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--accent-amber)', marginTop: 5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {topCategoryItem ? `${topCategoryItem.name} (${topCategoryItem.percentage}%)` : '-'}
+                  <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 4 }}>
+                    &plusmn; <strong style={{ color: 'var(--text-primary)' }}>{totalCatShipments > 0 ? (totalCatWeightKg / totalCatShipments).toFixed(2) : 0} kg</strong> rata-rata per paket
                   </div>
                 </div>
+
+                {/* KPI 4: Market Leader */}
+                <div 
+                  className="stat-card" 
+                  style={{ 
+                    padding: '14px 16px', 
+                    background: 'var(--bg-surface-soft)', 
+                    border: '1px solid var(--border-light)', 
+                    borderRadius: 12,
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}
+                >
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, background: '#f59e0b' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 11.5, color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                      Kategori Teratas (#1)
+                    </span>
+                    <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(245, 158, 11, 0.12)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Trophy size={15} />
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 16, fontWeight: 900, color: 'var(--accent-amber)', marginTop: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {topCategoryItem ? `${topCategoryItem.name}` : '-'}
+                  </div>
+                  <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 4 }}>
+                    Pangsa Pasar: <strong style={{ color: 'var(--accent-amber)' }}>{topCategoryItem ? `${topCategoryItem.percentage}%` : '0%'}</strong> ({topCategoryItem?.count || 0} resi)
+                  </div>
+                </div>
+
               </div>
 
-              {/* 2. Visual Donut Breakdown Card */}
+              {/* 2. Visual Donut Breakdown Card (Interactive Split Layout) */}
               {popularCategoriesList.length > 0 && (
-                <div style={{ padding: 16, background: 'var(--bg-surface-soft)', border: '1px solid var(--border-light)', borderRadius: 12, display: 'grid', gridTemplateColumns: '170px 1fr', gap: 20, alignItems: 'center' }}>
-                  {/* SVG Donut */}
-                  <div style={{ position: 'relative', width: 140, height: 140, margin: '0 auto' }}>
-                    {(() => {
-                      const DONUT_COLORS = ['#0284c7', '#f59e0b', '#10b981', '#a855f7', '#ec4899', '#6366f1', '#14b8a6', '#f97316', '#84cc16', '#06b6d4', '#64748b'];
-                      const r = 38;
-                      const circumference = 2 * Math.PI * r;
-                      let accumulatedOffset = 0;
-                      const totalPct = popularCategoriesList.reduce((acc, c) => acc + (c.percentage || 0), 0) || 100;
+                <div 
+                  style={{ 
+                    padding: '20px 22px', 
+                    background: 'var(--bg-surface-soft)', 
+                    border: '1px solid var(--border-light)', 
+                    borderRadius: 16, 
+                    display: 'grid', 
+                    gridTemplateColumns: '220px 1fr', 
+                    gap: 24, 
+                    alignItems: 'center',
+                    boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.1)'
+                  }}
+                >
+                  {/* SVG Donut with Cyber Center Glow */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ position: 'relative', width: 160, height: 160 }}>
+                      {(() => {
+                        const DONUT_COLORS = ['#0284c7', '#f59e0b', '#10b981', '#a855f7', '#ec4899', '#6366f1', '#14b8a6', '#f97316', '#84cc16', '#06b6d4', '#64748b'];
+                        const r = 38;
+                        const circumference = 2 * Math.PI * r;
+                        let accumulatedOffset = 0;
+                        const totalPct = popularCategoriesList.reduce((acc, c) => acc + (c.percentage || 0), 0) || 100;
 
-                      return (
-                        <svg viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)', width: '100%', height: '100%' }}>
-                          <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="11" />
-                          {popularCategoriesList.map((cat, idx) => {
-                            const normalizedPct = cat.percentage > 0 ? (cat.percentage / totalPct) * 100 : 0;
-                            const strokeLength = (normalizedPct / 100) * circumference;
-                            const strokeDasharray = `${strokeLength} ${circumference}`;
-                            const strokeDashoffset = -accumulatedOffset;
-                            accumulatedOffset += strokeLength;
-                            const color = DONUT_COLORS[idx % DONUT_COLORS.length];
+                        return (
+                          <svg viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)', width: '100%', height: '100%', filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.15))' }}>
+                            <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="12" />
+                            {popularCategoriesList.map((cat, idx) => {
+                              const normalizedPct = cat.percentage > 0 ? (cat.percentage / totalPct) * 100 : 0;
+                              const strokeLength = (normalizedPct / 100) * circumference;
+                              const strokeDasharray = `${strokeLength} ${circumference}`;
+                              const strokeDashoffset = -accumulatedOffset;
+                              accumulatedOffset += strokeLength;
+                              const color = DONUT_COLORS[idx % DONUT_COLORS.length];
 
-                            return (
-                              <circle
-                                key={cat.name + idx}
-                                cx="50"
-                                cy="50"
-                                r="38"
-                                fill="none"
-                                stroke={color}
-                                strokeWidth="11"
-                                strokeDasharray={strokeDasharray}
-                                strokeDashoffset={strokeDashoffset}
-                              />
-                            );
-                          })}
-                        </svg>
-                      );
-                    })()}
-                    <div style={{
-                      position: 'absolute',
-                      inset: 0,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      textAlign: 'center',
-                      fontSize: 11,
-                      fontWeight: 800,
-                      color: 'var(--text-primary)',
-                      lineHeight: 1.2
-                    }}>
-                      <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Dominasi</span>
-                      <strong style={{ fontSize: 12.5, color: 'var(--primary-blue)' }}>{popularCategoriesList.length} Layanan</strong>
+                              return (
+                                <circle
+                                  key={cat.name + idx}
+                                  cx="50"
+                                  cy="50"
+                                  r="38"
+                                  fill="none"
+                                  stroke={color}
+                                  strokeWidth="12"
+                                  strokeDasharray={strokeDasharray}
+                                  strokeDashoffset={strokeDashoffset}
+                                  style={{ transition: 'stroke-dasharray 0.6s ease' }}
+                                />
+                              );
+                            })}
+                          </svg>
+                        );
+                      })()}
+                      <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        textAlign: 'center',
+                        lineHeight: 1.2
+                      }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Dominasi</span>
+                        <strong style={{ fontSize: 15, fontWeight: 900, color: 'var(--primary-blue)', marginTop: 2 }}>{popularCategoriesList.length} Layanan</strong>
+                        <span style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 2 }}>{totalCatShipments} Paket</span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Progress bars list for all categories */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 2 }}>
-                      Komparasi Pangsa Pasar (Market Share)
+                  {/* Enhanced Comparison List with Double Tier Bars & Ranks */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-light)', paddingBottom: 6 }}>
+                      <span style={{ fontSize: 12.5, fontWeight: 800, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <TrendingUp size={15} color="var(--primary-blue)" /> Komparasi Pangsa Pasar (Volume vs Revenue)
+                      </span>
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                        Data Riil MongoDB IPOS5
+                      </span>
                     </div>
-                    {popularCategoriesList.map((cat, idx) => {
-                      const DONUT_COLORS = ['#0284c7', '#f59e0b', '#10b981', '#a855f7', '#ec4899', '#6366f1', '#14b8a6', '#f97316', '#84cc16', '#06b6d4', '#64748b'];
-                      const color = DONUT_COLORS[idx % DONUT_COLORS.length];
-                      const revenueSharePct = totalCatRevenue > 0 ? Math.round((cat.totalRevenue / totalCatRevenue) * 100) : 0;
-                      return (
-                        <div key={cat.name} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11 }}>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, color: 'var(--text-primary)' }}>
-                              <span style={{ width: 8, height: 8, borderRadius: '50%', background: color }} />
-                              {cat.name}
-                            </span>
-                            <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>
-                              <strong style={{ color: color }}>{cat.percentage}%</strong> ({cat.count.toLocaleString('id-ID')} resi &bull; Rev {revenueSharePct}%)
-                            </span>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
+                      {popularCategoriesList.map((cat, idx) => {
+                        const DONUT_COLORS = ['#0284c7', '#f59e0b', '#10b981', '#a855f7', '#ec4899', '#6366f1', '#14b8a6', '#f97316', '#84cc16', '#06b6d4', '#64748b'];
+                        const color = DONUT_COLORS[idx % DONUT_COLORS.length];
+                        const revenueSharePct = totalCatRevenue > 0 ? Math.round((cat.totalRevenue / totalCatRevenue) * 100) : 0;
+                        
+                        return (
+                          <div 
+                            key={cat.name} 
+                            style={{ 
+                              background: 'var(--bg-surface)', 
+                              border: '1px solid var(--border-light)', 
+                              borderRadius: 10, 
+                              padding: '10px 14px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: 6
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span style={{ 
+                                  fontSize: 10.5, 
+                                  fontWeight: 900, 
+                                  fontFamily: 'monospace', 
+                                  padding: '1px 6px', 
+                                  borderRadius: 4, 
+                                  background: idx === 0 ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255,255,255,0.06)',
+                                  color: idx === 0 ? '#f59e0b' : 'var(--text-secondary)',
+                                  border: `1px solid ${idx === 0 ? 'rgba(245, 158, 11, 0.3)' : 'var(--border-light)'}`
+                                }}>
+                                  #{idx + 1}
+                                </span>
+                                <span style={{ width: 8, height: 8, borderRadius: '50%', background: color }} />
+                                <strong style={{ color: 'var(--text-primary)', fontSize: 12.5 }}>{cat.name}</strong>
+                              </div>
+
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                                  <strong style={{ color: color, fontSize: 12 }}>{cat.percentage}%</strong> ({cat.count.toLocaleString('id-ID')} resi)
+                                </span>
+                                <span style={{ 
+                                  fontSize: 10.5, 
+                                  fontWeight: 700, 
+                                  padding: '2px 7px', 
+                                  borderRadius: 4, 
+                                  background: 'rgba(16, 185, 129, 0.1)', 
+                                  color: 'var(--accent-emerald)', 
+                                  border: '1px solid rgba(16, 185, 129, 0.2)' 
+                                }}>
+                                  Rev {revenueSharePct}% • Rp {cat.totalRevenue.toLocaleString('id-ID')}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Dual Gradient Progress Bar */}
+                            <div style={{ width: '100%', height: 7, background: 'rgba(255, 255, 255, 0.06)', borderRadius: 6, overflow: 'hidden' }}>
+                              <div 
+                                style={{ 
+                                  width: `${Math.min(100, Math.max(3, cat.percentage))}%`, 
+                                  height: '100%', 
+                                  background: `linear-gradient(90deg, ${color}, #38bdf8)`, 
+                                  borderRadius: 6, 
+                                  transition: 'width 0.4s ease',
+                                  boxShadow: `0 0 8px ${color}66`
+                                }} 
+                              />
+                            </div>
                           </div>
-                          <div style={{ width: '100%', height: 6, background: 'rgba(255, 255, 255, 0.07)', borderRadius: 4, overflow: 'hidden' }}>
-                            <div style={{ width: `${Math.min(100, Math.max(2, cat.percentage))}%`, height: '100%', background: color, borderRadius: 4, transition: 'width 0.4s ease' }} />
-                          </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               )}
 
-              {/* 3. Search & Sorting Controls */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+              {/* 3. Search, Quick Filters & Sorting Controls Bar */}
+              <div 
+                style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center', 
+                  flexWrap: 'wrap', 
+                  gap: 12,
+                  background: 'var(--bg-surface-soft)',
+                  padding: '12px 16px',
+                  borderRadius: 12,
+                  border: '1px solid var(--border-light)'
+                }}
+              >
+                {/* Search Box */}
                 <div style={{ position: 'relative', width: 280 }}>
-                  <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                  <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                   <input
                     type="text"
                     placeholder="Cari kategori produk layanan..."
                     value={categoryDetailSearch}
                     onChange={(e) => setCategoryDetailSearch(e.target.value)}
                     className="form-control"
-                    style={{ paddingLeft: 32, fontSize: 11.5, height: 34 }}
+                    style={{ paddingLeft: 34, fontSize: 12, height: 36, borderRadius: 8 }}
                   />
                   {categoryDetailSearch && (
                     <button
                       type="button"
                       onClick={() => setCategoryDetailSearch('')}
-                      style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+                      style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
                     >
-                      <X size={12} />
+                      <X size={13} />
                     </button>
                   )}
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11.5 }}>
-                  <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>Urutkan:</span>
+                {/* Quick Service Filter Chips */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflowX: 'auto' }}>
+                  <button
+                    type="button"
+                    onClick={() => setCategoryDetailSearch('')}
+                    className={`category-filter-pill ${categoryDetailSearch === '' ? 'active' : ''}`}
+                    style={{ fontSize: 11, padding: '4px 10px', height: 32, borderRadius: 6 }}
+                  >
+                    Semua ({popularCategoriesList.length})
+                  </button>
+                  {popularCategoriesList.map(c => (
+                    <button
+                      key={c.name}
+                      type="button"
+                      onClick={() => setCategoryDetailSearch(c.name)}
+                      className={`category-filter-pill ${categoryDetailSearch === c.name ? 'active' : ''}`}
+                      style={{ fontSize: 11, padding: '4px 10px', height: 32, borderRadius: 6, whiteSpace: 'nowrap' }}
+                    >
+                      {c.name}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Sorting Select & Toggle */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
+                  <span style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>Urutkan:</span>
                   <select
                     className="form-control"
                     value={categorySortKey}
                     onChange={(e) => setCategorySortKey(e.target.value)}
-                    style={{ fontSize: 11.5, height: 34, padding: '4px 10px', width: 170 }}
+                    style={{ fontSize: 11.5, height: 36, padding: '4px 12px', width: 175, borderRadius: 8 }}
                   >
                     <option value="count">Jumlah Resi (Volume)</option>
                     <option value="percentage">Pangsa Pasar (%)</option>
-                    <option value="totalRevenue">Total Nilai (Revenue)</option>
+                    <option value="totalRevenue">Total Revenue (Rp)</option>
                     <option value="totalWeightKg">Total Bobot (kg)</option>
                     <option value="name">Nama Kategori (A-Z)</option>
                   </select>
+                  
                   <button
                     type="button"
                     className="btn-ghost"
                     onClick={() => setCategorySortOrder(categorySortOrder === 'desc' ? 'asc' : 'desc')}
-                    style={{ height: 34, padding: '0 10px', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}
+                    style={{ 
+                      height: 36, 
+                      padding: '0 12px', 
+                      fontSize: 11.5, 
+                      fontWeight: 800, 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: 6,
+                      borderRadius: 8,
+                      border: '1px solid var(--border-light)'
+                    }}
                     title={categorySortOrder === 'desc' ? 'Urutan Menurun (Tinggi ke Rendah)' : 'Urutan Menaik (Rendah ke Tinggi)'}
                   >
-                    <ArrowUpDown size={12} />
+                    <ArrowUpDown size={13} />
                     <span>{categorySortOrder.toUpperCase()}</span>
                   </button>
                 </div>
               </div>
 
-              {/* 4. Full Table Breakdown */}
-              <div style={{ border: '1px solid var(--border-light)', borderRadius: 10, overflow: 'hidden' }}>
-                <table className="data-table" style={{ width: '100%', fontSize: 11.5, margin: 0 }}>
+              {/* Active Search & Filter Banner */}
+              {categoryDetailSearch && (
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between', 
+                  padding: '8px 14px', 
+                  background: 'rgba(2, 132, 199, 0.1)', 
+                  borderRadius: 10, 
+                  border: '1px solid rgba(2, 132, 199, 0.25)', 
+                  fontSize: 12 
+                }}>
+                  <span style={{ color: 'var(--text-secondary)' }}>
+                    Menampilkan hasil filter: <strong style={{ color: 'var(--primary-blue)' }}>"{categoryDetailSearch}"</strong> ({modalCategoriesFiltered.length} dari {popularCategoriesList.length} layanan ditemukan)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setCategoryDetailSearch('')}
+                    style={{ 
+                      background: 'none', 
+                      border: 'none', 
+                      color: '#ef4444', 
+                      fontWeight: 800, 
+                      cursor: 'pointer', 
+                      fontSize: 11.5,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4
+                    }}
+                  >
+                    <X size={13} />
+                    <span>Reset Filter / Tampilkan Semua ({popularCategoriesList.length})</span>
+                  </button>
+                </div>
+              )}
+
+              {/* 4. Full Width Roomy Breakdown Table */}
+              <div style={{ border: '1px solid var(--border-light)', borderRadius: 12, overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
+                <table className="data-table" style={{ width: '100%', fontSize: 12, margin: 0 }}>
                   <thead>
-                    <tr>
-                      <th style={{ width: 40 }}>#</th>
-                      <th>Kategori Layanan</th>
-                      <th style={{ textAlign: 'center' }}>Pangsa Pasar</th>
-                      <th style={{ textAlign: 'right' }}>Jumlah Resi</th>
-                      <th style={{ textAlign: 'right' }}>Total Revenue</th>
-                      <th style={{ textAlign: 'right' }}>Rata-rata / Resi</th>
-                      <th style={{ textAlign: 'right' }}>Total Tonase</th>
-                      <th style={{ textAlign: 'center', width: 140 }}>Aksi Dashboard</th>
+                    <tr style={{ background: 'var(--bg-surface-soft)' }}>
+                      <th style={{ width: 50, textAlign: 'center' }}>#</th>
+                      <th style={{ minWidth: 170 }}>KATEGORI LAYANAN</th>
+                      <th style={{ textAlign: 'center', width: 130 }}>PANGSA PASAR</th>
+                      <th style={{ textAlign: 'right', width: 110 }}>JUMLAH RESI</th>
+                      <th style={{ textAlign: 'right', width: 130 }}>TOTAL REVENUE</th>
+                      <th style={{ textAlign: 'right', width: 120 }}>RATA-RATA / RESI</th>
+                      <th style={{ textAlign: 'right', width: 120 }}>TOTAL TONASE</th>
+                      <th style={{ textAlign: 'center', width: 150 }}>AKSI DASHBOARD</th>
                     </tr>
                   </thead>
                   <tbody>
                     {modalCategoriesFiltered.length === 0 ? (
                       <tr>
-                        <td colSpan={8} style={{ textAlign: 'center', padding: '24px 12px', color: 'var(--text-muted)' }}>
-                          Tidak ada kategori yang cocok dengan kata kunci "{categoryDetailSearch}".
+                        <td colSpan={8} style={{ textAlign: 'center', padding: '32px 16px', color: 'var(--text-muted)' }}>
+                          <AlertCircle size={24} style={{ marginBottom: 6, opacity: 0.5 }} />
+                          <div>Tidak ada kategori yang cocok dengan kata kunci "{categoryDetailSearch}".</div>
                         </td>
                       </tr>
                     ) : (
@@ -1526,40 +1884,72 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
                         const avgWeight = cat.count > 0 ? (cat.totalWeightKg / cat.count).toFixed(2) : 0;
 
                         return (
-                          <tr key={cat.name}>
-                            <td className="font-mono" style={{ color: 'var(--text-muted)' }}>
-                              {String(idx + 1).padStart(2, '0')}
-                            </td>
-                            <td>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <span style={{ width: 10, height: 10, borderRadius: '50%', background: color, flexShrink: 0 }} />
-                                <div>
-                                  <div style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{cat.name}</div>
-                                  <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>Layanan Pos Indonesia</div>
-                                </div>
-                              </div>
-                            </td>
+                          <tr key={cat.name} style={{ transition: 'background 0.15s ease' }}>
+                            {/* Rank Badge */}
                             <td style={{ textAlign: 'center' }}>
-                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                                <div style={{ width: 45, height: 6, background: 'rgba(255, 255, 255, 0.08)', borderRadius: 3, overflow: 'hidden' }}>
-                                  <div style={{ width: `${Math.min(100, cat.percentage)}%`, height: '100%', background: color, borderRadius: 3 }} />
+                              <span 
+                                style={{ 
+                                  display: 'inline-block',
+                                  fontSize: 10.5,
+                                  fontWeight: 900,
+                                  fontFamily: 'monospace',
+                                  padding: '2px 6px',
+                                  borderRadius: 5,
+                                  background: idx === 0 ? 'rgba(245, 158, 11, 0.15)' : idx === 1 ? 'rgba(148, 163, 184, 0.15)' : idx === 2 ? 'rgba(217, 119, 6, 0.15)' : 'rgba(255,255,255,0.05)',
+                                  color: idx === 0 ? '#f59e0b' : idx === 1 ? '#94a3b8' : idx === 2 ? '#d97706' : 'var(--text-muted)',
+                                  border: `1px solid ${idx === 0 ? 'rgba(245, 158, 11, 0.3)' : idx === 1 ? 'rgba(148, 163, 184, 0.3)' : 'var(--border-light)'}`
+                                }}
+                              >
+                                {String(idx + 1).padStart(2, '0')}
+                              </span>
+                            </td>
+
+                            {/* Service Category Info */}
+                            <td>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <span style={{ width: 10, height: 10, borderRadius: '50%', background: color, flexShrink: 0, boxShadow: `0 0 6px ${color}88` }} />
+                                <div>
+                                  <div style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: 13 }}>{cat.name}</div>
+                                  <div style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>Layanan Resmi PT Pos Indonesia</div>
                                 </div>
-                                <strong style={{ color: color, fontSize: 11 }}>{cat.percentage}%</strong>
                               </div>
                             </td>
-                            <td className="font-mono" style={{ textAlign: 'right', fontWeight: 700, color: 'var(--text-primary)' }}>
-                              {cat.count.toLocaleString('id-ID')}
+
+                            {/* Market Share Progress Bar */}
+                            <td style={{ textAlign: 'center' }}>
+                              <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 4, width: '100%' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', fontSize: 11, padding: '0 4px' }}>
+                                  <span style={{ color: 'var(--text-muted)', fontSize: 10 }}>Share</span>
+                                  <strong style={{ color: color, fontSize: 11.5 }}>{cat.percentage}%</strong>
+                                </div>
+                                <div style={{ width: '100%', height: 6, background: 'rgba(255, 255, 255, 0.08)', borderRadius: 4, overflow: 'hidden' }}>
+                                  <div style={{ width: `${Math.min(100, cat.percentage)}%`, height: '100%', background: color, borderRadius: 4 }} />
+                                </div>
+                              </div>
                             </td>
-                            <td className="font-mono" style={{ textAlign: 'right', fontWeight: 800, color: 'var(--accent-emerald)' }}>
+
+                            {/* Volume Count */}
+                            <td className="font-mono" style={{ textAlign: 'right', fontWeight: 800, color: 'var(--text-primary)', fontSize: 12.5 }}>
+                              {cat.count.toLocaleString('id-ID')} <span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600 }}>resi</span>
+                            </td>
+
+                            {/* Total Revenue */}
+                            <td className="font-mono" style={{ textAlign: 'right', fontWeight: 900, color: 'var(--accent-emerald)', fontSize: 12.5 }}>
                               Rp {cat.totalRevenue.toLocaleString('id-ID')}
                             </td>
-                            <td className="font-mono" style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>
+
+                            {/* Average Ticket Size */}
+                            <td className="font-mono" style={{ textAlign: 'right', color: 'var(--text-secondary)', fontSize: 11.5 }}>
                               Rp {avgPerConnote.toLocaleString('id-ID')}
                             </td>
-                            <td className="font-mono" style={{ textAlign: 'right', color: 'var(--text-primary)' }}>
-                              {cat.totalWeightKg >= 1000 ? `${(cat.totalWeightKg / 1000).toFixed(2)} Ton` : `${cat.totalWeightKg.toLocaleString('id-ID')} kg`}
-                              <div style={{ fontSize: 9.5, color: 'var(--text-muted)' }}>&plusmn; {avgWeight} kg/resi</div>
+
+                            {/* Total Weight & Avg */}
+                            <td className="font-mono" style={{ textAlign: 'right', color: 'var(--text-primary)', fontSize: 11.5 }}>
+                              <strong>{cat.totalWeightKg >= 1000 ? `${(cat.totalWeightKg / 1000).toFixed(2)} Ton` : `${cat.totalWeightKg.toLocaleString('id-ID')} kg`}</strong>
+                              <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>&plusmn; {avgWeight} kg/resi</div>
                             </td>
+
+                            {/* Action Button: Filter Dashboard */}
                             <td style={{ textAlign: 'center' }}>
                               <button
                                 type="button"
@@ -1570,18 +1960,22 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
                                 }}
                                 className="btn-ghost"
                                 style={{
-                                  padding: '4px 10px',
-                                  fontSize: 10.5,
-                                  fontWeight: 700,
+                                  padding: '5px 12px',
+                                  fontSize: 11,
+                                  fontWeight: 800,
                                   color: 'var(--primary-blue)',
-                                  borderRadius: 6,
+                                  background: 'rgba(2, 132, 199, 0.08)',
+                                  border: '1px solid rgba(2, 132, 199, 0.25)',
+                                  borderRadius: 8,
                                   display: 'inline-flex',
                                   alignItems: 'center',
-                                  gap: 4
+                                  gap: 5,
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease'
                                 }}
-                                title={`Filter Dashboard dengan kategori ${cat.name}`}
+                                title={`Terapkan filter dashboard untuk layanan ${cat.name}`}
                               >
-                                <Filter size={11} />
+                                <Filter size={12} />
                                 <span>Filter Dashboard</span>
                               </button>
                             </td>
@@ -1595,19 +1989,39 @@ export default function Dashboard({ activeConnection, refreshStatsTrigger }) {
 
             </div>
 
-            {/* Modal Footer */}
-            <div style={{ padding: '14px 22px', borderTop: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-surface-soft)' }}>
-              <div style={{ fontSize: 11.5, color: 'var(--text-secondary)' }}>
-                Filter Aktif: <strong style={{ color: 'var(--text-primary)' }}>{selectedDateRange}</strong> &bull; Data tersinkronisasi MongoDB
+            {/* Modal Footer with Live Status */}
+            <div 
+              style={{ 
+                padding: '14px 24px', 
+                borderTop: '1px solid var(--border-light)', 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center', 
+                background: 'linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-surface-soft) 100%)' 
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: 'var(--text-secondary)' }}>
+                <span className="pulse" style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', background: '#10b981' }} />
+                <span>Filter Aktif: <strong style={{ color: 'var(--text-primary)' }}>{selectedDateRange}</strong> &bull; Database: <span className="font-mono text-cyan" style={{ fontSize: 11 }}>MongoDB (ipos5_reporting)</span></span>
               </div>
-              <button
-                type="button"
-                className="btn btn-navy"
-                onClick={() => setIsPopularCategoriesModalOpen(false)}
-                style={{ padding: '8px 18px', fontSize: 12, fontWeight: 700 }}
-              >
-                Tutup
-              </button>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <button
+                  type="button"
+                  className="btn btn-navy"
+                  onClick={() => setIsPopularCategoriesModalOpen(false)}
+                  style={{ 
+                    padding: '8px 22px', 
+                    fontSize: 12.5, 
+                    fontWeight: 800, 
+                    borderRadius: 8,
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(2, 132, 199, 0.25)'
+                  }}
+                >
+                  Tutup Modal
+                </button>
+              </div>
             </div>
 
           </div>

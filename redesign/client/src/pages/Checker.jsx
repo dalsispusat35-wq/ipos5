@@ -434,6 +434,7 @@ export default function Checker() {
       if (res.success && res.data) {
         const raw = res.data?.data || res.data || {};
         const isVehicle = res.isVehicleQuery || raw.isVehicleQuery || /^[a-zA-Z]{1,2}\s?\d{1,4}\s?[a-zA-Z]{1,3}$/.test(cleanTerm);
+        setSearchMode(isVehicle ? 'FLEET' : 'PACKAGE');
 
         const connoteCode = raw.connoteCode || cleanTerm;
         const bookingCode = raw.bookingCode || `BK-${connoteCode}`;
@@ -643,11 +644,19 @@ export default function Checker() {
     return groups;
   }, [result?.cargoGroupedByDestination, selectedDestFilter, selectedStopFilter, cargoSearchTerm, showOnlyNewlyLoaded, activeSeq]);
 
-  // Dynamically compute tracking timeline based on activeSeq and routeStops
+  // Dynamically compute tracking timeline based on searchMode & package/vehicle context
   const displayTimeline = useMemo(() => {
     if (!result) return [];
+
+    // When searching a single package (PACKAGE Mode), ALWAYS display the real database event logs
+    if (!result.isVehicleQuery || searchMode === 'PACKAGE') {
+      if (Array.isArray(result.timeline) && result.timeline.length > 0) {
+        return result.timeline;
+      }
+    }
+
+    // When in FLEET vehicle mode, show the vehicle stops progress timeline
     const stops = result.routeStops || [];
-    
     if (stops.length > 0) {
       const events = [];
       const stop1 = stops[0] || {};
@@ -694,7 +703,7 @@ export default function Checker() {
     }
 
     return result.timeline || [];
-  }, [result, activeSeq]);
+  }, [result, activeSeq, searchMode]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20, width: '100%', paddingBottom: 24 }}>

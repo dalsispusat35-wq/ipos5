@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import apiRouter from './routes/api.js';
 import DbConnection from './config/DbConnection.js';
 import UserModel from './models/UserModel.js';
+import NewsScraperService from './services/NewsScraperService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -69,6 +70,10 @@ const startServer = async () => {
       console.log(`⚠️ Auto-connect failed on start: ${e.message}`);
       console.log(`🔌 Waiting for MongoDB connection via UI...`);
     }
+
+    // Initialize Auto-Scraper for PT Pos Indonesia News Feed
+    NewsScraperService.initScheduler();
+
     console.log(`==================================================`);
   });
 };
